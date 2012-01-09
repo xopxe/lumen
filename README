@@ -1,0 +1,69 @@
+Lumen: Lua Multitasking Environment.
+====================================
+
+"A nice generic framework to develop complex, portable concurrent applications 
+in Lua." 
+
+
+Extremely simple environment for coroutine based multitasking. Consists of a 
+scheduler, and that's it.
+Created after finding a presentation by Fabien Fleutot for the 2011 Lua 
+Workshop ( see http://lua-users.org/lists/lua-l/2011-10/msg01057.html )
+
+* Tasks can emit signals, and block waiting for them, and that's it.
+	* Can wait on several signals, with a timeout.
+* A single Lua file, no C, no external dependencies. 
+	* can have use for a clock (os.time() will do)
+	* can have use for a idle function (busy waiting or socket.sleep will
+	  do)
+* Can interface with LuaSocket and nixio for socket and i/o support.
+* Only most basic of optimizations done.
+* Works with Lua 5.1, 5.2 and LuaJIT.
+
+
+
+Contains:
+=========
+
+
+COPYRIGHT
+	The copyright for the thing (same as Lua)
+
+documentation.txt
+	The documentation of the API for the scheduler.
+
+sched.lua
+	The scheduler itself.
+
+test.lua
+	A sample program that uses the scheduler to do stuff.
+
+socketeer.lua
+	A simplistic task that interfaces with LuaSocket. Only supports client
+	sockets.
+
+test-socketeer.lua
+	A test program for socketeer.
+
+nixiorator.lua
+	A task that interfaces with nixio. Supports UDP, TCP and async file 
+	I/O.
+
+test-nixiorator.lua
+	A test program for nixiorator. Reads from /dev/input/mice, so run as 
+	root.
+
+speed.lua
+	A test program with two tasks, one emiting signals and the other 
+	accepting them. See how fast it can run.
+
+
+
+Who?
+====
+
+
+Jorge Visca, jvisca@fing.edu.uy
+
+
+--End
