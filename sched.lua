@@ -2,15 +2,24 @@ local M = {}
 
 local weak_key = { __mode = 'k' }
 
+--table containing all the registered tasks.
+--tasks[task]=descriptor
 local tasks = {}
+
+--table to keep track tasks waiting for events
+--signals[event][emitter][task]=waitd
 local signals = setmetatable({}, weak_key)
 
+--register of names for tasks
 local tasknames = setmetatable({catalog = 'catalog'}, weak_key)
 
+--closeset wait timeout during a scheduler step
 local next_waketime
+
 
 local step_task
 
+--changes the status of a task from wainting to active (if everything is right)
 local wake_up = function (task, waitd)
 	local descriptor = tasks[task]
 	if not descriptor or descriptor.status~='ready' 
@@ -24,6 +33,7 @@ local wake_up = function (task, waitd)
 end
 
 local waked_up = {}
+--will wake up and run all tasks waiting on a event
 local emit_signal = function (emitter, event, ...)
 	--print('emitsignal',emitter, signals[event], event, ...)
 	local walktasks = function (waiting, ...)
@@ -48,6 +58,7 @@ local emit_signal = function (emitter, event, ...)
 	end
 end
 
+--resumes a task and handles finalization conditions
 step_task = function(t, ...)
 	local ok, ret = coroutine.resume(t, ...)
 	if tasks[t] and coroutine.status(t)=='dead' then
@@ -62,6 +73,7 @@ step_task = function(t, ...)
 	end
 end
 
+--blocks a task waiting for a signal. registers the task in signals table.
 local register_signal = function(task, waitd)
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
 	local descriptor = tasks[task]
@@ -92,6 +104,9 @@ local emit_timeout = function (task)
 		step_task(task, nil, 'timeout')
 	end
 end
+
+-----------------------------------------------------------------------------------------
+--API calls
 
 M.catalog = {}
 M.catalog.register = function ( name )
@@ -172,7 +187,6 @@ end
 
 M.sleep = function (timeout)
 --print('to sleep', timeout)
---	M.wait(nil, timeout)
 	M.wait({timeout=timeout})
 end
 
@@ -212,6 +226,7 @@ local cycleready, cycletimeout = {}, {}
 M.step = function ()
 	next_waketime = nil
 
+	--find tasks ready to run (active) and ready to wakeup by timeout
 	for task, descriptor in pairs (tasks) do
 		assert(descriptor)
 		if descriptor.waitingfor then 
@@ -231,10 +246,15 @@ M.step = function ()
 	end
 	local ncycleready,ncycletimeout = #cycleready, #cycletimeout
 
+	--wake timeouted tasks
 	for i, task in ipairs(cycletimeout) do
 		cycletimeout[i]=nil
 		emit_timeout( task )
 	end
+
+	--step active tasks (keeping track of impending timeouts)
+	--active means they yielded, so they receive as parametets timing data 
+	--see sched.yield()
 	if ncycleready==1 then
 		local available_time
 		if next_waketime then available_time=next_waketime-M.get_time() end
@@ -249,6 +269,7 @@ M.step = function ()
 		end
 	end
 
+	--calculate available idle time to be returned
 	if ncycletimeout==0 and ncycleready==0 then 
 		if not next_waketime then
 			return nil
