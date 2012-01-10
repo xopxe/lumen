@@ -16,9 +16,30 @@ Workshop ( see http://lua-users.org/lists/lua-l/2011-10/msg01057.html )
 	* can have use for a clock (os.time() will do)
 	* can have use for a idle function (busy waiting or socket.sleep will
 	  do)
-* Can interface with LuaSocket and nixio for socket and i/o support.
+* Can interface with LuaSocket and nixio for socket and async file I/O support.
 * Only most basic of optimizations done.
 * Works with Lua 5.1, 5.2 and LuaJIT.
+
+
+
+How tor try it out?
+===================
+
+This example recreates a slide from the above mentoned presentation:
+
+# lua test.lua
+
+
+If you want to see a very simple LuaSocket integration working, try:
+
+# lua test-socketeer.lua
+
+
+If you want to see TCP, UDP and async file I/O running, and have nixio 
+installed, and in Linux, you can try (root needed as it reads from 
+/dev/input/mice):
+
+# sudo lua test-nixiorator.lua
 
 
 
