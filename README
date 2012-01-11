@@ -11,7 +11,8 @@ Created after finding a presentation by Fabien Fleutot for the 2011 Lua
 Workshop ( see http://lua-users.org/lists/lua-l/2011-10/msg01057.html )
 
 * Tasks can emit signals, and block waiting for them, and that's it.
-	* Can wait on several signals, with a timeout.
+	* A signal can be of any type, and carry any paramteres
+	* A task can wait on several signals, with a timeout.
 * A single Lua file, no C, no external dependencies. 
 	* can have use for a clock (os.time() will do)
 	* can have use for a idle function (busy waiting or socket.sleep will
