@@ -3,12 +3,12 @@ local M = {}
 local weak_key = { __mode = 'k' }
 
 --table containing all the registered tasks.
---tasks[task]=descriptor
+--tasks[task]=taskd
 local tasks = {}
 
---table to keep track tasks waiting for events
---signals[event][emitter][task]=waitd
-local signals = setmetatable({}, weak_key)
+--table to keep track tasks waiting for signals
+--waiting[event][emitter][task]=waitd
+local waiting = setmetatable({}, weak_key)
 
 --register of names for tasks
 local tasknames = setmetatable({catalog = 'catalog'}, weak_key)
@@ -21,21 +21,21 @@ local step_task
 
 --changes the status of a task from wainting to active (if everything is right)
 local wake_up = function (task, waitd)
-	local descriptor = tasks[task]
-	if not descriptor or descriptor.status~='ready' 
-	or (waitd and waitd~=descriptor.waitingfor) then 
+	local taskd = tasks[task]
+	if not taskd or taskd.status~='ready' 
+	or (waitd and waitd~=taskd.waitingfor) then 
 		return false 
 	end
 
-	descriptor.waketime = nil
-	descriptor.waitingfor = nil
+	taskd.waketime = nil
+	taskd.waitingfor = nil
 	return true
 end
 
 local waked_up = {}
 --will wake up and run all tasks waiting on a event
 local emit_signal = function (emitter, event, ...)
-	--print('emitsignal',emitter, signals[event], event, ...)
+	--print('emitsignal',emitter, waiting[event], event, ...)
 	local walktasks = function (waiting, ...)
 		for task, waitd in pairs(waiting) do
 			--print('',':',task, waiting[task])
@@ -50,7 +50,7 @@ local emit_signal = function (emitter, event, ...)
 			step_task(task, event, ...)
 		end
 	end
-	local onevent=signals[event]
+	local onevent=waiting[event]
 	if onevent then 
 		local waiting1, waiting2 = onevent[emitter], onevent['*']
 		if waiting1 then walktasks(waiting1,...) end
@@ -73,15 +73,15 @@ step_task = function(t, ...)
 	end
 end
 
---blocks a task waiting for a signal. registers the task in signals table.
+--blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(task, waitd)
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
-	local descriptor = tasks[task]
-	descriptor.waitingfor = waitd
+	local taskd = tasks[task]
+	taskd.waitingfor = waitd
 
 	if timeout and timeout>=0 then 
 		local t = timeout + M.get_time() 
-		descriptor.waketime = t
+		taskd.waketime = t
 		next_waketime = next_waketime or t
 		if t<next_waketime then next_waketime=t end
 	end
@@ -90,10 +90,10 @@ local register_signal = function(task, waitd)
 	if events and emitter then 
 		for _, event in ipairs(events) do
 			--print('',':', event)
-			signals[event]=signals[event] or setmetatable({}, weak_key)
-			signals[event][emitter] = signals[event][emitter] 
+			waiting[event]=waiting[event] or setmetatable({}, weak_key)
+			waiting[event][emitter] = waiting[event][emitter] 
 						or setmetatable({}, { __mode = 'kv' })
-			signals[event][emitter][task]=waitd
+			waiting[event][emitter][task]=waitd
 		end
 	end
 end
@@ -203,8 +203,8 @@ end
 M.get_time = os.time
 
 M.clean_up = function()
-	--clean up signals table
-	for event, eventt in pairs(signals) do
+	--clean up waiting table
+	for event, eventt in pairs(waiting) do
 		for emitter, emittert in pairs(eventt) do
 			for task, taskt in pairs(emittert) do
 				if next( taskt )==nil then
@@ -216,7 +216,7 @@ M.clean_up = function()
 			end
 		end
 		if next( eventt )==nil then
-			signals[event]=nil
+			waiting[event]=nil
 		end
 	end
 	collectgarbage ('collect')
@@ -227,10 +227,9 @@ M.step = function ()
 	next_waketime = nil
 
 	--find tasks ready to run (active) and ready to wakeup by timeout
-	for task, descriptor in pairs (tasks) do
-		assert(descriptor)
-		if descriptor.waitingfor then 
-			local waketime = descriptor.waketime
+	for task, taskd in pairs (tasks) do
+		if taskd.waitingfor then 
+			local waketime = taskd.waketime
 			if waketime then 
 				next_waketime = next_waketime or waketime
 				if waketime <= M.get_time() then
@@ -240,7 +239,7 @@ M.step = function ()
 					next_waketime = waketime
 				end
 			end
-		elseif descriptor.status=='ready' then
+		elseif taskd.status=='ready' then
 			cycleready[#cycleready+1]=task
 		end
 	end
