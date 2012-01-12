@@ -9,6 +9,10 @@ local nixio = nixiorator.nixio
 local udprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'dgram'))
 local fdrecv = nixio.open('/dev/input/mice', nixio.open_flags('rdonly', 'sync'))
 
+sched.idle = nixio.idle or sched.idle
+if nixio.gettime then
+	sched.get_time = nixio.gettime
+end
 
 sched.run(function() 
 	nixiorator.register_client(udprecv, 1500)
@@ -51,7 +55,7 @@ sched.run(function()
 			local m="ping! "..os.time()
 			print("udp sending",m)
 			udpsend:send(m)
-			sched.sleep(2)
+			sched.sleep(0.5)
 		end
 	end)
 

@@ -28,6 +28,14 @@ local function accept(polle)
 end
 
 
+if nixio.gettime then
+	M.idle = function (t) 
+		local sec = math.floor(t)
+		local nsec = (t-sec)*1000000000
+		nixio.nanosleep(sec, nsec) 
+	end
+end
+
 M.register_server = function (skt, block)
 	local polle={
 		fd=skt, 
