@@ -145,6 +145,7 @@ sched.clean_up()
 		not neccesary.
 	Tip 2: can be called from a task that will do it periodically in a loop
 		with a sleep.
+	Tip 3: sched.idle is a good place.
 
 
 sched.go()

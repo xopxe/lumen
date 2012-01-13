@@ -256,7 +256,10 @@ M.step = function ()
 	--see sched.yield()
 	if ncycleready==1 then
 		local available_time
-		if next_waketime then available_time=next_waketime-M.get_time() end
+		if next_waketime then 
+			available_time=next_waketime-M.get_time() 
+			if available_time<0 then available_time=0 end
+		end
 		step_task( cycleready[1], available_time, available_time )
 		cycleready[1]=nil
 	else
@@ -272,8 +275,11 @@ M.step = function ()
 	if ncycletimeout==0 and ncycleready==0 then 
 		if not next_waketime then
 			return nil
-		elseif next_waketime>M.get_time() then
-			return next_waketime-M.get_time()
+		else
+			local remaining = next_waketime-M.get_time()
+			if remaining > 0 then
+				return remaining
+			end
 		end
 	end
 	return 0

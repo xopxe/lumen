@@ -3,10 +3,7 @@ local sched = require("sched")
 local nixioutil = require ("nixio.util")
 local pollt={}
 
-local MINIMAL_WAIT = 0.01 --seconds
-
 local M = {nixio=nixio}
-
 
 local function client(polle)
 	local skt=polle.fd
@@ -76,7 +73,6 @@ end
 M.step = function (timeout)
 
 	timeout=timeout or -1
-	if timeout == 0 then timeout=MINIMAL_WAIT end
         local stat, code = nixio.poll(pollt, timeout*1000)
 	if stat and stat > 0 then
 		for _, polle in ipairs(pollt) do

@@ -1,8 +1,6 @@
 local socket = require("socket")
 local sched = require("sched")
 
-local MINIMAL_WAIT = 0.01 --seconds
-
 local recvt={}
 
 local M = {socket=socket}
@@ -21,10 +19,9 @@ M.unregister = function (skt)
 end
 
 M.step = function (timeout)
-	--print('socket +', timeout)
-	if timeout == 0 then timeout=MINIMAL_WAIT end
+	print('socket +', timeout)
 	local recvt_ready, _, err = socket.select(recvt, nil, timeout)
-	--print('socket -', err)
+	print('socket -', err)
 	if err~='timeout' then
 		for _, skt in ipairs(recvt_ready) do
 			local data,err = skt:receive()
