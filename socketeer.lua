@@ -19,9 +19,9 @@ M.unregister = function (skt)
 end
 
 M.step = function (timeout)
-	print('socket +', timeout)
+	--print('socket +', timeout)
 	local recvt_ready, _, err = socket.select(recvt, nil, timeout)
-	print('socket -', err)
+	--print('socket -', err)
 	if err~='timeout' then
 		for _, skt in ipairs(recvt_ready) do
 			local data,err = skt:receive()
