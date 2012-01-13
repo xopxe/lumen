@@ -105,6 +105,16 @@ local emit_timeout = function (task)
 	end
 end
 
+--aux. function, computes time>=0 until next_waketime, nil if no next_waketime
+local compute_available_time = function()
+	local available_time
+	if next_waketime then 
+		available_time=next_waketime-M.get_time() 
+		if available_time<0 then available_time=0 end
+	end
+	return available_time
+end
+
 -----------------------------------------------------------------------------------------
 --API calls
 
@@ -252,22 +262,17 @@ M.step = function ()
 	end
 
 	--step active tasks (keeping track of impending timeouts)
-	--active means they yielded, so they receive as parametets timing data 
+	--active means they yielded, so they receive as parameters timing data 
 	--see sched.yield()
 	if ncycleready==1 then
-		local available_time
-		if next_waketime then 
-			available_time=next_waketime-M.get_time() 
-			if available_time<0 then available_time=0 end
-		end
+		local available_time = compute_available_time()
 		step_task( cycleready[1], available_time, available_time )
 		cycleready[1]=nil
 	else
 		for i, task in ipairs(cycleready) do
-			cycleready[i]=nil
-			local available_time
-			if next_waketime then available_time=next_waketime-M.get_time() end
+			local available_time = compute_available_time()
 			step_task( task, 0, available_time )
+			cycleready[i]=nil
 		end
 	end
 
