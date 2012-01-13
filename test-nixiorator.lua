@@ -55,7 +55,7 @@ sched.run(function()
 			local m="ping! "..os.time()
 			print("udp sending",m)
 			udpsend:send(m)
-			sched.sleep(0.5)
+			sched.sleep(2)
 		end
 	end)
 
