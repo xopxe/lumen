@@ -9,7 +9,7 @@ sched.run(f, [params...])
 		were err is the error message.
 	Parameters
 		f: function for the task
-		params: parameters pased to f upon first run.
+		params: parameters passed to f upon first run.
 	Returns
 		task in the scheduler.
 
@@ -24,7 +24,7 @@ sched.signal(event, [args...])
 sched.wait(waitd)
 	Blocks a task waiting for one or more events, or a timeout.
 	Parameters
-		waitd: a wait descriptor. It is a table containig the fields:
+		waitd: a wait descriptor. It is a table containing the fields:
 			emitter: optional, task originating the signal we wait
 				for. If	nil, will only return on timeout. If 
 				'*', means anyone.
@@ -34,7 +34,7 @@ sched.wait(waitd)
 			A wait descriptor can be reused (for example, when
 			waiting inside a loop) and shared amongst different 
 			tasks. If a wait descriptor changes while there is a
-			task waiting, the behaviour is uspecified.
+			task waiting, the behavior is unspecified.
 	Returns
 		the signal received as (event, args...) (see sched.signal()); 
 		on timeout expiration, returns (nil, 'timeout').
@@ -100,7 +100,7 @@ sched.catalog.register(name)
 	Parameters
 		name: can be of any type.
 	Returns
-		true is succesfull; (nil, 'used') if the name is already used 
+		true is successful; (nil, 'used') if the name is already used 
 		by another task.
 
 
@@ -111,7 +111,7 @@ sched.catalog.waitfor(name, [timeout])
 		name: can be of any type.
 		timeout: time to wait. nil or negative waits for ever.
 	Returns
-		the task if succesfull; on timeout expiration returns (nil, 
+		the task if successful; on timeout expiration returns (nil, 
 		'timeout').
 
 
@@ -138,11 +138,11 @@ sched.idle
 
 
 sched.clean_up()
-	Will collect some garbage data. It can be usefull if your apps generate
+	Will collect some garbage data. It can be useful if your apps generate
 	a huge lot of waitd's on different signals. In future versions will be
 	done automatically.
 	Tip 1: check the memory consumption of your app, most of times it is
-		not neccesary.
+		not necessary.
 	Tip 2: can be called from a task that will do it periodically in a loop
 		with a sleep.
 	Tip 3: sched.idle is a good place.
