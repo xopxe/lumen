@@ -7,7 +7,7 @@ local recvt={}
 
 local sktmode = setmetatable({}, weak_key)
 local isserver = setmetatable({}, weak_key)
-
+local partial = setmetatable({}, weak_key)
 
 local M = {socket=socket}
 
@@ -19,7 +19,7 @@ M.register_server = function (skt, pattern)
 end
 
 M.register_client = function (skt, pattern)
-	--skt:settimeout(0)
+	skt:settimeout(0)
 	sktmode[skt] = pattern
 	recvt[#recvt+1]=skt
 end
@@ -34,7 +34,7 @@ M.unregister = function (skt)
 end
 
 M.step = function (timeout)
-	--print('socket +', timeout)
+	--print('+', timeout)
 	local recvt_ready, _, err = socket.select(recvt, nil, timeout)
 	--print('-', #recvt_ready, err)
 	if err~='timeout' then
@@ -49,10 +49,17 @@ M.step = function (timeout)
 					sched.signal(skt, 'fail', err)
 				end
 			else
-				local data,err = skt:receive(mode)
-				if err=='closed' then M.unregister(skt) end
-				if err then 
-					sched.signal(skt, data, err)
+				--print('&+', skt, mode, partial[skt])
+				local data,err,part = skt:receive(mode,partial[skt])
+				partial[skt]=part
+				--print('&-',data,err,part)
+				if err then
+					if err=='closed' then 
+						M.unregister(skt)
+						sched.signal(skt, part, err) --data is nil or part?
+					elseif not part or part=='' then
+						sched.signal(skt, nil, err)
+					end
 				else
 					sched.signal(skt, data)
 				end
