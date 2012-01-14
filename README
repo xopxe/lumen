@@ -61,8 +61,7 @@ test.lua
 	A sample program that uses the scheduler to do stuff.
 
 socketeer.lua
-	A simplistic task that interfaces with LuaSocket. Only supports client
-	sockets.
+	A task that interfaces with LuaSocket. Support TCP and UDP sockets.
 
 test-socketeer.lua
 	A test program for socketeer.
