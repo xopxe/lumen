@@ -51,7 +51,7 @@ M.step = function (timeout)
 			else
 				--print('&+', skt, mode, partial[skt])
 				if type(mode) == "number" and mode <= 0 then
-					local data,err,part = skt:receive(1024)
+					local data,err,part = skt:receive(65000)
 					--print('&-',data,err,part, #part)
 					local s = data or part
 					if err=='closed' then
