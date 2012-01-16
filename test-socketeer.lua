@@ -19,7 +19,7 @@ sched.idle = socket.sleep
 
 sched.run(function() 
 	sched.catalog.register('MAIN')
-	local s = sched.run(socketeer.run)
+	local s = sched.run(socketeer.task)
 	print('SOCKETEER',s)
 
 	--udp

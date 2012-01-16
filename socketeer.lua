@@ -68,7 +68,7 @@ M.step = function (timeout)
 	end
 end
 
-M.run = function ()
+M.task = function ()
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )
