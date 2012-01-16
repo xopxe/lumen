@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Lumen: Lua Multitasking Environment</title>
+<meta name="author" content="Jorge Visca">
+<meta name="keywords" content="Lua, Library, Asynchronous, Scheduler">
+<meta name="description" content="Lumen: Lua Multitasking Environment">
+</head>
+<body>
+
+
+<h1>Lumen: Lua Multitasking Environment</h1>
+<p>Lumen is a library for writing cooperative multitasking tasks. The cooperation is 
+done trough signal passing: a task can emit a signal, which will be caught by all tasks
+that are waiting for it. Signals are used to exchange information between tasks, and 
+for synchronization. </p>
+<p>Cooperative means that the execution of a task will never be interrupted by the 
+scheduler, and a task will relinquish control explicitly, either by yielding 
+the control, or by blocking waiting for a signal.</p>
+<p>A Lumen task is a Lua function that uses Lumen's scheduler API.</p>
+<p>To use the scheduler, do</p>
+	<pre>local sched=require('sched')</pre>
+
+<hr>
+<h2><a name="sched.run">sched.run(f, [params...])</a></h2>
+	<p>Creates a task. The task will emit a <em>'die', true, params...</em> signal 
+		upon normal finalization, were params are the returns of f. If
+		there is a error, the task will emit a <em>'die', false, err</em> 
+		were err is the error message.</p>
+	<b>Parameters</b>
+		<ul><li>f: function for the task</li>
+		<li>params: parameters passed to f upon first run.</li></ul>
+	<b>Returns</b>
+		<ul><li>task in the scheduler.</li></ul>
+
+<hr>
+<h2><a name="sched.signal">sched.signal(event, [args...])</a></h2>
+	<p>Emits a signal from a task.</p>
+	<strong>Parameters</strong>
+		<ul><li>event: event of the signal. Can be of any type.</li>
+		<li>args: further parameters to be sent with the signal.</li></ul>
+
+<hr>
+<h2><a name="sched.wait">sched.wait(waitd)</a></h2>
+	<p>Blocks a task waiting for one or more events, or a timeout.</p>
+	<strong>Parameters</strong>
+		<ul><li>waitd: a wait descriptor. It is a table containing the fields:
+			<ul><li>emitter: optional, task originating the signal we wait
+				for. If	<em>nil</em>, will only return on timeout. If 
+				<em>'*'</em>, means anyone.</li>
+			<li>timeout: optional, time to wait. <em>nil</em> or negative waits
+				for ever.</li>
+			<li>events: optional, array with the events to wait.</li>
+			</ul>
+			A wait descriptor can be reused (for example, when
+			waiting inside a loop) and shared amongst different 
+			tasks. If a wait descriptor changes while there is a
+			task waiting, the behavior is unspecified.</li></ul>
+	<strong>Returns</strong>
+		<ul><li>the signal received as <em>event, args...</em> (see <a href="#sched.signal">sched.signal()</a>); 
+		on timeout expiration, returns <em>nil, 'timeout'</em>.
+</li></ul>
+
+<hr>
+<h2>sched.waitd(emitter, timeout, [events...])</h2>
+	<p>Helper function that instantiates a wait descriptor (see <em><a href="#sched.wait">sched.wait()</a></em>).</p>
+	<strong>Parameters</strong>
+		<ul><li>emitter: task originating the signal we wait for. If nil, will 
+			only return on timeout. If <em>'*'</em>, means anyone.</li>
+		<li>timeout: time to wait. <em>nil</em> or negative waits for ever.</li>
+		<li>events: events to wait.</li></ul>
+	<strong>Returns</strong>
+		<ul><li>A wait descriptor object.</li></ul>
+
+<hr>
+<h2>sched.sleep(t)</h2>
+	<p>Sleeps the task for t time units. Same as <em><a href="#sched.wait">sched.wait</a>({timeout=t})</em></p>
+	<strong>Parameters</strong>
+		<ul><li>t: time to sleep.</li></ul>
+
+<hr>
+<h2>sched.yield()</h2>
+	<p>Yields the execution of a task, as in cooperative multitasking.</p>
+	<strong>Returns</strong>
+		<ul><li>availabletime: time available until other tasks are capable of
+			running. If there are other active (yielded, 
+			non-waiting) tasks, this will be 0. </li>
+		<li>availabletimeuntiltimeout: time available until the nearest
+			timeout of a waiting task.</li></ul>
+		<p>A well behaved task should respect the first time as much as 
+		possible, and never hog the CPU beyond the second time.</p>
+
+<hr>
+<h2>sched.sigrun(f, waitd)</h2>
+	Creates a task that will run on a given signal. For more details see
+	<em><a href="#sched.wait">sched.wait()</a></em> and <em><a href="#sched.run">sched.run()</a></em>
+	<strong>Parameters</strong>
+		<ul><li>f: function for the task. The function will receive the signal.</li>
+		<li>waitd: wait descriptor, as used in <em><a href="#sched.wait">sched.wait()</a></em></li></ul>
+	<strong>Returns</strong>
+		<ul><li>the created task.</li></ul>
+
+<hr>
+<h2>sched.sigrunonce(f, waitd)</h2>
+	<p>Creates a task that will run on a given signal once, and terminate. For
+	more details see <em><a href="#sched.wait">sched.wait()</a></em> and <em><a href="#sched.wait">sched.run()</a></em></p>
+	<strong>Parameters</strong>
+		<ul><li>f: function for the task. The function will receives the signal.</li>
+		<li>waitd: wait descriptor, as used in <em><a href="#sched.wait">sched.wait()</a></em></li></ul>
+	<strong>Returns</strong>
+		<ul><li>the created task.</li></ul>
+
+<hr>
+<h2>sched.kill([task])</h2>
+	<p>Finishes a task. Said task will emit a signal <em>'die', false, 'killed'</em></p>
+	<strong>Parameters</strong>
+		<ul><li>task: task to terminate. If <em>nil</em>, terminates the current task.</li></ul>
+
+<hr>
+<h2>sched.catalog.register(name)</h2>
+	<p>Register a name for the task. </p>
+	<strong>Parameters</strong>
+		<ul><li>name: can be of any type.</li></ul>
+	<strong>Returns</strong>
+		<ul><li><em>true</em> is successful; <em>nil, 'used'</em> if the name is already used 
+		by another task.</li></ul>
+
+<hr>
+<h2>sched.catalog.waitfor(name, [timeout])</h2>
+	<p>Look for the task with the given name. Can wait up to timeout until it
+	appears. </p>
+	<strong>Parameters</strong>
+		<ul><li>name: can be of any type.</li>
+		<li>timeout: time to wait. <em>nil</em> or negative waits for ever.</li></ul>
+	<strong>Returns</strong>
+		<ul><li>the task if successful; on timeout expiration returns <em>nil, 
+		'timeout'</em>.</li></ul>
+
+<hr>
+<h2>sched.catalog.tasks()</h2>
+	<p>Iterator for registered tasks</p>
+	<strong>Returns</strong>
+		<ul><li>Example use:
+		<pre>for name, task in sched.catalog.tasks() do 
+	print(name, task) 
+end</pre></li></ul>
+	
+<hr>
+<h2>sched.get_time</h2>
+	<p>Function used by the scheduler to get current time; replace with 
+	whatever your app uses. LuaSocket's <em>gettime</em> works just fine. Defaults 
+	to <em>os.time</em>.</p>
+
+<hr>
+<h2><a name="sched.idle">sched.idle</a></h2>
+	<p>Function called by the scheduler when there is nothing else to do 
+	(e.g., all tasks are waiting for a signal). This function should idle 
+	up to <em>t</em> time units. Replace with whatever your app uses. LuaSocket's 
+	<em>sleep</em> works just fine. It is allowed to idle for less than t; the empty
+	function will result in a busy wait. Defaults to execution of Linux's 
+	"sleep" command.</p>
+
+<hr>
+<h2>sched.clean_up()</h2>
+	<p>Will collect some garbage data. It can be useful if your apps generate
+	a huge lot of waitd's on different signals. In future versions will be
+	done automatically.</p>
+	<p>Tip 1: check the memory consumption of your app, most of times it is
+		not necessary.</p>
+	<p>Tip 2: can be called from a task that will do it periodically in a loop
+		with a sleep.</p>
+	<p>Tip 3: <em><a href="#sched.idle">sched.idle</a></em> is a good place.</p>
+
+<hr>
+<h2>sched.go()</h2>
+	<p>Starts the scheduler. Will run until there is no more activity, i.e. 
+	there's no active task, and none of the waiting tasks has a timeout 
+	set.</p>
+
+<hr>
+<h2>sched.step() </h2>
+	<p>Runs a single step of the scheduler. </p>
+	<strong>Returns</strong> 
+		<ul><li>the idle time available until more activity is expected; this 
+		means it will be 0 if there are active tasks. </li></ul>
+<br><br>
+<hr>
+<div align="right">(c) 2012 - Jorge Visca, jvisca@fing.edu.uy</div>
+
+</body>
+</html>

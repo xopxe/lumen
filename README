@@ -11,7 +11,7 @@ Created after finding a presentation by Fabien Fleutot for the 2011 Lua
 Workshop ( see http://lua-users.org/lists/lua-l/2011-10/msg01057.html )
 
 * Tasks can emit signals, and block waiting for them, and that's it.
-	* A signal can be of any type, and carry any paramteres
+	* A signal can be of any type, and carry any parameters
 	* A task can wait on several signals, with a timeout.
 * A single Lua file, no C, no external dependencies. 
 	* can have use for a clock (os.time() will do)
@@ -26,12 +26,12 @@ Workshop ( see http://lua-users.org/lists/lua-l/2011-10/msg01057.html )
 How tor try it out?
 ===================
 
-This example recreates a slide from the above mentoned presentation:
+This example recreates a slide from the above mentioned presentation:
 
 # lua test.lua
 
 
-If you want to see a very simple LuaSocket integration working, try:
+If you want to see LuaSocket integration working, try:
 
 # lua test-socketeer.lua
 
@@ -75,7 +75,7 @@ test-nixiorator.lua
 	root.
 
 speed.lua
-	A test program with two tasks, one emiting signals and the other 
+	A test program with two tasks, one emitting signals and the other 
 	accepting them. See how fast it can run.
 
 
