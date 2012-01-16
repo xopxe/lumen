@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Socketeer: a LuaSocket-binding task for Lumen</title>
+<meta name="author" content="Jorge Visca">
+<meta name="description" content="Socketeer: a LuaSocket-binding task for Lumen">
+</head>
+<body>
+
+
+<h1>Socketeer: a LuaSocket-binding task for Lumen</h1>
+<p>Socketeer is a library providing a Lumen task that interfaces with LuaSocket and 
+generates Lumen signals. This allows for Lumen applications to integrate LuaSocket.</p>
+<p>To use the library, do</p>
+	<pre>local socketeer = require("socketeer")</pre>
+
+<hr>
+<h2><a name="socketeer.register_server">socketeer.register_server(skt, [pattern])</a></h2>
+	<p>Registers a TCP server socket with socketeer.</p>
+	<b>Parameters</b>
+		<ul><li>skt: a server socket</li>
+		<li>pattern: The read pattern to be used for established connections 
+			 (see <em><a href="#socketeer.register_client">socketeer.register_client()</a></em>).</li></ul>
+	<b>Signals</b>
+		<ul><li><em>skt, 'accepted', client</em> when establishing a connection, where skt is 
+				the server socket and client is the new client socket. The client socket is 
+				automatically registered into socketeer.</li>
+		<li><em>skt, 'fail', error</em> on error conditions</li></ul>
+
+<hr>
+<h2><a name="socketeer.register_client">socketeer.register_client(skt, [pattern])</a></h2>
+	<p>Registers a client socket (TCP or UDP) with socketeer.</p>
+	<b>Parameters</b>
+		<ul><li>skt: a client socket</li>
+		<li>pattern: The read pattern to be used.
+		<ul><li><em>'*a'</em> (TCP only) will read all the data from the 
+		socket until it is closed, and provide it all in one signal.</li>
+		<li><em>'*l'</em> (TCP only) will read line by line, as specified in LuaSocket.</li>
+		<li><em>number>0</em> If TCP will read in chunks of <em>number</em> bytes. 
+		The last chunk, the one with <em>'closed'</em> error can be shorter. If UDP, 
+		means the first <em>number</em> bytes from each UDP packet.
+		</li>
+		<li><em>number<=0</em> Will provide chunks as they arrive, with no further 
+		processing.
+		</li>
+		</ul></li></ul>
+	<b>Signals</b>
+		<ul><li><em>skt, data, error</em> On data read. data is the string read. 
+		Data can be <em>nil</em> if error is <em>'closed'</em>. A 
+		<em>'closed'</em> error also means the skt got unregistered.</li></ul>
+
+
+<hr>
+<h2><a name="socketeer.wait">socketeer.unregister(skt)</a></h2>
+	<p>Unregisters a socket with socketeer.</p>
+	<strong>Parameters</strong>
+		<ul><li>skt: the socket to unregister.</li></ul>
+
+<hr>
+<h2>socketeer.step(timeout)</h2>
+	<p>Performs a single step for the socketeer. Will block at the OS level for up to
+	timeout seconds. Usually this method is not used (see <em><a href="#socketeer.task">socketeer.task</a></em>)</p>
+	<strong>Parameters</strong>
+		<ul><li>timeout: Max allowed blocking time.</li></ul>
+	<b>Signals</b>
+		<ul><li>The ones triggered by registered sockets (see <em>
+		<a href="#socketeer.register_server">socketeer.register_server()</a></em> 
+		and <em><a href="#socketeer.register_client">socketeer.register_client()</a></em>).</li></ul>
+
+<hr>
+<h2>socketeer.socket</h2>
+	<p>A reference to the LuaSocket library.</p>
+
+<hr>
+<h2><a name="#socketeer.task">socketeer.task</a></h2>
+	<p>The function to be registered with the Lumen scheduler to receive the socketeer 
+	task. Usually used like this:</p>
+	<pre>local sched = require "sched"
+local socketeer = require "socketeer"
+local s = sched.run(socketeer.task)</pre>
+
+	<b>Signals</b>
+		<ul><li>The ones triggered by registered sockets (see <em>
+		<a href="#socketeer.register_server">socketeer.register_server()</a></em> 
+		and <em><a href="#socketeer.register_client">socketeer.register_client()</a></em>).
+		</li></ul>
+
+<br><br>
+<hr>
+<div align="right">(c) 2012 - Jorge Visca, jvisca@fing.edu.uy</div>
+
+</body>
+</html>

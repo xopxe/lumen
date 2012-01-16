@@ -51,9 +51,6 @@ Contains:
 COPYRIGHT
 	The copyright for the thing (same as Lua)
 
-documentation.txt
-	The documentation of the API for the scheduler.
-
 sched.lua
 	The scheduler itself.
 
@@ -77,6 +74,10 @@ test-nixiorator.lua
 speed.lua
 	A test program with two tasks, one emitting signals and the other 
 	accepting them. See how fast it can run.
+
+/doc/*
+	The documentation of the API for the scheduler and nixio and LuaSocket bindings.
+
 
 
 
