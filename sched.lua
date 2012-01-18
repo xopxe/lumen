@@ -35,29 +35,32 @@ local wake_up = function (task, waitd)
 	return true
 end
 
-local waked_up = {}
+--iterates over a list of tasks sending them events. the iteration is split as the 
+--list can change during iteration
+local walktasks = function (waitingtasks, event, ...)
+	local waked_up = {}
+	for task, waitd in pairs(waitingtasks) do
+		--print('',':',task, waiting[task])
+		if wake_up( task, waitd ) then 
+			waked_up[task]=true 
+		else
+			waiting[task]=nil --lazy cleanup
+		end
+	end
+	for task, _ in pairs(waked_up) do
+		--waked_up[task]=nil
+		step_task(task, event, ...)
+	end
+end
+
 --will wake up and run all tasks waiting on a event
 local emit_signal = function (emitter, event, ...)
 	--print('emitsignal',emitter, waiting[event], event, ...)
-	local walktasks = function (waiting, ...)
-		for task, waitd in pairs(waiting) do
-			--print('',':',task, waiting[task])
-			if wake_up( task, waitd ) then 
-				waked_up[task]=true 
-			else
-				waiting[task]=nil --lazy cleanup
-			end
-		end
-		for task, _ in pairs(waked_up) do
-			waked_up[task]=nil
-			step_task(task, event, ...)
-		end
-	end
 	local onevent=waiting[event]
 	if onevent then 
-		local waiting1, waiting2 = onevent[emitter], onevent['*']
-		if waiting1 then walktasks(waiting1,...) end
-		if waiting2 then walktasks(waiting2,...) end
+		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
+		if waiting1 then walktasks(waiting1, event, ...) end
+		if waiting2 then walktasks(waiting2, event, ...) end
 	end
 end
 
@@ -138,9 +141,9 @@ M.catalog.waitfor = function ( name, timeout )
 	if co then
 		return co
 	else 
-		local name, action, co = M.wait({emitter='catalog', timeout=timeout, events={name}})
-		if name and action == 'registered' then 
-			return co
+		local _, action, received_co = M.wait({emitter='catalog', timeout=timeout, events={name}})
+		if action == 'registered' then 
+			return received_co
 		else
 			return nil, 'timeout'
 		end
