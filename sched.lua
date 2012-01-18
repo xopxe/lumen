@@ -1,3 +1,7 @@
+--get locals for some useful things
+local pairs, ipairs, next, coroutine, setmetatable, os
+	= pairs, ipairs, next, coroutine, setmetatable, os
+
 local M = {}
 
 local weak_key = { __mode = 'k' }

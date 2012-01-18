@@ -3,6 +3,9 @@ local sched = require("sched")
 local nixioutil = require ("nixio.util")
 local pollt={}
 
+--get locals for some useful things
+local math, ipairs, table = math, ipairs, table 
+
 local M = {nixio=nixio}
 
 local function client(polle)

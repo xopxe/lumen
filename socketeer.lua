@@ -1,6 +1,9 @@
 local socket = require("socket")
 local sched = require("sched")
 
+--get locals for some useful things
+local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type 
+
 local weak_key = { __mode = 'k' }
 
 local recvt={}
