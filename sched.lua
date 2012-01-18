@@ -4,13 +4,16 @@ local weak_key = { __mode = 'k' }
 
 --table containing all the registered tasks.
 --tasks[task]=taskd
+--taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'killed'}
 local tasks = {}
 
 --table to keep track tasks waiting for signals
 --waiting[event][emitter][task]=waitd
+--waitd as per reference
 local waiting = setmetatable({}, weak_key)
 
 --register of names for tasks
+--tasknames[co]=name
 local tasknames = setmetatable({catalog = 'catalog'}, weak_key)
 
 --closeset wait timeout during a scheduler step
@@ -19,7 +22,7 @@ local next_waketime
 
 local step_task
 
---changes the status of a task from wainting to active (if everything is right)
+--changes the status of a task from waiting to active (if everything is right)
 local wake_up = function (task, waitd)
 	local taskd = tasks[task]
 	if not taskd or taskd.status~='ready' 
