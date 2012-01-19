@@ -36,8 +36,7 @@ generates Lumen signals. This allows for Lumen applications to integrate LuaSock
 		<ul><li><em>'*a'</em> (TCP only) will read all the data from the 
 		socket until it is closed, and provide it all in one signal.</li>
 		<li><em>'*l'</em> (TCP only) will read line by line, as specified in LuaSocket.</li>
-		<li><em>number>0</em> If TCP will read in chunks of <em>number</em> bytes. 
-		The last chunk, the one with <em>'closed'</em> error can be shorter. If UDP, 
+		<li><em>number>0</em> If TCP will read in chunks of <em>number</em> bytes. If UDP, 
 		means the first <em>number</em> bytes from each UDP packet.
 		</li>
 		<li><em>number<=0</em> Will provide chunks as they arrive, with no further 
@@ -47,7 +46,9 @@ generates Lumen signals. This allows for Lumen applications to integrate LuaSock
 	<b>Signals</b>
 		<ul><li><em>skt, data, error</em> On data read. data is the string read. 
 		Data can be <em>nil</em> if error is <em>'closed'</em>. A 
-		<em>'closed'</em> error also means the skt got unregistered.</li></ul>
+		<em>'closed'</em> error also means the skt got unregistered. When reading
+		from TCP with pattern>0, the last signal can provide a partial read after
+		the err return.</li></ul>
 
 
 <hr>

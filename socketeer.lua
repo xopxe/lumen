@@ -56,21 +56,20 @@ M.step = function (timeout)
 				if type(mode) == "number" and mode <= 0 then
 					local data,err,part = skt:receive(65000)
 					--print('&-',data,err,part, #part)
-					local s = data or part
 					if err=='closed' then
 						M.unregister(skt)
-						sched.signal(skt, part, err) --data is nil or part?
+						sched.signal(skt, nil, err, part) --data is nil or part?
 					else
-						sched.signal(skt, s)
+						sched.signal(skt, data)
 					end
 				else
 					local data,err,part = skt:receive(mode,partial[skt])
 					partial[skt]=part
 					--print('&-',data,err,part)
-					if err then
+					if not data then
 						if err=='closed' then 
 							M.unregister(skt)
-							sched.signal(skt, part, err) --data is nil or part?
+							sched.signal(skt, nil, err, part) --data is nil or part?
 						elseif not part or part=='' then
 							sched.signal(skt, nil, err)
 						end
