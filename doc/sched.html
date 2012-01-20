@@ -161,15 +161,9 @@ end</pre></li></ul>
 	"sleep" command.</p>
 
 <hr>
-<h2>sched.clean_up()</h2>
-	<p>Will collect some garbage data. It can be useful if your apps generate
-	a huge lot of waitd's on different signals. In future versions will be
-	done automatically.</p>
-	<p>Tip 1: check the memory consumption of your app, most of times it is
-		not necessary.</p>
-	<p>Tip 2: can be called from a task that will do it periodically in a loop
-		with a sleep.</p>
-	<p>Tip 3: <em><a href="#sched.idle">sched.idle</a></em> is a good place.</p>
+<h2>sched.to_clean_up</h2>
+	<p>Number that controls the aggresivenes of collection of garbage data. Defaults
+	to 1000. Smaller means more frecuent, bigger less frecuent.</p>
 
 <hr>
 <h2>sched.go()</h2>

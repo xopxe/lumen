@@ -15,6 +15,7 @@ local tasks = {}
 --waiting[event][emitter][task]=waitd
 --waitd as per reference
 local waiting = setmetatable({}, weak_key)
+local waiting_emitter_counter = 0 --for triggering cleanups
 
 --register of names for tasks
 --tasknames[co]=name
@@ -100,10 +101,17 @@ local register_signal = function(task, waitd)
 	if events and emitter then 
 		for _, event in ipairs(events) do
 			--print('',':', event)
+			local clean_up
 			waiting[event]=waiting[event] or setmetatable({}, weak_key)
-			waiting[event][emitter] = waiting[event][emitter] 
-						or setmetatable({}, { __mode = 'kv' })
+			if not waiting[event][emitter] then
+				waiting[event][emitter] = setmetatable({}, { __mode = 'kv' })
+				waiting_emitter_counter = waiting_emitter_counter +1
+			end
 			waiting[event][emitter][task]=waitd
+		end
+		if waiting_emitter_counter>M.to_clean_up then
+			waiting_emitter_counter = 0
+			M.clean_up()
 		end
 	end
 end
@@ -125,8 +133,33 @@ local compute_available_time = function()
 	return available_time
 end
 
+local clean_up = function()
+	--clean up waiting table
+	--print("cleanup!")
+	for event, eventt in pairs(waiting) do
+		for emitter, emittert in pairs(eventt) do
+			for task, taskt in pairs(emittert) do
+				if next( taskt )==nil then
+					emittert[task]=nil
+				end
+			end
+			if next( emittert )==nil then
+				eventt[emitter]=nil
+			end
+		end
+		if next( eventt )==nil then
+			waiting[event]=nil
+		end
+	end
+	collectgarbage ('collect')
+end
+
+
 -----------------------------------------------------------------------------------------
 --API calls
+
+--number of new insertions in waiting[event] before triggering clean_up
+M.to_clean_up = 1000
 
 M.catalog = {}
 M.catalog.register = function ( name )
@@ -221,26 +254,6 @@ M.idle = function (t)
 end
 
 M.get_time = os.time
-
-M.clean_up = function()
-	--clean up waiting table
-	for event, eventt in pairs(waiting) do
-		for emitter, emittert in pairs(eventt) do
-			for task, taskt in pairs(emittert) do
-				if next( taskt )==nil then
-					emittert[task]=nil
-				end
-			end
-			if next( emittert )==nil then
-				eventt[emitter]=nil
-			end
-		end
-		if next( eventt )==nil then
-			waiting[event]=nil
-		end
-	end
-	collectgarbage ('collect')
-end
 
 local cycleready, cycletimeout = {}, {}
 M.step = function ()
