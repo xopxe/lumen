@@ -84,6 +84,29 @@ step_task = function(t, ...)
 	end
 end
 
+
+local clean_up = function()
+	--clean up waiting table
+	--print("cleanup!")
+	for event, eventt in pairs(waiting) do
+		for emitter, emittert in pairs(eventt) do
+			for task, taskt in pairs(emittert) do
+				if next( taskt )==nil then
+					emittert[task]=nil
+				end
+			end
+			if next( emittert )==nil then
+				eventt[emitter]=nil
+			end
+		end
+		if next( eventt )==nil then
+			waiting[event]=nil
+		end
+	end
+	collectgarbage ('collect')
+end
+
+
 --blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(task, waitd)
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
@@ -110,7 +133,7 @@ local register_signal = function(task, waitd)
 		end
 		if waiting_emitter_counter>M.to_clean_up then
 			waiting_emitter_counter = 0
-			M.clean_up()
+			clean_up()
 		end
 	end
 end
@@ -130,27 +153,6 @@ local compute_available_time = function()
 		if available_time<0 then available_time=0 end
 	end
 	return available_time
-end
-
-local clean_up = function()
-	--clean up waiting table
-	--print("cleanup!")
-	for event, eventt in pairs(waiting) do
-		for emitter, emittert in pairs(eventt) do
-			for task, taskt in pairs(emittert) do
-				if next( taskt )==nil then
-					emittert[task]=nil
-				end
-			end
-			if next( emittert )==nil then
-				eventt[emitter]=nil
-			end
-		end
-		if next( eventt )==nil then
-			waiting[event]=nil
-		end
-	end
-	collectgarbage ('collect')
 end
 
 
@@ -224,7 +226,7 @@ end
 
 M.signal = function ( event, ... )
 	local emitter=coroutine.running()
-	emit_signal( emitter, event, ... )	
+	emit_signal( emitter, event, ... )
 end
 
 M.waitd = function ( emitter, timeout, ... )
