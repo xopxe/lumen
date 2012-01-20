@@ -101,7 +101,6 @@ local register_signal = function(task, waitd)
 	if events and emitter then 
 		for _, event in ipairs(events) do
 			--print('',':', event)
-			local clean_up
 			waiting[event]=waiting[event] or setmetatable({}, weak_key)
 			if not waiting[event][emitter] then
 				waiting[event][emitter] = setmetatable({}, { __mode = 'kv' })
