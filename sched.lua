@@ -235,6 +235,9 @@ end
 
 M.wait = function ( waitd )
 	local my_task = coroutine.running()
+	
+	--TODO if there is data in waitd.pipe, return unpack
+
 	register_signal( my_task, waitd )
 	return coroutine.yield( my_task )
 end
