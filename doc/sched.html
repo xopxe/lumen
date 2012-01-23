@@ -10,11 +10,11 @@
 
 
 <h1>Lumen: Lua Multitasking Environment</h1>
-<p>Lumen is a library for writing cooperative multitasking tasks. The cooperation is 
+<p>Lumen is a library for writing cooperative multitasking applications. The cooperation is 
 done trough signal passing: a task can emit a signal, which will be caught by all tasks
 that are waiting for it. Signals are used to exchange information between tasks, and 
-for synchronization. A signal consits of a event plus any numner of parameters. 
-Bot the event and the parameters can be of any time.</p>
+for synchronization. A signal consits of a event plus any numer of parameters. 
+Both the event and the parameters can be of any type.</p>
 <p>Cooperative means that the execution of a task will never be interrupted by the 
 scheduler, and a task will relinquish control explicitly, either by yielding 
 the control, or by blocking waiting for a signal.</p>
@@ -45,7 +45,7 @@ the control, or by blocking waiting for a signal.</p>
 <h2><a name="sched.wait">sched.wait(waitd)</a></h2>
 	<p>Stops the task until (one of)the specified signal(s) is available. 
 	If there are signals in	the pipe, will return the first immediately. 
-	Otherwise, will block the task until arrival, or a timeout.</p>
+	Otherwise will block the task until signal arrival, or a timeout.</p>
 	<strong>Parameters</strong>
 		<ul><li>waitd: a wait descriptor. It is a table containing the fields:
 			<ul><li>emitter: optional, task originating the signal we wait
@@ -61,10 +61,10 @@ the control, or by blocking waiting for a signal.</p>
 			A wait descriptor can be reused (for example, when
 			waiting inside a loop) and shared amongst different 
 			tasks. If a wait descriptor changes while there is a
-			task waiting, the behavior is unspecified. Notice when sharing
-			a wait descriptor between several tasks that the pipe 
+			task waiting, the behavior is unspecified. Notice that when sharing
+			a wait descriptor between several tasks, the pipe 
 			is associated to the wait descriptor, and tasks will service piped
-			signals on first arrival basis.</li></ul>
+			signals on first request basis.</li></ul>
 	<strong>Returns</strong>
 		<ul><li>the signal received as <em>event, args...</em> (see <a href="#sched.signal">sched.signal()</a>); 
 		on timeout expiration, returns <em>nil, 'timeout'</em>.
@@ -103,8 +103,8 @@ the control, or by blocking waiting for a signal.</p>
 
 <hr>
 <h2>sched.sigrun(f, waitd)</h2>
-	Creates a task that will run on a given signal. For more details see
-	<em><a href="#sched.wait">sched.wait()</a></em> and <em><a href="#sched.run">sched.run()</a></em>
+	<p>Creates a task that will run on a given signal once, and terminate. For
+	more details see <em><a href="#sched.wait">sched.wait()</a></em> and <em><a href="#sched.wait">sched.run()</a></em></p>
 	<strong>Parameters</strong>
 		<ul><li>f: function for the task. The function will receive the signal.</li>
 		<li>waitd: wait descriptor, as used in <em><a href="#sched.wait">sched.wait()</a></em></li></ul>
