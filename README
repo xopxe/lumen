@@ -13,6 +13,8 @@ Workshop ( see http://lua-users.org/lists/lua-l/2011-10/msg01057.html )
 * Tasks can emit signals, and block waiting for them, and that's it.
 	* A signal can be of any type, and carry any parameters
 	* A task can wait on several signals, with a timeout.
+	* Signals can be piped, this is they can be buffered to avoid signals
+	  being lost on slow readers.
 * A single Lua file, no C, no external dependencies. 
 	* can have use for a clock (os.time() will do)
 	* can have use for a idle function (busy waiting or socket.sleep will
@@ -42,6 +44,10 @@ installed, and in Linux, you can try (root needed as it reads from
 
 # sudo lua test-nixiorator.lua
 
+
+To see how pipes work an what they are for,  try:
+
+# lua test-pipe.lua
 
 
 Contains:

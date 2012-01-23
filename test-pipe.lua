@@ -43,7 +43,7 @@ sched.run(function()
 			--consume pipe'd signals
 			while waitd.pipe and waitd.pipe:len()>0 do
 				local  _, n = sched.wait(waitd)
-				print("from pipe", n)
+				print("received", n)
 			end
 			local  _, n = sched.wait(waitd)
 			print("received", n)

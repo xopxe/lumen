@@ -244,8 +244,12 @@ M.signal = function ( event, ... )
 	emit_signal( emitter, event, ... )
 end
 
-M.waitd = function ( emitter, timeout, ... )
-	return {emitter = emitter, timeout = timeout, events = {...}}
+M.waitd = function ( emitter, timeout, pipe_max_len, ... )
+	return {emitter = emitter,
+		timeout = timeout,
+		pipe_max_len = pipe_max_len,
+		events = {...}
+	}
 end
 
 M.wait = function ( waitd )

@@ -13,7 +13,8 @@
 <p>Lumen is a library for writing cooperative multitasking tasks. The cooperation is 
 done trough signal passing: a task can emit a signal, which will be caught by all tasks
 that are waiting for it. Signals are used to exchange information between tasks, and 
-for synchronization. </p>
+for synchronization. A signal consits of a event plus any numner of parameters. 
+Bot the event and the parameters can be of any time.</p>
 <p>Cooperative means that the execution of a task will never be interrupted by the 
 scheduler, and a task will relinquish control explicitly, either by yielding 
 the control, or by blocking waiting for a signal.</p>
@@ -42,7 +43,9 @@ the control, or by blocking waiting for a signal.</p>
 
 <hr>
 <h2><a name="sched.wait">sched.wait(waitd)</a></h2>
-	<p>Blocks a task waiting for one or more events, or a timeout.</p>
+	<p>Stops the task until (one of)the specified signal(s) is available. 
+	If there are signals in	the pipe, will return the first immediately. 
+	Otherwise, will block the task until arrival, or a timeout.</p>
 	<strong>Parameters</strong>
 		<ul><li>waitd: a wait descriptor. It is a table containing the fields:
 			<ul><li>emitter: optional, task originating the signal we wait
@@ -50,24 +53,32 @@ the control, or by blocking waiting for a signal.</p>
 				<em>'*'</em>, means anyone.</li>
 			<li>timeout: optional, time to wait. <em>nil</em> or negative waits
 				for ever.</li>
+			<li>pipe_max_len: Maximum length of the pipe. A pipe allows for storing signals that
+			arrived while the task is not blocked on the wait descriptor. 
+			<em>nil</em> o 0 disables,	negative means no length limit. </li>
 			<li>events: optional, array with the events to wait.</li>
 			</ul>
 			A wait descriptor can be reused (for example, when
 			waiting inside a loop) and shared amongst different 
 			tasks. If a wait descriptor changes while there is a
-			task waiting, the behavior is unspecified.</li></ul>
+			task waiting, the behavior is unspecified. Notice when sharing
+			a wait descriptor between several tasks that the pipe 
+			is associated to the wait descriptor, and tasks will service piped
+			signals on first arrival basis.</li></ul>
 	<strong>Returns</strong>
 		<ul><li>the signal received as <em>event, args...</em> (see <a href="#sched.signal">sched.signal()</a>); 
 		on timeout expiration, returns <em>nil, 'timeout'</em>.
 </li></ul>
 
 <hr>
-<h2>sched.waitd(emitter, timeout, [events...])</h2>
+<h2>sched.waitd(emitter, timeout, pipe_max_len, [events...])</h2>
 	<p>Helper function that instantiates a wait descriptor (see <em><a href="#sched.wait">sched.wait()</a></em>).</p>
 	<strong>Parameters</strong>
 		<ul><li>emitter: task originating the signal we wait for. If nil, will 
 			only return on timeout. If <em>'*'</em>, means anyone.</li>
 		<li>timeout: time to wait. <em>nil</em> or negative waits for ever.</li>
+		<li>pipe_max_len: Maximum length of the pipe. <em>nil</em> o 0 disables, 
+		negative means no length limit.</li>
 		<li>events: events to wait.</li></ul>
 	<strong>Returns</strong>
 		<ul><li>A wait descriptor object.</li></ul>
