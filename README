@@ -7,14 +7,17 @@ in Lua."
 
 Extremely simple environment for coroutine based multitasking. Consists of a 
 scheduler, and that's it.
-Created after finding a presentation by Fabien Fleutot for the 2011 Lua 
-Workshop ( see http://lua-users.org/lists/lua-l/2011-10/msg01057.html )
+The API was inspired by a brief description of Sierra's scheduler: 
+https://github.com/SierraWireless/luasched.
+Lumen has no external dependencies nor C code, and runs on unmodified Lua.
 
 * Tasks can emit signals, and block waiting for them, and that's it.
 	* A signal can be of any type, and carry any parameters
 	* A task can wait on several signals, with a timeout.
 	* Signals can be piped, this is they can be buffered to avoid signals
 	  being lost on slow readers.
+* Tasks can register a name, and query for tasks by name.
+	* Tasks also can wait for a given name to get registered.
 * A single Lua file, no C, no external dependencies. 
 	* can have use for a clock (os.time() will do)
 	* can have use for a idle function (busy waiting or socket.sleep will
@@ -23,12 +26,15 @@ Workshop ( see http://lua-users.org/lists/lua-l/2011-10/msg01057.html )
 * Only most basic of optimizations done.
 * Works with Lua 5.1, 5.2 and LuaJIT.
 
+WARNING: Lumen is under heavy development, and API changes happen rather 
+frequently, as other weird breakages.
 
 
 How tor try it out?
 ===================
 
-This example recreates a slide from the above mentioned presentation:
+This example has a few tasks exchnging messages, showing off basic 
+functionality:
 
 # lua test.lua
 
@@ -45,7 +51,7 @@ installed, and in Linux, you can try (root needed as it reads from
 # sudo lua test-nixiorator.lua
 
 
-To see how pipes work an what they are for,  try:
+To see how pipes work an what they are for, try:
 
 # lua test-pipe.lua
 
@@ -77,11 +83,14 @@ test-nixiorator.lua
 	A test program for nixiorator. Reads from /dev/input/mice, so run as 
 	root.
 
-speed.lua
+test-pipe.lua
+	A demonstration of pipes.
+
+test-stress.lua
 	A test program with two tasks, one emitting signals and the other 
 	accepting them. See how fast it can run.
 
-/doc/*
+doc/*
 	The documentation of the API for the scheduler and nixio and LuaSocket bindings.
 
 
