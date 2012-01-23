@@ -4,6 +4,8 @@ local pairs, ipairs, next, coroutine, setmetatable, os
 
 local M = {}
 
+local queue = require 'queue'
+
 local weak_key = { __mode = 'k' }
 
 --table containing all the registered tasks.
@@ -40,16 +42,29 @@ local wake_up = function (task, waitd)
 	return true
 end
 
+local add_to_pipe = function (waitd, event, ...)
+	local pipe_max_len = waitd.pipe_max_len
+	--print('add to pipe',pipe_max_len,waitd, event, ...)
+	if pipe_max_len then 
+		waitd.pipe = waitd.pipe or queue:new()
+		local pipe=waitd.pipe
+		if pipe_max_len<0 or pipe_max_len>pipe:len() then
+			pipe:push({event, ...})
+		end
+	end
+end
+
 --iterates over a list of tasks sending them events. the iteration is split as the 
 --list can change during iteration
 local walktasks = function (waitingtasks, event, ...)
 	local waked_up = {}
 	for task, waitd in pairs(waitingtasks) do
-		--print('',':',task, waiting[task])
+		--print('',':',task, waitd, waiting[task])
 		if wake_up( task, waitd ) then 
 			waked_up[task]=true 
 		else
-			waiting[task]=nil --lazy cleanup
+			add_to_pipe(waitd, event, ...)
+			waiting[task]=nil --lazy cleanup 
 		end
 	end
 	for task, _ in pairs(waked_up) do
@@ -236,8 +251,14 @@ end
 M.wait = function ( waitd )
 	local my_task = coroutine.running()
 	
-	--TODO if there is data in waitd.pipe, return unpack
+	--if there are pipe'd signals, service the first
+	local pipe = waitd.pipe 
+	if pipe and pipe:len()> 0 then
+		local ret = pipe:pop()
+		return unpack(ret)
+	end
 
+	--block on signal
 	register_signal( my_task, waitd )
 	return coroutine.yield( my_task )
 end
