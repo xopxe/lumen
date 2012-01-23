@@ -18,7 +18,7 @@ Lumen has no external dependencies nor C code, and runs on unmodified Lua.
 	  being lost on slow readers.
 * Tasks can register a name, and query for tasks by name.
 	* Tasks also can wait for a given name to get registered.
-* A single Lua file, no C, no external dependencies. 
+* Pure Lua code, no C, no external dependencies. 
 	* can have use for a clock (os.time() will do)
 	* can have use for a idle function (busy waiting or socket.sleep will
 	  do)
