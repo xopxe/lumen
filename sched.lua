@@ -45,7 +45,7 @@ end
 local add_to_pipe = function (waitd, event, ...)
 	local pipe_max_len = waitd.pipe_max_len
 	--print('add to pipe',pipe_max_len,waitd, event, ...)
-	if pipe_max_len then 
+	if pipe_max_len and pipe_max_len~=0 then 
 		waitd.pipe = waitd.pipe or queue:new()
 		local pipe=waitd.pipe
 		if pipe_max_len<0 or pipe_max_len>pipe:len() then
