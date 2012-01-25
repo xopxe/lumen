@@ -64,7 +64,7 @@ local walktasks = function (waitingtasks, event, ...)
 			waked_up[task]=true 
 		else
 			add_to_pipe(waitd, event, ...)
-			waiting[task]=nil --lazy cleanup 
+			--waiting[task]=nil --lazy cleanup 
 		end
 	end
 	for task, _ in pairs(waked_up) do
