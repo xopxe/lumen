@@ -91,7 +91,8 @@ test-stress.lua
 	accepting them. See how fast it can run.
 
 doc/*
-	The documentation of the API for the scheduler and nixio and LuaSocket bindings.
+	The documentation of the API for the scheduler and nixio and LuaSocket 
+	bindings.
 
 
 

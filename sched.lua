@@ -207,7 +207,7 @@ M.catalog.tasks = function ()
 end
 
 M.run = function ( f, ... )
-	local co = coroutine.create( f )	
+	local co = coroutine.create( f )
 	--print('newtask', co, ...)
 	tasks[co] = {status='ready'}
 	step_task(co, ...)
