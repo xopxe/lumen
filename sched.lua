@@ -51,6 +51,7 @@ local add_to_pipe = function (waitd, event, ...)
 		if pipe_max_len<0 or pipe_max_len>pipe:len() then
 			pipe:push({event, ...})
 		end
+		return true
 	end
 end
 
@@ -63,8 +64,9 @@ local walktasks = function (waitingtasks, event, ...)
 		if wake_up( task, waitd ) then 
 			waked_up[task]=true 
 		else
-			add_to_pipe(waitd, event, ...)
-			--waiting[task]=nil --lazy cleanup 
+			if not add_to_pipe(waitd, event, ...) then
+				waiting[task]=nil --lazy cleanup 
+			end
 		end
 	end
 	for task, _ in pairs(waked_up) do
