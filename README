@@ -14,8 +14,8 @@ Lumen has no external dependencies nor C code, and runs on unmodified Lua.
 * Tasks can emit signals, and block waiting for them, and that's it.
 	* A signal can be of any type, and carry any parameters
 	* A task can wait on several signals, with a timeout.
-	* Signals can be piped, this is they can be buffered to avoid signals
-	  being lost on slow readers.
+	* Signals can be buffered; this helps avoid losing signals when waiting
+	  signals in a loop.
 * Tasks can register a name, and query for tasks by name.
 	* Tasks also can wait for a given name to get registered.
 * Pure Lua code, no C, no external dependencies. 
@@ -51,9 +51,9 @@ installed, and in Linux, you can try (root needed as it reads from
 # sudo lua test-nixiorator.lua
 
 
-To see how pipes work an what they are for, try:
+To see how buffers work an what they are for, try:
 
-# lua test-pipe.lua
+# lua test-buff.lua
 
 
 Contains:
@@ -83,8 +83,8 @@ test-nixiorator.lua
 	A test program for nixiorator. Reads from /dev/input/mice, so run as 
 	root.
 
-test-pipe.lua
-	A demonstration of pipes.
+test-buff.lua
+	A demonstration of buffers.
 
 test-stress.lua
 	A test program with two tasks, one emitting signals and the other 

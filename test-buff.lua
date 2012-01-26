@@ -1,6 +1,6 @@
 local sched=require 'sched'
 
-print 'testing without pipe'
+print 'testing without buffer'
 ---[[
 sched.run(function() 
 	-- sender --
@@ -24,7 +24,7 @@ end)
 sched.go()
 --]]
 
-print '\ntesting with pipe'
+print '\ntesting with buffer'
 sched.run(function() 
 	-- sender --
 	local sender = sched.run(function() 
@@ -37,11 +37,11 @@ sched.run(function()
 
 	sched.run(function() 
 		-- receiver --
-		local waitd= {emitter=sender, events={'tick'}, pipe_max_len=-1}
+		local waitd= {emitter=sender, events={'tick'}, buff_len=-1}
 		while true do 
 		
-			--consume pipe'd signals
-			while waitd.pipe and waitd.pipe:len()>0 do
+			--consume buffered signals
+			while waitd.buff and waitd.buff:len()>0 do
 				local  _, n = sched.wait(waitd)
 				print("received", n)
 			end

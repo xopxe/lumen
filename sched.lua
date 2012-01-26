@@ -42,14 +42,14 @@ local wake_up = function (task, waitd)
 	return true
 end
 
-local add_to_pipe = function (waitd, event, ...)
-	local pipe_max_len = waitd.pipe_max_len
-	--print('add to pipe',pipe_max_len,waitd, event, ...)
-	if pipe_max_len and pipe_max_len~=0 then 
-		waitd.pipe = waitd.pipe or queue:new()
-		local pipe=waitd.pipe
-		if pipe_max_len<0 or pipe_max_len>pipe:len() then
-			pipe:push({event, ...})
+local to_buffer = function (waitd, event, ...)
+	local buff_len = waitd.buff_len
+	--print('add to buffer',buff_len,waitd, event, ...)
+	if buff_len and buff_len~=0 then 
+		waitd.buff = waitd.buff or queue:new()
+		local buff=waitd.buff
+		if buff_len<0 or buff_len>buff:len() then
+			buff:push({event, ...})
 		end
 		return true
 	end
@@ -64,8 +64,8 @@ local walktasks = function (waitingtasks, event, ...)
 		if wake_up( task, waitd ) then 
 			waked_up[task]=true 
 		else
-			if not add_to_pipe(waitd, event, ...) then
-				waiting[task]=nil --lazy cleanup 
+			if not to_buffer(waitd, event, ...) then
+				waiting[task]=nil --buferless, so lazy cleanup 
 			end
 		end
 	end
@@ -246,10 +246,10 @@ M.signal = function ( event, ... )
 	emit_signal( emitter, event, ... )
 end
 
-M.waitd = function ( emitter, timeout, pipe_max_len, ... )
+M.waitd = function ( emitter, timeout, buff_len, ... )
 	return {emitter = emitter,
 		timeout = timeout,
-		pipe_max_len = pipe_max_len,
+		buff_len = buff_len,
 		events = {...}
 	}
 end
@@ -257,10 +257,10 @@ end
 M.wait = function ( waitd )
 	local my_task = coroutine.running()
 	
-	--if there are pipe'd signals, service the first
-	local pipe = waitd.pipe 
-	if pipe and pipe:len()> 0 then
-		local ret = pipe:pop()
+	--if there are buffered signals, service the first
+	local buff = waitd.buff 
+	if buff and buff:len()> 0 then
+		local ret = buff:pop()
 		return unpack(ret)
 	end
 
