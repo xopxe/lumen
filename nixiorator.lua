@@ -1,6 +1,6 @@
 local nixio = require("nixio")
 local sched = require("sched")
-local nixioutil = require ("nixio.util")
+require ("nixio.util")
 local pollt={}
 
 --get locals for some useful things
@@ -75,7 +75,7 @@ end
 
 M.step = function (timeout)
 	timeout=timeout or -1
-	local stat, code = nixio.poll(pollt, timeout*1000)
+	local stat= nixio.poll(pollt, timeout*1000)
 	if stat and stat > 0 then
 		for _, polle in ipairs(pollt) do
 			if polle.revents and polle.revents ~= 0 then 
@@ -87,6 +87,7 @@ M.step = function (timeout)
 end
 
 M.task = function ()
+	sched.catalog.register('nixiorator')
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )

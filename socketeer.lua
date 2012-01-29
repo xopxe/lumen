@@ -83,6 +83,7 @@ M.step = function (timeout)
 end
 
 M.task = function ()
+	sched.catalog.register('socketeer')
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )
