@@ -43,7 +43,7 @@ the control, or by blocking waiting for a signal.</p>
 
 <hr>
 <h2><a name="sched.wait">sched.wait(waitd)</a></h2>
-	<p>Stops the task until (one of)the specified signal(s) is available. 
+	<p>Pauses the task until (one of) the specified signal(s) is available. 
 	If there are signals in	the buffer, will return the first immediately. 
 	Otherwise will block the task until signal arrival, or a timeout.</p>
 	<strong>Parameters</strong>
@@ -54,8 +54,12 @@ the control, or by blocking waiting for a signal.</p>
 			<li>timeout: optional, time to wait. <em>nil</em> or negative waits
 				for ever.</li>
 			<li>buff_len: Maximum length of the buffer. A buffer allows for storing signals that
-			arrived while the task is not blocked on the wait descriptor. 
+			arrived while the task is not blocked on the wait descriptor. Whenever there is an 
+			attempt to insert in a full buffer, the buffer.dropped flag is set.
 			<em>nil</em> o 0 disables,	negative means no length limit. </li>
+			<li>buff_mode: Specifies how to behave when inserting in a full buffer. 
+			<em>'drop first'</em> means drop the oldest signals to make space. <em>'drop last'</em>
+			or <em>nil</em> will skip the insertion in a full buffer.</li>
 			<li>events: optional, array with the events to wait.</li>
 			</ul>
 			A wait descriptor can be reused (for example, when
@@ -71,7 +75,7 @@ the control, or by blocking waiting for a signal.</p>
 </li></ul>
 
 <hr>
-<h2>sched.waitd(emitter, timeout, buff_len, [events...])</h2>
+<h2>sched.waitd(emitter, timeout, buff_len, buff_mode, [events...])</h2>
 	<p>Helper function that instantiates a wait descriptor (see <em><a href="#sched.wait">sched.wait()</a></em>).</p>
 	<strong>Parameters</strong>
 		<ul><li>emitter: task originating the signal we wait for. If nil, will 
@@ -79,6 +83,8 @@ the control, or by blocking waiting for a signal.</p>
 		<li>timeout: time to wait. <em>nil</em> or negative waits for ever.</li>
 		<li>buff_len: Maximum length of the buffer. <em>nil</em> o 0 disables, 
 		negative means no length limit.</li>
+		<li>buff_mode: how to beahve when the buffer becomes full. 'drop first' means drop the oldest signals to make space. 
+		'drop last' or nil will skip the insertion in a full buffer.</li>
 		<li>events: events to wait.</li></ul>
 	<strong>Returns</strong>
 		<ul><li>A wait descriptor object.</li></ul>

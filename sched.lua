@@ -48,8 +48,26 @@ local to_buffer = function (waitd, event, ...)
 	if buff_len and buff_len~=0 then 
 		waitd.buff = waitd.buff or queue:new()
 		local buff=waitd.buff
-		if buff_len<0 or buff_len>buff:len() then
+		if buff_len<0 then 
 			buff:push({event, ...})
+		else
+			local overpopulation = buff:len()-buff_len
+			--print('OP', buff_len,buff:len(),overpopulation)
+			if overpopulation<0 then
+				buff:push({event, ...})
+			else
+				buff.dropped = true
+				if waitd.buff_mode == 'drop_first' then
+					for _ = 0, overpopulation do
+						buff:popleft()
+					end
+					buff:push({event, ...})
+				else --'drop_last', default
+					for _ = 1, overpopulation do
+						buff:popright()
+					end
+				end
+			end
 		end
 		return true
 	end
@@ -208,6 +226,8 @@ M.catalog.tasks = function ()
 	return function (_, v) return next(tasknames, v) end
 end
 
+M.pipe = require 'pipe'
+
 M.run = function ( f, ... )
 	local co = coroutine.create( f )
 	--print('newtask', co, ...)
@@ -246,10 +266,11 @@ M.signal = function ( event, ... )
 	emit_signal( emitter, event, ... )
 end
 
-M.waitd = function ( emitter, timeout, buff_len, ... )
+M.waitd = function ( emitter, timeout, buff_len, buff_mode, ... )
 	return {emitter = emitter,
 		timeout = timeout,
 		buff_len = buff_len,
+		buff_mode = buff_mode,
 		events = {...}
 	}
 end
