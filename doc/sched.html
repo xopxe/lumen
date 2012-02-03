@@ -154,13 +154,65 @@ the control, or by blocking waiting for a signal.</p>
 		'timeout'</em>.</li></ul>
 
 <hr>
-<h2>sched.catalog.tasks()</h2>
+<h2>sched.catalog.iterator()</h2>
 	<p>Iterator for registered tasks</p>
 	<strong>Returns</strong>
 		<ul><li>Example use:
 		<pre>for name, task in sched.catalog.tasks() do 
 	print(name, task) 
 end</pre></li></ul>
+	
+	
+	
+	
+<hr>
+<h2><a name="sched.pipes.new">sched.pipes.new(name, size, [timeout])</a></h2>
+	<p>Creates a new pipe.</p>
+	<strong>Parameters</strong>
+		<ul>
+		<li>name: can be of any type.</li>
+		<li>size: must be a positive number. </li>
+		<li>timeout: time to wait by a reader blocked reading from a empty pipe, 
+			or a writer writing in a full pipe. <em>nil</em> or negative waits
+				for ever.</li>
+		</ul>
+	<strong>Returns</strong>
+		<ul><li>A table representing a pipe, or <em>nil, 'exists'</em> if a pipe with the given name already exists.
+		 A pipe contains the following fields:
+			<ul>
+				<li>write(...): writes to the pipe. Will block when writing to a full pipe. Return <em>true</em> on success, 
+				<em>nil, 'timeout'</em> on timeout</li>
+				<li>read(): reads from the pipe. Will block on a empty pipe. Return data if available, 
+				<em>nil, 'timeout'</em> on timeout</li>
+				</ul>
+		</li></ul>
+
+<hr>
+<h2>sched.pipes.waitfor(name, [timeout])</h2>
+	<p>Look for a pipe with the given name. Can wait up to timeout until it
+	appears. </p>
+	<strong>Parameters</strong>
+		<ul><li>name: can be of any type.</li>
+		<li>timeout: time to wait. <em>nil</em> or negative waits for ever.</li></ul>
+	<strong>Returns</strong>
+		<ul><li>the task if successful; on timeout expiration returns <em>nil, 
+		'timeout'</em>.</li></ul>
+		<ul><li>A table representing a pipe if succesfull; on timeout expiration returns <em>nil, 
+		'timeout'</em>. For a description of a pipe table, see <a href="#sched.pipes.new">sched.pipes.new</a>.
+		</li></ul>
+
+
+
+<hr>
+<h2>sched.pipes.iterator()</h2>
+	<p>Iterator for pipes</p>
+	<strong>Returns</strong>
+		<ul><li>Example use:
+		<pre>for name, pipe in sched.pipes.tasks() do 
+	print(name, task) 
+end</pre></li></ul>
+		
+	
 	
 <hr>
 <h2>sched.get_time</h2>

@@ -42,7 +42,4 @@ function M.len(list)
 	return list.last - list.first + 1
 end
 
-M.push = M.pushright
-M.pop = M.popleft
-
 return M

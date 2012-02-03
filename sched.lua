@@ -1,6 +1,10 @@
 --get locals for some useful things
 local pairs, ipairs, next, coroutine, setmetatable, os
 	= pairs, ipairs, next, coroutine, setmetatable, os
+	
+table.pack=table.pack or function (...)
+	return {n=select('#',...),...}
+end
 
 local M = {}
 
@@ -19,13 +23,8 @@ local tasks = {}
 local waiting = setmetatable({}, weak_key)
 local waiting_emitter_counter = 0 --for triggering cleanups
 
---register of names for tasks
---tasknames[co]=name
-local tasknames = setmetatable({catalog = 'catalog'}, weak_key)
-
 --closeset wait timeout during a scheduler step
 local next_waketime
-
 
 local step_task
 
@@ -49,19 +48,19 @@ local to_buffer = function (waitd, event, ...)
 		waitd.buff = waitd.buff or queue:new()
 		local buff=waitd.buff
 		if buff_len<0 then 
-			buff:push({event, ...})
+			buff:pushright(table.pack(event, ...))
 		else
 			local overpopulation = buff:len()-buff_len
 			--print('OP', buff_len,buff:len(),overpopulation)
 			if overpopulation<0 then
-				buff:push({event, ...})
+				buff:pushright(table.pack(event, ...))
 			else
 				buff.dropped = true
 				if waitd.buff_mode == 'drop_first' then
 					for _ = 0, overpopulation do
 						buff:popleft()
 					end
-					buff:push({event, ...})
+					buff:pushright(table.pack(event, ...))
 				else --'drop_last', default
 					for _ = 1, overpopulation do
 						buff:popright()
@@ -76,19 +75,21 @@ end
 --iterates over a list of tasks sending them events. the iteration is split as the 
 --list can change during iteration
 local walktasks = function (waitingtasks, event, ...)
-	local waked_up = {}
+	local waked_up, bufferable = {}, {}
 	for task, waitd in pairs(waitingtasks) do
 		--print('',':',task, waitd, waiting[task])
 		if wake_up( task, waitd ) then 
-			waked_up[task]=true 
+			waked_up[task]=true
+			bufferable[waitd] = nil
 		else
-			if not to_buffer(waitd, event, ...) then
-				waiting[task]=nil --buferless, so lazy cleanup 
-			end
+			bufferable[waitd] = true
 		end
 	end
+	for waitd, _ in pairs(bufferable) do
+		--print('','','Buffer!')
+		to_buffer(waitd, event, ...)
+	end
 	for task, _ in pairs(waked_up) do
-		--waked_up[task]=nil
 		step_task(task, event, ...)
 	end
 end
@@ -192,12 +193,13 @@ end
 
 
 -----------------------------------------------------------------------------------------
---API calls
-
---number of new insertions in waiting[event] before triggering clean_up
-M.to_clean_up = 1000
+--Catalog API calls
 
 M.catalog = {}
+local CATALOG_EV = {} --singleton origin for catalog events
+--register of names for tasks
+--tasknames[co]=name
+local tasknames = setmetatable({CATALOG_EV = CATALOG_EV}, weak_key)
 M.catalog.register = function ( name )
 	local co = coroutine.running()
 	if tasknames[name] and tasknames[name] ~= co then
@@ -205,7 +207,7 @@ M.catalog.register = function ( name )
 	end
 	--print('catalog register', co, name)
 	tasknames[name] = co
-	emit_signal('catalog', name, 'registered', co)
+	emit_signal(CATALOG_EV, name, 'registered', co)
 	return true
 end
 M.catalog.waitfor = function ( name, timeout )
@@ -214,7 +216,7 @@ M.catalog.waitfor = function ( name, timeout )
 	if co then
 		return co
 	else 
-		local _, action, received_co = M.wait({emitter='catalog', timeout=timeout, events={name}})
+		local _, action, received_co = M.wait({emitter=CATALOG_EV, timeout=timeout, events={name}})
 		if action == 'registered' then 
 			return received_co
 		else
@@ -222,11 +224,79 @@ M.catalog.waitfor = function ( name, timeout )
 		end
 	end
 end
-M.catalog.tasks = function ()
+M.catalog.iterator = function ()
 	return function (_, v) return next(tasknames, v) end
 end
 
-M.pipe = require 'pipe'
+-----------------------------------------------------------------------------------------
+--Pipe API calls
+
+M.pipes={}
+local PIPES_EV={} --singleton origin for pipes events
+tasknames[PIPES_EV]=PIPES_EV
+--register of pipes
+local pipes =  setmetatable({}, { __mode = 'kv' })
+M.pipes.new = function(name, size, timeout)
+	if pipes[name] then
+		return nil, 'exists'
+	end
+	local piped = {}
+	local pipe_enable = {}
+	local readers_present = false
+	local waitd_read={emitter='*', buff_len=size+1, timeout=0, events = {piped}, buff = queue:new()}
+	
+	M.wait(waitd_read); waitd_read.timeout=timeout  --prefetch waitd
+	
+	local waitd_write={emitter='*', buff_len=1, timeout=timeout, buff_mode='drop_first', events = {pipe_enable}, buff = queue:new()}
+	piped.read = function ()
+		local function format_signal(ev, ...)
+			if not ev then return nil, 'timeout' end
+			return ...
+		end
+		if waitd_read.buff:len() == size-1 then
+			M.signal(pipe_enable)
+		elseif not readers_present then
+			readers_present = true
+			M.signal(pipe_enable)
+		end
+		return format_signal(M.wait(waitd_read))
+		
+	end
+	piped.write = function (...)
+		if waitd_read.buff:len() >= size or not readers_present then
+			--print('PAUSED', readers_present)
+			local ret, _ = M.wait(waitd_write)
+			if not ret then return nil, 'timeout' end
+		end
+		M.signal(piped, ...) --table.pack(...))
+		return true
+	end
+	pipes[name]=piped
+	emit_signal(PIPES_EV, name, 'created', piped)
+	return piped
+end
+M.pipes.waitfor = function(name, timeout)
+	local piped = pipes[name]
+	if piped then 
+		return piped
+	else
+		local _, action, received_piped= M.wait({emitter=PIPES_EV, timeout=timeout, events={name}})
+		if action == 'created' then 
+			return received_piped
+		else
+			return nil, 'timeout'
+		end
+	end
+end
+M.pipes.iterator = function ()
+	return function (_, v) return next(pipes, v) end
+end
+
+-----------------------------------------------------------------------------------------
+--API calls
+
+--number of new insertions in waiting[event] before triggering clean_up
+M.to_clean_up = 1000
 
 M.run = function ( f, ... )
 	local co = coroutine.create( f )
@@ -281,12 +351,15 @@ M.wait = function ( waitd )
 	--if there are buffered signals, service the first
 	local buff = waitd.buff 
 	if buff and buff:len()> 0 then
-		local ret = buff:pop()
-		return unpack(ret)
+		local ret = buff:popleft()
+		--print('W from buff')
+		return unpack(ret, 1, ret.n)
 	end
 
 	--block on signal
+	--print('W+')
 	register_signal( my_task, waitd )
+	--print('W-')
 	return coroutine.yield( my_task )
 end
 

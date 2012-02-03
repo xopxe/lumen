@@ -1,7 +1,7 @@
 local sched=require 'sched'
 
 print 'testing without buffer'
----[[
+--[[
 sched.run(function() 
 	-- sender --
 	local sender = sched.run(function() 
@@ -42,12 +42,14 @@ sched.run(function()
 		
 			--consume buffered signals
 			while waitd.buff and waitd.buff:len()>0 do
+				print("waiting (buff)")
 				local  _, n = sched.wait(waitd)
-				print("received", n)
+				print("received (buff)", n)
 			end
+			print("waiting")
 			local  _, n = sched.wait(waitd)
 			print("received", n)
-			sched.sleep(3)
+			--sched.sleep(3)
 		end
 	end)
 end)
