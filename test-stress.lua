@@ -12,9 +12,9 @@ local i=0
 sched.run(function() 
 	local t2=sched.run(function() 
 		local t1 = sched.catalog.waitfor('A')
-		local waitd=sched.waitd(t1, nil, 'ev')
+		local waitd=sched.waitd(t1, nil, nil, nil, 'ev')
 		while true do
-			--local waitd=sched.waitd(t1, nil, 'ev', 'ev'..i)
+			--local waitd=sched.waitd(t1, nil, nil, nil,  'ev', 'ev'..i)
 			--print(i)
 			sched.wait(waitd)
 			i=i+1
