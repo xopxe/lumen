@@ -39,7 +39,7 @@ frequently, as other weird breakages.
 How tor try it out?
 ===================
 
-This example has a few tasks exchnging messages, showing off basic 
+This example has a few tasks exchanging messages, showing off basic 
 functionality:
 
 # lua test.lua
