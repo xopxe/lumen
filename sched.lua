@@ -73,17 +73,19 @@ local to_buffer = function (waitd, event, ...)
 end
 
 --iterates over a list of tasks sending them events. the iteration is split as the 
---list can change during iteration
+--list can change during iteration. it also sees if a event should be buffered
 local walktasks = function (waitingtasks, event, ...)
 	local waked_up, bufferable = {}, {}
 	for task, waitd in pairs(waitingtasks) do
 		--print('',':',task, waitd, waiting[task])
 		if wake_up( task, waitd ) then 
-			waked_up[task]=true
-			bufferable[waitd] = nil
+			waked_up[task]=waitd
 		else
 			bufferable[waitd] = true
 		end
+	end
+	for _, waitd in pairs(waked_up) do
+		bufferable[waitd]=nil
 	end
 	for waitd, _ in pairs(bufferable) do
 		--print('','','Buffer!')
@@ -241,36 +243,45 @@ M.pipes.new = function(name, size, timeout)
 		return nil, 'exists'
 	end
 	local piped = {}
-	local pipe_enable = {}
-	local readers_present = false
-	local waitd_read={emitter='*', buff_len=size+1, timeout=0, events = {piped}, buff = queue:new()}
-	
-	M.wait(waitd_read); waitd_read.timeout=timeout  --prefetch waitd
-	
-	local waitd_write={emitter='*', buff_len=1, timeout=timeout, buff_mode='drop_first', events = {pipe_enable}, buff = queue:new()}
-	piped.read = function ()
+	local pipe_enable = {} --singleton event for pipe control
+	local pipe_data = {} --singleton event for pipe data
+	local buff_data = queue:new()
+	local waitd_data={emitter='*', buff_len=size+1, timeout=0, events = {pipe_data}, buff = buff_data}
+	M.wait(waitd_data); waitd_data.timeout=timeout  --prefetch waitd
+	local waitd_enable={emitter='*', buff_len=1, timeout=timeout, buff_mode='drop_last', events = {pipe_enable}, buff = queue:new()}
+	local piped_read = function ()
 		local function format_signal(ev, ...)
 			if not ev then return nil, 'timeout' end
 			return ...
 		end
-		if waitd_read.buff:len() == size-1 then
-			M.signal(pipe_enable)
-		elseif not readers_present then
-			readers_present = true
+		if buff_data:len() == size-1 then
 			M.signal(pipe_enable)
 		end
-		return format_signal(M.wait(waitd_read))
-		
+		return format_signal(M.wait(waitd_data))
 	end
-	piped.write = function (...)
-		if waitd_read.buff:len() >= size or not readers_present then
-			--print('PAUSED', readers_present)
-			local ret, _ = M.wait(waitd_write)
+	local piped_write = function (...)
+		if buff_data:len() >= size then
+			local ret, _ = M.wait(waitd_enable)
 			if not ret then return nil, 'timeout' end
 		end
-		M.signal(piped, ...) --table.pack(...))
+		M.signal(pipe_data, ...) --table.pack(...))
 		return true
 	end
+	--first run is a initialization, replaces functions with proper code
+	piped.read = function ()
+		piped.read = piped_read
+		piped.write = piped_write
+		M.signal(pipe_enable)
+		return piped_read()
+	end
+	--blocks on no-readers, replaced in piped.read
+	piped.write = function (...)
+		local ret, _ = M.wait(waitd_enable)
+		if not ret then return nil, 'timeout' end
+		M.signal(pipe_data, ...)
+		return true
+	end
+	
 	pipes[name]=piped
 	emit_signal(PIPES_EV, name, 'created', piped)
 	return piped
