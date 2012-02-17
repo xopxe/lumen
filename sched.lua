@@ -246,8 +246,8 @@ M.pipes.new = function(name, size, timeout)
 	local pipe_enable = {} --singleton event for pipe control
 	local pipe_data = {} --singleton event for pipe data
 	local buff_data = queue:new()
-	local waitd_data={emitter='*', buff_len=size+1, timeout=0, events = {pipe_data}, buff = buff_data}
-	M.wait(waitd_data); waitd_data.timeout=timeout  --prefetch waitd
+	local waitd_data={emitter='*', buff_len=size+1, timeout=timeout, events = {pipe_data}, buff = buff_data}
+	M.wait_feed(waitd_data)
 	local waitd_enable={emitter='*', buff_len=1, timeout=timeout, buff_mode='drop_last', events = {pipe_enable}, buff = queue:new()}
 	local piped_read = function ()
 		local function format_signal(ev, ...)
@@ -372,6 +372,13 @@ M.wait = function ( waitd )
 	register_signal( my_task, waitd )
 	--print('W-')
 	return coroutine.yield( my_task )
+end
+
+M.wait_feed = function(waitd)
+	local timeout=waitd.timeout
+	waitd.timeout=0
+	M.wait(waitd)
+	waitd.timeout=timeout
 end
 
 M.sleep = function (timeout)
