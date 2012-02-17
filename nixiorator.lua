@@ -11,7 +11,7 @@ local M = {nixio=nixio}
 local function client(polle)
 	local skt=polle.fd
 	local data=polle.it()
-	if data and data ~= '' then
+	if data then 
 		sched.signal(skt, data)
 	else
 		M.unregister(skt)
