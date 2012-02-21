@@ -57,7 +57,7 @@ installed, and in Linux, you can try (root needed as it reads from
 # sudo lua test-nixiorator.lua
 
 
-To see how buffers and pipes work an what they are for, try:
+To see how buffers and pipes work and what they are for, try:
 
 # lua test-buff.lua
 # lua test-pipe.lua
