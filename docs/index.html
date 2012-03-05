@@ -48,8 +48,9 @@
 
 <p>Lumen cooperative scheduler.</p>
 <p>
- Lumen (Lua Multitasking Environment) is a cooperative
- coroutine based scheduler</p>
+ Lumen (Lua Multitasking Environment) is a simple environment 
+ for coroutine based multitasking. Consists of a signal scheduler, 
+ and that's it.</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local sched = require 'sched'</pre>
@@ -72,6 +73,10 @@
 </table>
 <h2><a href="#Named_pipes">Named pipes</a></h2>
 <table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#piped">piped</a></td>
+	<td class="summary">Pipe descriptor.</td>
+	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#M.pipes.new">M.pipes.new&nbsp;(name, size, timeout)</a></td>
 	<td class="summary">Create a new pipe.</td>
@@ -228,6 +233,26 @@ end</pre>
  no message can get lost: writers get blocked when the pipe is full
     <dl class="function">
     <dt>
+    <a name = "piped"></a>
+    <strong>piped</strong>
+    </dt>
+    <dd>
+    Pipe descriptor. 
+ A named pipe.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>write</em></code>:  writes to the pipe. Will block when writing to a full pipe. 
+ Return true on success, nil, 'timeout' on timeout</li>
+       <li><code><em>read</em></code>:  reads from the pipe. Will block on a empty pipe. 
+ Return data if available, nil, 'timeout' on timeout</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
     <a name = "M.pipes.new"></a>
     <strong>M.pipes.new&nbsp;(name, size, timeout)</strong>
     </dt>
@@ -245,7 +270,8 @@ end</pre>
 
     <h3>Returns:</h3>
     <ol>
-        the pipe
+        the pipe descriptor (see <a href="index.html#piped">piped</a>) on success, or nil,'exists' if a pipe
+ with the given name already exists
     </ol>
 
 

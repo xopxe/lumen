@@ -96,7 +96,6 @@ local walktasks = function (waitingtasks, event, ...)
 		bufferable[waitd]=nil
 	end
 	for waitd, _ in pairs(bufferable) do
-		--print('','','Buffer!')
 		to_buffer(waitd, event, ...)
 	end
 	for task, _ in pairs(waked_up) do
@@ -266,6 +265,15 @@ end
 
 M.pipes={}
 
+------
+-- Pipe descriptor.
+-- A named pipe.
+-- @field write writes to the pipe. Will block when writing to a full pipe. 
+-- Return true on success, nil, 'timeout' on timeout
+-- @field read reads from the pipe. Will block on a empty pipe. 
+-- Return data if available, nil, 'timeout' on timeout
+-- @table piped
+
 local PIPES_EV={} --singleton origin for pipes events
 tasknames[PIPES_EV]=PIPES_EV
 --register of pipes
@@ -276,7 +284,9 @@ local pipes =  setmetatable({}, { __mode = 'kv' })
 -- @param size maximum number of signals in the pipe
 -- @param timeout timeout for blocking on pipe operations. -1 or nil disable 
 -- timeout
--- @return the pipe
+-- @return the pipe descriptor (see @{piped}) on success, or nil,'exists' if a pipe
+-- with the given name already exists
+
 M.pipes.new = function(name, size, timeout)
 	if pipes[name] then
 		return nil, 'exists'
