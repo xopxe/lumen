@@ -100,7 +100,7 @@ test-stress.lua
 	A test program with two tasks, one emitting signals and the other 
 	accepting them. See how fast it can run.
 
-doc/*
+docs/*
 	The documentation of the API for the scheduler and nixio and LuaSocket 
 	bindings.
 
