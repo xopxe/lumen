@@ -160,7 +160,7 @@
 
     <h2><a name="Catalog_operations"></a>Catalog operations</h2>
     
- The catalog is used to give tasks names, and the query them
+ The catalog is used to give tasks names, and then query them
     <dl class="function">
     <dt>
     <a name = "M.catalog.register"></a>
@@ -270,7 +270,7 @@ end</pre>
 
     <h3>Returns:</h3>
     <ol>
-        the pipe descriptor (see <a href="index.html#piped">piped</a>) on success, or nil,'exists' if a pipe
+        the pipe descriptor (see <a href="sched.html#piped">piped</a>) on success, or nil,'exists' if a pipe
  with the given name already exists
     </ol>
 
@@ -305,7 +305,7 @@ end</pre>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">for name, pipe in sched.pipes.tasks() do 
-	print(name, task) 
+	print(name, pipe) 
 end</pre>
     </ul>
 
@@ -370,7 +370,7 @@ end</pre>
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>f</em></code>:  function for the task</li>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="index.html#waitd">waitd</a>)</li>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="sched.html#waitd">waitd</a>)</li>
     </ul>
 
 
@@ -382,8 +382,8 @@ end</pre>
 
     <h3>see also:</h3>
     <ul>
-         <li><a href="index.html#wait">wait</a></li>
-         <li><a href="index.html#run">run</a></li>
+         <li><a href="sched.html#wait">wait</a></li>
+         <li><a href="sched.html#run">run</a></li>
     </ul>
 </dd>
     <dt>
@@ -396,7 +396,7 @@ end</pre>
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>f</em></code>:  function for the task</li>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="index.html#waitd">waitd</a>)</li>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="sched.html#waitd">waitd</a>)</li>
     </ul>
 
 
@@ -408,8 +408,8 @@ end</pre>
 
     <h3>see also:</h3>
     <ul>
-         <li><a href="index.html#wait">wait</a></li>
-         <li><a href="index.html#run">run</a></li>
+         <li><a href="sched.html#wait">wait</a></li>
+         <li><a href="sched.html#run">run</a></li>
     </ul>
 </dd>
     <dt>
@@ -493,7 +493,7 @@ end</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="index.html#waitd">waitd</a>)</li>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="sched.html#waitd">waitd</a>)</li>
     </ul>
 
 
@@ -511,7 +511,7 @@ end</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="index.html#waitd">waitd</a>)</li>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="sched.html#waitd">waitd</a>)</li>
     </ul>
 
 

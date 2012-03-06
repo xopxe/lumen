@@ -204,7 +204,7 @@ end
 
 
 --- Catalog operations.
--- The catalog is used to give tasks names, and the query them
+-- The catalog is used to give tasks names, and then query them
 -- @section catalog
 
 M.catalog = {}
@@ -357,7 +357,7 @@ end
 --- Iterator for all pipes
 -- @return iterator
 -- @usage for name, pipe in sched.pipes.tasks() do 
---	print(name, task) 
+--	print(name, pipe) 
 --end
 M.pipes.iterator = function ()
 	return function (_, v) return next(pipes, v) end

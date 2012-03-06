@@ -1,3 +1,9 @@
+--- Nixiorator task for Lumen.
+-- Nixiorator is a Lumen task that allow to interface with nixio. 
+-- @module nixiorator
+-- @usage local nixiorator = require 'nixiorator'
+-- @alias M
+
 local nixio = require("nixio")
 local sched = require("sched")
 require ("nixio.util")
@@ -6,7 +12,7 @@ local pollt={}
 --get locals for some useful things
 local math, ipairs, table = math, ipairs, table 
 
-local M = {nixio=nixio}
+local M = {}
 
 local function client(polle)
 	local skt=polle.fd
@@ -27,15 +33,13 @@ local function accept(polle)
 	sched.signal(polle.fd, 'accepted', skt)
 end
 
-
-if nixio.gettime then
-	M.idle = function (t) 
-		local sec = math.floor(t)
-		local nsec = (t-sec)*1000000000
-		nixio.nanosleep(sec, nsec) 
-	end
-end
-
+--- Registers a TCP server socket with nixiorator.
+-- nixiorator will signal fd, 'accepted', client when establishing a connection, 
+-- where fd is the server socket and client is the new client socket. 
+-- The client socket is automatically registered into nixiorator.
+-- @param skt a nixio server socket
+-- @param block a nixio block mode to use with accepted client sockets
+-- @return the polle structure from nixio
 M.register_server = function (skt, block)
 	local polle={
 		fd=skt, 
@@ -48,31 +52,49 @@ M.register_server = function (skt, block)
 	return polle
 end
 
-M.register_client = function (skt, block)
+--- Registers a client socket (TCP, UDP, or filehandle) with nixiorator.
+-- nixiorator will signal fd, data, error on data read.
+-- @param fd A client socket or filehandle
+-- @param block The read pattern to be used.
+--
+-- - `line` will provide data trough nixio's linesource iterator.
+-- - number will provide data trough nixio's block iterator.
+--
+-- @return the polle structure from nixio
+M.register_client = function (fd, block)
 	local polle={
-		fd=skt, 
+		fd=fd, 
 		events=nixio.poll_flags("in"), 
 		block=block or 8192,
 		handler=client
 	}
 	if polle.block=='line' then
-		polle.it=skt:linesource()
+		polle.it=fd:linesource()
 	else
-		polle.it=skt:blocksource(polle.block)
+		polle.it=fd:blocksource(polle.block)
 	end
 	pollt[#pollt+1]=polle
 	return polle
 end
 
-M.unregister = function (skt)
+--- Unregisters a socket from nixiorator.
+-- @param fd  the socket or filehandle to unregister.
+M.unregister = function (fd)
 	for k, v in ipairs(pollt) do 
-		if skt==v.fd then 
+		if fd==v.fd then 
 			table.remove(pollt,k) 
 			return
 		end
 	end
 end
 
+--- Performs a single step for nixiorator. 
+-- Will block at the OS level for up to timeout seconds. 
+-- Usually this method is not used (probably what you want is to 
+-- register @{task} with the Lumen scheduler).
+-- Nixiorator will emit the signals from registered sockets 
+-- (see @{register_server} and @{register_client}).
+-- @param timeout Max allowed blocking time.
 M.step = function (timeout)
 	timeout=timeout or -1
 	local stat= nixio.poll(pollt, timeout*1000)
@@ -86,12 +108,30 @@ M.step = function (timeout)
 
 end
 
+--- The function to be registered with the Lumen scheduler to receive the nixiorator signals.
+-- Whe running, nixiorator will emit the signals from registered sockets 
+-- (see @{register_server} and @{register_client}).
+-- @usage local sched = require "sched"
+--local nixiorator = require "nixiorator"
+--local n = sched.run(nixiorator.task)
+-- @param timeout Max allowed blocking time.
 M.task = function ()
 	sched.catalog.register('nixiorator')
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )
 	end
+end
+
+--- A reference to the nixio library.
+M.nixio=nixio
+
+--- A idling function.
+-- this is valid replacement function for Lumen's sched.idle
+M.idle = function (t) 
+	local sec = math.floor(t)
+	local nsec = (t-sec)*1000000000
+	nixio.nanosleep(sec, nsec) 
 end
 
 return M

@@ -1,3 +1,9 @@
+--- Socketeer task for Lumen.
+-- Socketeer is a Lumen task that allow to interface with LuaSocket. 
+-- @module socketeer
+-- @usage local socketeer = require 'socketeer'
+-- @alias M
+
 local socket = require("socket")
 local sched = require("sched")
 
@@ -14,6 +20,13 @@ local partial = setmetatable({}, weak_key)
 
 local M = {socket=socket}
 
+--- Registers a TCP server socket with socketeer.
+-- socketeer will signal fd, 'accepted', client when establishing a connection, 
+-- where skt is the server socket and client is the new client socket, or skt, 'fail', error 
+-- on error conditions. 
+-- The client socket is automatically registered into nixiorator.
+-- @param skt a LuaSocket server socket
+-- @param pattern The read pattern to be used for established connections (see @{register_client})
 M.register_server = function (skt, pattern)
 	isserver[skt]=true
 	skt:settimeout(0)
@@ -21,12 +34,27 @@ M.register_server = function (skt, pattern)
 	recvt[#recvt+1]=skt
 end
 
+--- Registers a client socket (TCP or UDP) with socketeer.
+-- socketeer will signal skt, data, error On data read. data is the string read. 
+-- Data can be nil if error is 'closed'. A 'closed' error also means the skt got unregistered. 
+-- When reading from TCP with pattern>0, the last signal can provide a partial read after 
+-- the err return.
+-- @param skt a LuaSocket client socket
+-- @param pattern The read pattern to be used.
+--
+-- - '*a' (TCP only) will read all the data from the socket until it is closed, and provide it all in one signal.
+-- - '*l' (TCP only) will read line by line, as specified in LuaSocket.
+-- - number>0 If TCP will read in chunks of number bytes. If UDP, means the first number bytes from each UDP packet.
+-- - number<=0 Will provide chunks as they arrive, with no further processing.
+--
 M.register_client = function (skt, pattern)
 	skt:settimeout(0)
 	sktmode[skt] = pattern
 	recvt[#recvt+1]=skt
 end
 
+--- Unregisters a socket from socketeer
+-- @param skt the socket to unregister.
 M.unregister = function (skt)
 	for k, v in ipairs(recvt) do 
 		if skt==v then 
@@ -36,6 +64,13 @@ M.unregister = function (skt)
 	end
 end
 
+--- Performs a single step for socketeer. 
+-- Will block at the OS level for up to timeout seconds. 
+-- Usually this method is not used (probably what you want is to 
+-- register @{task} with the Lumen scheduler).
+-- Socketeer will emit the signals from registered sockets 
+-- (see @{register_server} and @{register_client}).
+-- @param timeout Max allowed blocking time.
 M.step = function (timeout)
 	--print('+', timeout)
 	local recvt_ready, _, err = socket.select(recvt, nil, timeout)
@@ -82,6 +117,13 @@ M.step = function (timeout)
 	end
 end
 
+--- The function to be registered with the Lumen scheduler to receive the nixiorator signals.
+-- Whe running, socketeer will emit the signals from registered sockets 
+-- (see @{register_server} and @{register_client}).
+-- @usage local sched = require 'sched'
+--local socketter = require 'socketeer'
+--local n = sched.run(socketeer.task)
+-- @param timeout Max allowed blocking time.
 M.task = function ()
 	sched.catalog.register('socketeer')
 	while true do
