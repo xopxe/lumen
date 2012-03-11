@@ -36,8 +36,8 @@ WARNING: Lumen is under heavy development, and API changes happen rather
 frequently, as other weird breakages.
 
 
-How tor try it out?
-===================
+How to try it out?
+==================
 
 This example has a few tasks exchanging messages, showing off basic 
 functionality:
@@ -68,7 +68,7 @@ Contains:
 
 
 COPYRIGHT
-	The copyright for the thing (same as Lua)
+	The copyright for Lumen (same as Lua)
 
 sched.lua
 	The scheduler itself.
