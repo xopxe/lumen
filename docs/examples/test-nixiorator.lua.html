@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>Lumen</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+
+
+<h2>Modules</h2>
+<ul>
+  <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/socketeer.html">socketeer</a></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><strong>test-nixiorator.lua</strong></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Example <code>test-nixiorator.lua</code></h1>
+
+    <pre>
+<span class="comment">---
+</span><span class="comment">-- A task that interfaces with nixio. Supports UDP, TCP and async 
+</span><span class="comment">-- file I/O.
+</span><span class="comment">-- Should run as root or sudo, for reading /dev/input/mice
+</span>
+<span class="global">require</span> <span class="string">"strict"</span>
+
+<span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
+<span class="keyword">local</span> nixiorator = <span class="global">require</span> <span class="string">"nixiorator"</span>
+<span class="keyword">local</span> nixio = nixiorator.nixio
+
+<span class="keyword">local</span> udprecv = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="string">'inet'</span>, <span class="string">'dgram'</span>))
+<span class="keyword">local</span> fdrecv = nixio.open(<span class="string">'/dev/input/mice'</span>, nixio.open_flags(<span class="string">'rdonly'</span>, <span class="string">'sync'</span>))
+
+sched.idle = nixio.idle <span class="keyword">or</span> sched.idle
+<span class="keyword">if</span> nixio.gettime <span class="keyword">then</span>
+	sched.get_time = nixio.gettime
+<span class="keyword">end</span>
+
+sched.run(<span class="keyword">function</span>() 
+	nixiorator.register_client(udprecv, <span class="number">1500</span>)
+	nixiorator.register_client(fdrecv, <span class="number">10</span>)
+	<span class="keyword">local</span> nxtask = sched.run(nixiorator.task)
+	<span class="global">print</span>(<span class="string">'NIXIORATOR'</span>,nxtask)
+	sched.sigrun(<span class="keyword">function</span>(file, data) <span class="global">print</span>(<span class="string">"!F"</span>, file, <span class="global">string</span>.byte(data)) <span class="keyword">end</span>, {emitter=nxtask, events={fdrecv}})
+	sched.sigrun(<span class="keyword">function</span>(...) <span class="global">print</span>(<span class="string">"!U"</span>, ...) <span class="keyword">end</span>, {emitter=nxtask, events={udprecv}})
+	sched.run(<span class="keyword">function</span>()
+		<span class="keyword">local</span> tcprecv = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="string">'inet'</span>, <span class="string">'stream'</span>))
+		nixiorator.register_server(tcprecv, <span class="string">'line'</span>)
+		sched.catalog.register(<span class="string">"accepter"</span>)
+		<span class="keyword">local</span> waitd={emitter=nxtask, events={tcprecv}}
+		<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+			<span class="keyword">local</span> skt, msg, inskt  = sched.wait(waitd)
+			<span class="global">print</span> (<span class="string">"#"</span>, <span class="global">os</span>.time(), skt, msg, inskt )
+			<span class="keyword">if</span> msg==<span class="string">'accepted'</span> <span class="keyword">then</span> 
+				sched.sigrun(<span class="keyword">function</span>(skt, data, err) 
+					<span class="global">print</span>(<span class="string">"!T"</span>, skt, data, err) 
+					<span class="keyword">if</span> <span class="keyword">not</span> data <span class="keyword">then</span> sched.kill() <span class="keyword">end</span>
+				<span class="keyword">end</span>, {emitter=nxtask, events={inskt}})
+			<span class="keyword">end</span>
+		<span class="keyword">end</span>
+	<span class="keyword">end</span>)
+	sched.run(<span class="keyword">function</span>()
+		sched.catalog.waitfor(<span class="string">'accepter'</span>)
+		<span class="keyword">local</span> tcpsend = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">0</span>, <span class="string">'inet'</span>, <span class="string">'stream'</span>))
+		tcpsend:connect(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
+		<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+			<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
+			<span class="global">print</span>(<span class="string">"tcp sending"</span>,m)
+			tcpsend:writeall(m..<span class="string">"\n"</span>)
+			sched.sleep(<span class="number">3</span>)
+		<span class="keyword">end</span>
+	<span class="keyword">end</span>)
+	sched.run(<span class="keyword">function</span>()
+		<span class="keyword">local</span> udpsend = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">0</span>, <span class="string">'inet'</span>, <span class="string">'dgram'</span>))
+		udpsend:connect(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
+		<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+			<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
+			<span class="global">print</span>(<span class="string">"udp sending"</span>,m)
+			udpsend:send(m)
+			sched.sleep(<span class="number">2</span>)
+		<span class="keyword">end</span>
+	<span class="keyword">end</span>)
+
+
+<span class="keyword">end</span>)
+
+
+sched.go()
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.1</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

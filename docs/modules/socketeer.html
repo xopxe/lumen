@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <head>
     <title>Reference</title>
-    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
 </head>
 <body>
 
@@ -24,8 +24,11 @@
 
 <div id="navigation">
 <br/>
-<h1>ldoc</h1>
+<h1>Lumen</h1>
 
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
 
 <h2>Contents</h2>
 <ul>
@@ -35,7 +38,22 @@
 
 <h2>Modules</h2>
 <ul>
+  <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><a href="../modules/sched.html">sched</a></li>
   <li><strong>socketeer</strong></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
 </div>
@@ -44,9 +62,8 @@
 
 <h1>Module <code>socketeer</code></h1>
 
-<p>Socketeer task for Lumen.</p>
-<p>
- Socketeer is a Lumen task that allow to interface with LuaSocket. </p>
+<p>Task for accessing LuaSocket library.</p>
+<p> Socketeer is a Lumen task that allow to interface with LuaSocket. </p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local socketeer = require 'socketeer'</pre>
@@ -97,7 +114,7 @@
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>skt</em></code>:  a LuaSocket server socket</li>
-       <li><code><em>pattern</em></code>:  The read pattern to be used for established connections (see <a href="socketeer.html#register_client">register_client</a>)</li>
+       <li><code><em>pattern</em></code>:  The read pattern to be used for established connections (see <a href="../modules/socketeer.html#register_client">register_client</a>)</li>
     </ul>
 
 
@@ -118,12 +135,16 @@
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>skt</em></code>:  a LuaSocket client socket</li>
-       <li><code><em>pattern</em></code>:  The read pattern to be used.
+       <li><code><em>pattern</em></code>: 
+<p> The read pattern to be used.</p>
 
- - '*a' (TCP only) will read all the data from the socket until it is closed, and provide it all in one signal.
- - '*l' (TCP only) will read line by line, as specified in LuaSocket.
- - number>0 If TCP will read in chunks of number bytes. If UDP, means the first number bytes from each UDP packet.
- - number<=0 Will provide chunks as they arrive, with no further processing.</li>
+<ul>
+    <li>'*a' (TCP only) will read all the data from the socket until it is closed, and provide it all in one signal.</li>
+    <li>'*l' (TCP only) will read line by line, as specified in LuaSocket.</li>
+    <li>number>0 If TCP will read in chunks of number bytes. If UDP, means the first number bytes from each UDP packet.</li>
+    <li>number&lt;=0 Will provide chunks as they arrive, with no further processing.</li>
+</ul>
+</li>
     </ul>
 
 
@@ -151,12 +172,12 @@
     <strong>step&nbsp;(timeout)</strong>
     </dt>
     <dd>
-    Performs a single step for socketeer.  
+    Performs a single step for socketeer. <br/>
  Will block at the OS level for up to timeout seconds. 
  Usually this method is not used (probably what you want is to 
- register <a href="socketeer.html#task">task</a> with the Lumen scheduler).
+ register <a href="../modules/socketeer.html#task">task</a> with the Lumen scheduler).
  Socketeer will emit the signals from registered sockets 
- (see <a href="socketeer.html#register_server">register_server</a> and <a href="socketeer.html#register_client">register_client</a>).
+ (see <a href="../modules/socketeer.html#register_server">register_server</a> and <a href="../modules/socketeer.html#register_client">register_client</a>).
 
     <h3>Parameters:</h3>
     <ul>
@@ -174,7 +195,7 @@
     <dd>
     The function to be registered with the Lumen scheduler to receive the nixiorator signals. 
  Whe running, socketeer will emit the signals from registered sockets 
- (see <a href="socketeer.html#register_server">register_server</a> and <a href="socketeer.html#register_client">register_client</a>).
+ (see <a href="../modules/socketeer.html#register_server">register_server</a> and <a href="../modules/socketeer.html#register_client">register_client</a>).
 
 
     <h3>Usage:</h3>

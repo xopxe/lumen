@@ -436,6 +436,20 @@ M.signal = function ( event, ... )
 	emit_signal( emitter, event, ... )
 end
 
+--- Auxiliar function for instantiating waitd tables.
+-- @param emitter Event of the signal. Can be of any type.
+-- task originating the signal we wait for. If nil, will
+-- only return on timeout. If '*', means anyone.
+-- @param timeout Time to wait. nil or negative waits for ever.
+-- @param buff_len Maximum length of the buffer. A buffer allows for storing 
+-- signals that arrived while the task is not blocked on the wait descriptor. 
+-- Whenever there is an attempt to insert in a full buffer, the buffer.dropped 
+-- flag is set. nil o 0 disables, negative means no length limit.
+-- @param buff_mode Specifies how to behave when inserting in a full buffer. 
+-- 'drop first' means drop the oldest signals to make space. 'drop last' 
+-- or nil will skip the insertion in a full buffer. 
+-- @param ... Array with the events to wait.
+-- @return a new waitd descriptor
 M.create_waitd = function ( emitter, timeout, buff_len, buff_mode, ... )
 	return {emitter = emitter,
 		timeout = timeout,
@@ -444,30 +458,6 @@ M.create_waitd = function ( emitter, timeout, buff_len, buff_mode, ... )
 		events = {...}
 	}
 end
-
-------
--- Wait descriptor.
--- Specifies a condition on which wait. Includes a signal description,
--- a optional timeout specification and buffer configuration.
--- A wait descriptor can be reused (for example, when waiting inside a 
--- loop) and shared amongst different tasks. If a wait descriptor changes 
--- while there is a task waiting, the behavior is unspecified. Notice that 
--- when sharing a wait descriptor between several tasks, the buffer is 
--- associated to the wait descriptor, and tasks will service buffered signals 
--- on first request basis.
--- Can use @\{create_waitd} to create this table.
--- @field emitter optional, task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone.
--- @field timeout optional, time to wait. nil or negative waits for ever.
--- @field buff_len Maximum length of the buffer. A buffer allows for storing 
--- signals that arrived while the task is not blocked on the wait descriptor. 
--- Whenever there is an attempt to insert in a full buffer, the buffer.dropped 
--- flag is set. nil o 0 disables, negative means no length limit.
--- @field buff_mode: Specifies how to behave when inserting in a full buffer. 
--- 'drop first' means drop the oldest signals to make space. 'drop last' 
--- or nil will skip the insertion in a full buffer. 
--- @field events optional, array with the events to wait.
--- @table waitd
 
 --- Wait for a signal.
 -- Pauses the task until (one of) the specified signal(s) is available. 
@@ -609,6 +599,33 @@ M.go = function ()
 	until not idle_time
 end
 
+--- Data structures.
+-- Main structures used.
+-- @section descriptors
+
+------
+-- Wait descriptor.
+-- Specifies a condition on which wait. Includes a signal description,
+-- a optional timeout specification and buffer configuration.
+-- A wait descriptor can be reused (for example, when waiting inside a 
+-- loop) and shared amongst different tasks. If a wait descriptor changes 
+-- while there is a task waiting, the behavior is unspecified. Notice that 
+-- when sharing a wait descriptor between several tasks, the buffer is 
+-- associated to the wait descriptor, and tasks will service buffered signals 
+-- on first request basis.
+-- Can use @\{create_waitd} to create this table.
+-- @field emitter optional, task originating the signal we wait for. If nil, will
+-- only return on timeout. If '*', means anyone.
+-- @field timeout optional, time to wait. nil or negative waits for ever.
+-- @field buff_len Maximum length of the buffer. A buffer allows for storing 
+-- signals that arrived while the task is not blocked on the wait descriptor. 
+-- Whenever there is an attempt to insert in a full buffer, the buffer.dropped 
+-- flag is set. nil o 0 disables, negative means no length limit.
+-- @field buff_mode: Specifies how to behave when inserting in a full buffer. 
+-- 'drop first' means drop the oldest signals to make space. 'drop last' 
+-- or nil will skip the insertion in a full buffer. 
+-- @field events optional, array with the events to wait.
+-- @table waitd
 
 return M
 

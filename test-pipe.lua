@@ -1,3 +1,6 @@
+---
+-- A demonstration of pipes.
+
 local sched=require 'sched'
 
 sched.run(function() 

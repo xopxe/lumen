@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <head>
     <title>Reference</title>
-    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
 </head>
 <body>
 
@@ -24,8 +24,11 @@
 
 <div id="navigation">
 <br/>
-<h1>ldoc</h1>
+<h1>Lumen</h1>
 
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
 
 <h2>Contents</h2>
 <ul>
@@ -37,6 +40,21 @@
 <h2>Modules</h2>
 <ul>
   <li><strong>nixiorator</strong></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/socketeer.html">socketeer</a></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
 </div>
@@ -45,9 +63,8 @@
 
 <h1>Module <code>nixiorator</code></h1>
 
-<p>Nixiorator task for Lumen.</p>
-<p>
- Nixiorator is a Lumen task that allow to interface with nixio. </p>
+<p>Task for accessing nixio library.</p>
+<p> Nixiorator is a Lumen task that allow to interface with nixio. </p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local nixiorator = require 'nixiorator'</pre>
@@ -130,10 +147,14 @@
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>fd</em></code>:  A client socket or filehandle</li>
-       <li><code><em>block</em></code>:  The read pattern to be used.
+       <li><code><em>block</em></code>: 
+<p> The read pattern to be used.</p>
 
- - `line` will provide data trough nixio's linesource iterator.
- - number will provide data trough nixio's block iterator.</li>
+<ul>
+    <li><code>line</code> will provide data trough nixio's linesource iterator.</li>
+    <li>number will provide data trough nixio's block iterator.</li>
+</ul>
+</li>
     </ul>
 
 
@@ -165,12 +186,12 @@
     <strong>step&nbsp;(timeout)</strong>
     </dt>
     <dd>
-    Performs a single step for nixiorator.  
+    Performs a single step for nixiorator. <br/>
  Will block at the OS level for up to timeout seconds. 
  Usually this method is not used (probably what you want is to 
- register <a href="nixiorator.html#task">task</a> with the Lumen scheduler).
+ register <a href="../modules/nixiorator.html#task">task</a> with the Lumen scheduler).
  Nixiorator will emit the signals from registered sockets 
- (see <a href="nixiorator.html#register_server">register_server</a> and <a href="nixiorator.html#register_client">register_client</a>).
+ (see <a href="../modules/nixiorator.html#register_server">register_server</a> and <a href="../modules/nixiorator.html#register_client">register_client</a>).
 
     <h3>Parameters:</h3>
     <ul>
@@ -188,7 +209,7 @@
     <dd>
     The function to be registered with the Lumen scheduler to receive the nixiorator signals. 
  Whe running, nixiorator will emit the signals from registered sockets 
- (see <a href="nixiorator.html#register_server">register_server</a> and <a href="nixiorator.html#register_client">register_client</a>).
+ (see <a href="../modules/nixiorator.html#register_server">register_server</a> and <a href="../modules/nixiorator.html#register_client">register_client</a>).
 
 
     <h3>Usage:</h3>
@@ -211,7 +232,9 @@ local n = sched.run(nixiorator.task)</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>t</em></code>: </li>
+       <li><code><em>t</em></code>: 
+
+</li>
     </ul>
 
 

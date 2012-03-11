@@ -1,4 +1,4 @@
---- Nixiorator task for Lumen.
+--- Task for accessing nixio library.
 -- Nixiorator is a Lumen task that allow to interface with nixio. 
 -- @module nixiorator
 -- @usage local nixiorator = require 'nixiorator'

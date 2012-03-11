@@ -1,3 +1,7 @@
+---
+-- A test program for socketeer.
+
+
 require "strict"
 
 local sched = require "sched"

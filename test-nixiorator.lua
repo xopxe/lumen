@@ -1,4 +1,7 @@
---should run as root or sudo, for reading /dev/input/mice
+---
+-- A task that interfaces with nixio. Supports UDP, TCP and async 
+-- file I/O.
+-- Should run as root or sudo, for reading /dev/input/mice
 
 require "strict"
 

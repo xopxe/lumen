@@ -1,4 +1,4 @@
---- Socketeer task for Lumen.
+--- Task for accessing LuaSocket library.
 -- Socketeer is a Lumen task that allow to interface with LuaSocket. 
 -- @module socketeer
 -- @usage local socketeer = require 'socketeer'

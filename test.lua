@@ -1,3 +1,5 @@
+--- A sample program that uses the scheduler to do stuff.
+
 --require "strict"
 
 local sched = require "sched"
