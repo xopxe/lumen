@@ -37,22 +37,22 @@ There are also named pipes, for intertask communications.
 This example has a few tasks exchanging messages, showing off basic 
 functionality:
 
-    lua test.lua
+    lua @{test.lua}
 
 If you want to see LuaSocket integration working, try:
 
-    lua test-socketeer.lua
+    lua @{test-socketeer.lua}
 
 If you want to see TCP, UDP and async file I/O running, and have nixio 
 installed, and in Linux, you can try (root needed as it reads from 
 /dev/input/mice):
 
-    sudo lua test-nixiorator.lua
+    sudo lua @{test-nixiorator.lua}
 
 To see how buffers and pipes work and what they are for, try:
 
-    lua test-buff.lua
-    lua test-pipe.lua
+    lua @{test-buff.lua}
+    lua @{test-pipe.lua}
 
 ## License
 
