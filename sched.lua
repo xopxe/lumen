@@ -250,7 +250,7 @@ end
 
 --- Iterator for registered tasks.
 -- @return iterator
--- @usage for name, task in sched.catalog.tasks() do 
+-- @usage for name, task in sched.catalog.iterator() do 
 --	print(name, task) 
 --end
 M.catalog.iterator = function ()
