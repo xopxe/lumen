@@ -212,7 +212,7 @@ M.catalog = {}
 local CATALOG_EV = {} --singleton origin for catalog events
 --register of names for tasks
 --tasknames[co]=name
-local tasknames = setmetatable({CATALOG_EV = CATALOG_EV}, weak_key)
+local tasknames = setmetatable({CATALOG_EV = CATALOG_EV}, { __mode = 'v' })
 
 --- Register a name for the current task
 -- @param name a name for the task
