@@ -448,7 +448,7 @@ end
 -- @param buff_mode Specifies how to behave when inserting in a full buffer. 
 -- 'drop first' means drop the oldest signals to make space. 'drop last' 
 -- or nil will skip the insertion in a full buffer. 
--- @param ... Array with the events to wait.
+-- @param ... Events to wait.
 -- @return a new waitd descriptor
 M.create_waitd = function ( emitter, timeout, buff_len, buff_mode, ... )
 	return {emitter = emitter,
