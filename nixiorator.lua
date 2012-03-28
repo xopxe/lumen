@@ -16,12 +16,16 @@ local M = {}
 
 local function client(polle)
 	local skt=polle.fd
-	local data=polle.it()
+	local data,code,msg=polle.it()
 	if data then 
 		sched.signal(skt, data)
 	else
-		M.unregister(skt)
-		sched.signal(skt, nil, 'closed')
+        --11: 'Resource temporarily unavailable'
+        if code and code~=11 then 
+		    M.unregister(skt)
+		    sched.signal(skt, nil, 'closed')
+            os.exit()
+        end
 	end
 end
 
@@ -64,7 +68,7 @@ end
 M.register_client = function (fd, block)
 	local polle={
 		fd=fd, 
-		events=nixio.poll_flags("in"), 
+		events=nixio.poll_flags("in", "pri"), 
 		block=block or 8192,
 		handler=client
 	}
@@ -98,7 +102,7 @@ end
 M.step = function (timeout)
 	timeout=timeout or -1
 	local stat= nixio.poll(pollt, timeout*1000)
-	if stat and stat > 0 then
+	if stat and tonumber(stat) > 0 then
 		for _, polle in ipairs(pollt) do
 			if polle.revents and polle.revents ~= 0 then 
 				polle:handler()
