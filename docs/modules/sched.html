@@ -238,7 +238,7 @@
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">for name, task in sched.catalog.tasks() do 
+        <pre class="example">for name, task in sched.catalog.iterator() do 
 	print(name, task) 
 end</pre>
     </ul>
@@ -488,7 +488,7 @@ end</pre>
        <li><code><em>buff_mode</em></code>:  Specifies how to behave when inserting in a full buffer. 
  'drop first' means drop the oldest signals to make space. 'drop last' 
  or nil will skip the insertion in a full buffer.</li>
-       <li><code><em>...</em></code>:  Array with the events to wait.</li>
+       <li><code><em>...</em></code>:  Events to wait.</li>
     </ul>
 
 
