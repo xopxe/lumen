@@ -118,7 +118,6 @@ end
 -- @usage local sched = require "sched"
 --local nixiorator = require "nixiorator"
 --local n = sched.run(nixiorator.task)
--- @param timeout Max allowed blocking time.
 M.task = function ()
 	sched.catalog.register('nixiorator')
 	while true do

@@ -123,7 +123,6 @@ end
 -- @usage local sched = require 'sched'
 --local socketter = require 'socketeer'
 --local n = sched.run(socketeer.task)
--- @param timeout Max allowed blocking time.
 M.task = function ()
 	sched.catalog.register('socketeer')
 	while true do
