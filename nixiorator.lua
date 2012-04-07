@@ -22,7 +22,7 @@ local function client(polle)
 	else
 		--11: 'Resource temporarily unavailable'
 		--print('!!!!!',data,code,msg)
-		if (code==nil and skt.is_socket()) 
+		if (code==nil) 
         or (code and code~=11) then 
 		    M.unregister(skt)
 		    sched.signal(skt, nil, 'closed')
