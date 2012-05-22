@@ -65,16 +65,16 @@
 </span>
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
 
-sched.run(<span class="keyword">function</span>() 
+sched.run(<span class="keyword">function</span>()
 	sched.catalog.register(<span class="string">'main'</span>)
-	<span class="keyword">local</span> A=sched.run(<span class="keyword">function</span>() 
+	<span class="keyword">local</span> A=sched.run(<span class="keyword">function</span>()
 		sched.catalog.register(<span class="string">'A'</span>)
 		sched.sleep(<span class="number">2</span>)
 		<span class="global">print</span>(<span class="string">"A says: emittig 'ev, data!'"</span>)
 		sched.signal(<span class="string">'ev'</span>, <span class="string">'data!'</span>)
 		<span class="global">print</span>(<span class="string">"A says: finishing"</span>)
 	<span class="keyword">end</span>)
-	<span class="keyword">local</span> B=sched.run(<span class="keyword">function</span>() 
+	<span class="keyword">local</span> B=sched.run(<span class="keyword">function</span>()
 		sched.catalog.register(<span class="string">'B'</span>)
 		<span class="keyword">local</span> A = sched.catalog.waitfor(<span class="string">'A'</span>)
 		<span class="global">print</span> (<span class="string">"B says: A found at"</span>, A)

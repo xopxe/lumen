@@ -66,8 +66,8 @@
 <h1>Module <code>sched</code></h1>
 
 <p>Lumen cooperative scheduler.</p>
-<p> Lumen (Lua Multitasking Environment) is a simple environment 
- for coroutine based multitasking. Consists of a signal scheduler, 
+<p> Lumen (Lua Multitasking Environment) is a simple environment
+ for coroutine based multitasking. Consists of a signal scheduler,
  and that's it.</p>
     <h3>Usage:</h3>
     <ul>
@@ -242,8 +242,8 @@
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">for name, task in sched.catalog.iterator() do 
-	print(name, task) 
+        <pre class="example">for name, task in sched.catalog.iterator() do
+	print(name, task)
 end</pre>
     </ul>
 
@@ -269,9 +269,9 @@ end</pre>
 
     <h3>Fields:</h3>
     <ul>
-       <li><code><em>write</em></code>:  writes to the pipe. Will block when writing to a full pipe. 
+       <li><code><em>write</em></code>:  writes to the pipe. Will block when writing to a full pipe.
  Return true on success, nil, 'timeout' on timeout</li>
-       <li><code><em>read</em></code>:  reads from the pipe. Will block on a empty pipe. 
+       <li><code><em>read</em></code>:  reads from the pipe. Will block on a empty pipe.
  Return data if available, nil, 'timeout' on timeout</li>
     </ul>
 
@@ -290,7 +290,7 @@ end</pre>
     <ul>
        <li><code><em>name</em></code>:  a name for the pipe</li>
        <li><code><em>size</em></code>:  maximum number of signals in the pipe</li>
-       <li><code><em>timeout</em></code>:  timeout for blocking on pipe operations. -1 or nil disable 
+       <li><code><em>timeout</em></code>:  timeout for blocking on pipe operations. -1 or nil disable
  timeout</li>
     </ul>
 
@@ -331,8 +331,8 @@ end</pre>
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">for name, pipe in sched.pipes.tasks() do 
-	print(name, pipe) 
+        <pre class="example">for name, pipe in sched.pipes.tasks() do
+	print(name, pipe)
 end</pre>
     </ul>
 
@@ -353,9 +353,9 @@ end</pre>
     </dt>
     <dd>
     task dying event. 
- This event will be emitted when a task dies. When the task dies a natural 
- death (finishes), the first parameter is true, followed by 
- the task returns. Otherwise, the first parameter is nil and the second 
+ This event will be emitted when a task dies. When the task dies a natural
+ death (finishes), the first parameter is true, followed by
+ the task returns. Otherwise, the first parameter is nil and the second
  is 'killed' if the task was killed, or the error message if the task errore'd.
 
 
@@ -388,9 +388,9 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
     </dt>
     <dd>
     Create and run a task. 
- The task will emit a sched.EVENT<em>DIE, true, params... 
- signal upon normal finalization, were params are the returns of f. 
- If there is a error, the task will emit a sched.EVENT</em>DIE, false, err were 
+ The task will emit a sched.EVENT<em>DIE, true, params...
+ signal upon normal finalization, were params are the returns of f.
+ If there is a error, the task will emit a sched.EVENT</em>DIE, false, err were
  err is the error message.
 
     <h3>Parameters:</h3>
@@ -506,12 +506,12 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
  task originating the signal we wait for. If nil, will
  only return on timeout. If '*', means anyone.</li>
        <li><code><em>timeout</em></code>:  Time to wait. nil or negative waits for ever.</li>
-       <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing 
- signals that arrived while the task is not blocked on the wait descriptor. 
- Whenever there is an attempt to insert in a full buffer, the buffer.dropped 
+       <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing
+ signals that arrived while the task is not blocked on the wait descriptor.
+ Whenever there is an attempt to insert in a full buffer, the buffer.dropped
  flag is set. nil o 0 disables, negative means no length limit.</li>
-       <li><code><em>buff_mode</em></code>:  Specifies how to behave when inserting in a full buffer. 
- 'drop first' means drop the oldest signals to make space. 'drop last' 
+       <li><code><em>buff_mode</em></code>:  Specifies how to behave when inserting in a full buffer.
+ 'drop first' means drop the oldest signals to make space. 'drop last'
  or nil will skip the insertion in a full buffer.</li>
        <li><code><em>...</em></code>:  Events to wait.</li>
     </ul>
@@ -530,8 +530,8 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
     </dt>
     <dd>
     Wait for a signal. 
- Pauses the task until (one of) the specified signal(s) is available. 
- If there are signals in the buffer, will return the first immediately. 
+ Pauses the task until (one of) the specified signal(s) is available.
+ If there are signals in the buffer, will return the first immediately.
  Otherwise will block the task until signal arrival, or a timeout.
 
     <h3>Parameters:</h3>
@@ -595,12 +595,12 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
     <strong>idle&nbsp;(t)</strong>
     </dt>
     <dd>
-    Idle function. <br/>
- Function called by the scheduler when there is 
- nothing else to do (e.g., all tasks are waiting for a signal). 
- This function should idle up to t time units. Replace with 
- whatever your app uses. LuaSocket's sleep works just fine. 
- It is allowed to idle for less than t; the empty function will 
+    Idle function. 
+ Function called by the scheduler when there is
+ nothing else to do (e.g., all tasks are waiting for a signal).
+ This function should idle up to t time units. Replace with
+ whatever your app uses. LuaSocket's sleep works just fine.
+ It is allowed to idle for less than t; the empty function will
  result in a busy wait. Defaults to execution of Linux's "sleep" command.
 
     <h3>Parameters:</h3>
@@ -618,7 +618,7 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
     </dt>
     <dd>
     Function used by the scheduler to get current time. 
- Replace with whatever your app uses. LuaSocket's gettime works just fine. 
+ Replace with whatever your app uses. LuaSocket's gettime works just fine.
  Defaults to os.time.
 
 
@@ -637,7 +637,7 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
 
     <h3>Returns:</h3>
     <ol>
-        the idle time available until more activity is expected; this 
+        the idle time available until more activity is expected; this
  means it will be 0 if there are active tasks.
     </ol>
 
@@ -648,8 +648,8 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
     <strong>go&nbsp;()</strong>
     </dt>
     <dd>
-    Starts the scheduler. <br/>
- Will run until there is no more activity, i.e. there's no active task, 
+    Starts the scheduler. 
+ Will run until there is no more activity, i.e. there's no active task,
  and none of the waiting tasks has a timeout set.
 
 
@@ -669,11 +669,11 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
     Wait descriptor. 
  Specifies a condition on which wait. Includes a signal description,
  a optional timeout specification and buffer configuration.
- A wait descriptor can be reused (for example, when waiting inside a 
- loop) and shared amongst different tasks. If a wait descriptor changes 
- while there is a task waiting, the behavior is unspecified. Notice that 
- when sharing a wait descriptor between several tasks, the buffer is 
- associated to the wait descriptor, and tasks will service buffered signals 
+ A wait descriptor can be reused (for example, when waiting inside a
+ loop) and shared amongst different tasks. If a wait descriptor changes
+ while there is a task waiting, the behavior is unspecified. Notice that
+ when sharing a wait descriptor between several tasks, the buffer is
+ associated to the wait descriptor, and tasks will service buffered signals
  on first request basis.
  Can use @{create_waitd} to create this table.
 
@@ -682,12 +682,12 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
        <li><code><em>emitter</em></code>:  optional, task originating the signal we wait for. If nil, will
  only return on timeout. If '*', means anyone.</li>
        <li><code><em>timeout</em></code>:  optional, time to wait. nil or negative waits for ever.</li>
-       <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing 
- signals that arrived while the task is not blocked on the wait descriptor. 
- Whenever there is an attempt to insert in a full buffer, the buffer.dropped 
+       <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing
+ signals that arrived while the task is not blocked on the wait descriptor.
+ Whenever there is an attempt to insert in a full buffer, the buffer.dropped
  flag is set. nil o 0 disables, negative means no length limit.</li>
-       <li><code><em>buff_mode:</em></code>:  Specifies how to behave when inserting in a full buffer. 
- 'drop first' means drop the oldest signals to make space. 'drop last' 
+       <li><code><em>buff_mode:</em></code>:  Specifies how to behave when inserting in a full buffer.
+ 'drop first' means drop the oldest signals to make space. 'drop last'
  or nil will skip the insertion in a full buffer.</li>
        <li><code><em>events</em></code>:  optional, array with the events to wait.</li>
     </ul>
