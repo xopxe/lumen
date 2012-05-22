@@ -4,7 +4,6 @@
 
 local sched = require "sched"
 
-
 sched.run(function() 
 	sched.catalog.register('main')
 	local A=sched.run(function() 
@@ -19,7 +18,7 @@ sched.run(function()
 		local A = sched.catalog.waitfor('A')
 		print ("B says: A found at", A)
 		print ("B says: waiting for a 'die' from A")
-		local _, status = sched.wait({emitter=A, events={'die'}})
+		local _, status = sched.wait({emitter=A, events={sched.EVENT_DIE}})
 		print ("B says: received a 'die' from A")
 		print ("B says: going to error with message 'xxx'")
 		error('xxx')

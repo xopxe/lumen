@@ -111,6 +111,10 @@
 <h2><a href="#Scheduler_operations">Scheduler operations</a></h2>
 <table class="function_list">
 	<tr>
+	<td class="name" nowrap><a href="#EVENT_DIE">EVENT_DIE</a></td>
+	<td class="summary">task dying event.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#to_clean_up">to_clean_up</a></td>
 	<td class="summary">control memory collection.</td>
 	</tr>
@@ -344,6 +348,27 @@ end</pre>
      Main API of the scheduler.
     <dl class="function">
     <dt>
+    <a name = "EVENT_DIE"></a>
+    <strong>EVENT_DIE</strong>
+    </dt>
+    <dd>
+    task dying event. 
+ This event will be emitted when a task dies. When the task dies a natural 
+ death (finishes), the first parameter is true, followed by 
+ the task returns. Otherwise, the first parameter is nil and the second 
+ is 'killed' if the task was killed, or the error message if the task errore'd.
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">--prints each time a task dies
+sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
+    </ul>
+
+
+
+</dd>
+    <dt>
     <a name = "to_clean_up"></a>
     <strong>to_clean_up</strong>
     </dt>
@@ -363,9 +388,9 @@ end</pre>
     </dt>
     <dd>
     Create and run a task. 
- The task will emit a 'die', true, params... 
+ The task will emit a sched.EVENT<em>DIE, true, params... 
  signal upon normal finalization, were params are the returns of f. 
- If there is a error, the task will emit a 'die', false, err were 
+ If there is a error, the task will emit a sched.EVENT</em>DIE, false, err were 
  err is the error message.
 
     <h3>Parameters:</h3>
@@ -440,7 +465,7 @@ end</pre>
     </dt>
     <dd>
     Finishes a task. 
- The killed task will emit a signal 'die', false, 'killed'
+ The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
 
     <h3>Parameters:</h3>
     <ul>

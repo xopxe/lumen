@@ -65,7 +65,6 @@
 </span>
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
 
-
 sched.run(<span class="keyword">function</span>() 
 	sched.catalog.register(<span class="string">'main'</span>)
 	<span class="keyword">local</span> A=sched.run(<span class="keyword">function</span>() 
@@ -80,7 +79,7 @@ sched.run(<span class="keyword">function</span>()
 		<span class="keyword">local</span> A = sched.catalog.waitfor(<span class="string">'A'</span>)
 		<span class="global">print</span> (<span class="string">"B says: A found at"</span>, A)
 		<span class="global">print</span> (<span class="string">"B says: waiting for a 'die' from A"</span>)
-		<span class="keyword">local</span> _, status = sched.wait({emitter=A, events={<span class="string">'die'</span>}})
+		<span class="keyword">local</span> _, status = sched.wait({emitter=A, events={sched.EVENT_DIE}})
 		<span class="global">print</span> (<span class="string">"B says: received a 'die' from A"</span>)
 		<span class="global">print</span> (<span class="string">"B says: going to error with message 'xxx'"</span>)
 		error(<span class="string">'xxx'</span>)

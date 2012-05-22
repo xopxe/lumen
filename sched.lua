@@ -20,6 +20,10 @@ local queue = require 'queue'
 
 local weak_key = { __mode = 'k' }
 
+--local event_die = {} --singleton event for dying tasks
+local event_die = setmetatable({}, {__tostring=function() return "DIE" end})
+
+
 --table containing all the registered tasks.
 --tasks[task]=taskd
 --taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'killed'}
@@ -123,10 +127,10 @@ step_task = function(t, ...)
 		tasks[t]=nil
 		if ok then 
 			--print('task return:', t, ret)
-			return emit_signal(t, 'die', true, ret) 
+			return emit_signal(t, event_die, true, ret)
 		else
 			--print('task error:', t, ret)
-			return emit_signal(t, 'die', false, ret)
+			return emit_signal(t, event_die, nil, ret)
 		end
 	end
 end
@@ -368,15 +372,24 @@ end
 -- Main API of the scheduler.
 -- @section scheduler
 
+--- task dying event.
+-- This event will be emitted when a task dies. When the task dies a natural 
+-- death (finishes), the first parameter is true, followed by 
+-- the task returns. Otherwise, the first parameter is nil and the second 
+-- is 'killed' if the task was killed, or the error message if the task errore'd.
+-- @usage --prints each time a task dies
+--sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})
+M.EVENT_DIE = event_die
+
 --- control memory collection.
 -- number of new insertions in waiting[event] before triggering clean_up.
 -- Defaults to 1000
 M.to_clean_up = 1000
 
 --- Create and run a task.
--- The task will emit a 'die', true, params... 
+-- The task will emit a sched.EVENT_DIE, true, params... 
 -- signal upon normal finalization, were params are the returns of f. 
--- If there is a error, the task will emit a 'die', false, err were 
+-- If there is a error, the task will emit a sched.EVENT_DIE, false, err were 
 -- err is the error message.
 -- @param f function for the task
 -- @param ... parameters passed to f upon first run
@@ -418,14 +431,14 @@ M.sigrunonce = function ( f, waitd )
 end
 
 --- Finishes a task.
--- The killed task will emit a signal 'die', false, 'killed'
+-- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
 -- @param t task to terminate. If nil, terminates the current task.
 M.kill = function ( t )
 	t=t or coroutine.running()
 	--print('kill',t,tasks[t])
 	tasks[t].status = 'killed'
 	tasks[t] = nil
-	emit_signal(t, 'die', false, 'killed')
+	emit_signal(t, event_die, false, 'killed')
 end
 
 --- Emit a signal.
