@@ -1,5 +1,5 @@
 ---
--- A task that interfaces with nixio. Supports UDP, TCP and async 
+-- A task that interfaces with nixio. Supports UDP, TCP and async
 -- file I/O.
 -- Should run as root or sudo, for reading /dev/input/mice
 
@@ -17,7 +17,7 @@ if nixio.gettime then
 	sched.get_time = nixio.gettime
 end
 
-sched.run(function() 
+sched.run(function()
 	nixiorator.register_client(udprecv, 1500)
 	nixiorator.register_client(fdrecv, 10)
 	local nxtask = sched.run(nixiorator.task)
@@ -32,9 +32,9 @@ sched.run(function()
 		while true do
 			local skt, msg, inskt  = sched.wait(waitd)
 			print ("#", os.time(), skt, msg, inskt )
-			if msg=='accepted' then 
-				sched.sigrun(function(skt, data, err) 
-					print("!T", skt, data, err) 
+			if msg=='accepted' then
+				sched.sigrun(function(skt, data, err)
+					print("!T", skt, data, err)
 					if not data then sched.kill() end
 				end, {emitter=nxtask, events={inskt}})
 			end

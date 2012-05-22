@@ -21,7 +21,7 @@ assert(udpsend:setpeername("127.0.0.1", 8888))
 sched.get_time = socket.gettime
 sched.idle = socket.sleep
 
-sched.run(function() 
+sched.run(function()
 	sched.catalog.register('MAIN')
 	local s = sched.run(socketeer.task)
 	print('SOCKETEER',s)
@@ -46,12 +46,12 @@ sched.run(function()
 		sched.catalog.register('TCPLISTEN')
 		local server = assert(socket.bind('127.0.0.1', 8888))
 		socketeer.register_server(server, 3)--'*a')
-		while true do 
+		while true do
 			local skt, msg, inskt  = sched.wait({emitter=s, events={server}})
 			--print ("#", skt, msg, inskt )
-			if msg=='accepted' then 
-				sched.sigrun(function(_, d, e) 
-					print("!T", d, e or '') 
+			if msg=='accepted' then
+				sched.sigrun(function(_, d, e)
+					print("!T", d, e or '')
 				end, {emitter=s, events={inskt}})
 			end
 		end

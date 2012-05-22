@@ -1,6 +1,6 @@
 --- Lumen cooperative scheduler.
--- Lumen (Lua Multitasking Environment) is a simple environment 
--- for coroutine based multitasking. Consists of a signal scheduler, 
+-- Lumen (Lua Multitasking Environment) is a simple environment
+-- for coroutine based multitasking. Consists of a signal scheduler,
 -- and that's it.
 -- @module sched
 -- @usage local sched = require 'sched'
@@ -9,7 +9,7 @@
 --get locals for some useful things
 local pairs, ipairs, next, coroutine, setmetatable, os
 	= pairs, ipairs, next, coroutine, setmetatable, os
-	
+
 table.pack=table.pack or function (...)
 	return {n=select('#',...),...}
 end
@@ -43,9 +43,9 @@ local step_task
 --changes the status of a task from waiting to active (if everything is right)
 local wake_up = function (task, waitd)
 	local taskd = tasks[task]
-	if not taskd or taskd.status~='ready' 
-	or (waitd and waitd~=taskd.waitingfor) then 
-		return false 
+	if not taskd or taskd.status~='ready'
+	or (waitd and waitd~=taskd.waitingfor) then
+		return false
 	end
 
 	taskd.waketime = nil
@@ -56,10 +56,10 @@ end
 local to_buffer = function (waitd, event, ...)
 	local buff_len = waitd.buff_len
 	--print('add to buffer',buff_len,waitd, event, ...)
-	if buff_len and buff_len~=0 then 
+	if buff_len and buff_len~=0 then
 		waitd.buff = waitd.buff or queue:new()
 		local buff=waitd.buff
-		if buff_len<0 then 
+		if buff_len<0 then
 			buff:pushright(table.pack(event, ...))
 		else
 			local overpopulation = buff:len()-buff_len
@@ -84,13 +84,13 @@ local to_buffer = function (waitd, event, ...)
 	end
 end
 
---iterates over a list of tasks sending them events. the iteration is split as the 
+--iterates over a list of tasks sending them events. the iteration is split as the
 --list can change during iteration. it also sees if a event should be buffered
 local walktasks = function (waitingtasks, event, ...)
 	local waked_up, bufferable = {}, {}
 	for task, waitd in pairs(waitingtasks) do
 		--print('',':',task, waitd, waiting[task])
-		if wake_up( task, waitd ) then 
+		if wake_up( task, waitd ) then
 			waked_up[task]=waitd
 		else
 			bufferable[waitd] = true
@@ -111,7 +111,7 @@ end
 local emit_signal = function (emitter, event, ...)
 	--print('emitsignal',emitter, waiting[event], event, ...)
 	local onevent=waiting[event]
-	if onevent then 
+	if onevent then
 		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
 		if waiting1 then walktasks(waiting1, event, ...) end
 		if waiting2 then walktasks(waiting2, event, ...) end
@@ -120,12 +120,12 @@ end
 
 ---
 -- resumes a task and handles finalization conditions
--- @local 
+-- @local
 step_task = function(t, ...)
 	local ok, ret = coroutine.resume(t, ...)
 	if tasks[t] and coroutine.status(t)=='dead' then
 		tasks[t]=nil
-		if ok then 
+		if ok then
 			--print('task return:', t, ret)
 			return emit_signal(t, event_die, true, ret)
 		else
@@ -164,15 +164,15 @@ local register_signal = function(task, waitd)
 	local taskd = tasks[task]
 	taskd.waitingfor = waitd
 
-	if timeout and timeout>=0 then 
-		local t = timeout + M.get_time() 
+	if timeout and timeout>=0 then
+		local t = timeout + M.get_time()
 		taskd.waketime = t
 		next_waketime = next_waketime or t
 		if t<next_waketime then next_waketime=t end
 	end
 	--print('registersignal', task, emitter, timeout, #events)
 
-	if events and emitter then 
+	if events and emitter then
 		for _, event in ipairs(events) do
 			--print('',':', event)
 			waiting[event]=waiting[event] or setmetatable({}, weak_key)
@@ -191,7 +191,7 @@ end
 
 local emit_timeout = function (task)
 	--print('emittimeout',task)
-	if wake_up( task ) then 
+	if wake_up( task ) then
 		step_task(task, nil, 'timeout')
 	end
 end
@@ -199,8 +199,8 @@ end
 --aux. function, computes time>=0 until next_waketime, nil if no next_waketime
 local compute_available_time = function()
 	local available_time
-	if next_waketime then 
-		available_time=next_waketime-M.get_time() 
+	if next_waketime then
+		available_time=next_waketime-M.get_time()
 		if available_time<0 then available_time=0 end
 	end
 	return available_time
@@ -242,9 +242,9 @@ M.catalog.waitfor = function ( name, timeout )
 	--print('catalog query', coroutine.running(), name, timeout, co)
 	if co then
 		return co
-	else 
+	else
 		local _, action, received_co = M.wait({emitter=CATALOG_EV, timeout=timeout, events={name}})
-		if action == 'registered' then 
+		if action == 'registered' then
 			return received_co
 		else
 			return nil, 'timeout'
@@ -254,8 +254,8 @@ end
 
 --- Iterator for registered tasks.
 -- @return iterator
--- @usage for name, task in sched.catalog.iterator() do 
---	print(name, task) 
+-- @usage for name, task in sched.catalog.iterator() do
+--	print(name, task)
 --end
 M.catalog.iterator = function ()
 	return function (_, v) return next(tasknames, v) end
@@ -272,9 +272,9 @@ M.pipes={}
 ------
 -- Pipe descriptor.
 -- A named pipe.
--- @field write writes to the pipe. Will block when writing to a full pipe. 
+-- @field write writes to the pipe. Will block when writing to a full pipe.
 -- Return true on success, nil, 'timeout' on timeout
--- @field read reads from the pipe. Will block on a empty pipe. 
+-- @field read reads from the pipe. Will block on a empty pipe.
 -- Return data if available, nil, 'timeout' on timeout
 -- @table piped
 
@@ -286,7 +286,7 @@ local pipes =  setmetatable({}, { __mode = 'kv' })
 --- Create a new pipe.
 -- @param name a name for the pipe
 -- @param size maximum number of signals in the pipe
--- @param timeout timeout for blocking on pipe operations. -1 or nil disable 
+-- @param timeout timeout for blocking on pipe operations. -1 or nil disable
 -- timeout
 -- @return the pipe descriptor (see @{piped}) on success, or nil,'exists' if a pipe
 -- with the given name already exists
@@ -334,7 +334,7 @@ M.pipes.new = function(name, size, timeout)
 		M.signal(pipe_data, ...)
 		return true
 	end
-	
+
 	pipes[name]=piped
 	emit_signal(PIPES_EV, name, 'created', piped)
 	return piped
@@ -346,11 +346,11 @@ end
 -- @param timeout max. time time to wait. -1 or nil disables timeout.
 M.pipes.waitfor = function(name, timeout)
 	local piped = pipes[name]
-	if piped then 
+	if piped then
 		return piped
 	else
 		local _, action, received_piped= M.wait({emitter=PIPES_EV, timeout=timeout, events={name}})
-		if action == 'created' then 
+		if action == 'created' then
 			return received_piped
 		else
 			return nil, 'timeout'
@@ -360,8 +360,8 @@ end
 
 --- Iterator for all pipes
 -- @return iterator
--- @usage for name, pipe in sched.pipes.tasks() do 
---	print(name, pipe) 
+-- @usage for name, pipe in sched.pipes.tasks() do
+--	print(name, pipe)
 --end
 M.pipes.iterator = function ()
 	return function (_, v) return next(pipes, v) end
@@ -373,9 +373,9 @@ end
 -- @section scheduler
 
 --- task dying event.
--- This event will be emitted when a task dies. When the task dies a natural 
--- death (finishes), the first parameter is true, followed by 
--- the task returns. Otherwise, the first parameter is nil and the second 
+-- This event will be emitted when a task dies. When the task dies a natural
+-- death (finishes), the first parameter is true, followed by
+-- the task returns. Otherwise, the first parameter is nil and the second
 -- is 'killed' if the task was killed, or the error message if the task errore'd.
 -- @usage --prints each time a task dies
 --sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})
@@ -387,9 +387,9 @@ M.EVENT_DIE = event_die
 M.to_clean_up = 1000
 
 --- Create and run a task.
--- The task will emit a sched.EVENT_DIE, true, params... 
--- signal upon normal finalization, were params are the returns of f. 
--- If there is a error, the task will emit a sched.EVENT_DIE, false, err were 
+-- The task will emit a sched.EVENT_DIE, true, params...
+-- signal upon normal finalization, were params are the returns of f.
+-- If there is a error, the task will emit a sched.EVENT_DIE, false, err were
 -- err is the error message.
 -- @param f function for the task
 -- @param ... parameters passed to f upon first run
@@ -454,13 +454,13 @@ end
 -- task originating the signal we wait for. If nil, will
 -- only return on timeout. If '*', means anyone.
 -- @param timeout Time to wait. nil or negative waits for ever.
--- @param buff_len Maximum length of the buffer. A buffer allows for storing 
--- signals that arrived while the task is not blocked on the wait descriptor. 
--- Whenever there is an attempt to insert in a full buffer, the buffer.dropped 
+-- @param buff_len Maximum length of the buffer. A buffer allows for storing
+-- signals that arrived while the task is not blocked on the wait descriptor.
+-- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
 -- flag is set. nil o 0 disables, negative means no length limit.
--- @param buff_mode Specifies how to behave when inserting in a full buffer. 
--- 'drop first' means drop the oldest signals to make space. 'drop last' 
--- or nil will skip the insertion in a full buffer. 
+-- @param buff_mode Specifies how to behave when inserting in a full buffer.
+-- 'drop first' means drop the oldest signals to make space. 'drop last'
+-- or nil will skip the insertion in a full buffer.
 -- @param ... Events to wait.
 -- @return a new waitd descriptor
 M.create_waitd = function ( emitter, timeout, buff_len, buff_mode, ... )
@@ -473,15 +473,15 @@ M.create_waitd = function ( emitter, timeout, buff_len, buff_mode, ... )
 end
 
 --- Wait for a signal.
--- Pauses the task until (one of) the specified signal(s) is available. 
--- If there are signals in the buffer, will return the first immediately. 
+-- Pauses the task until (one of) the specified signal(s) is available.
+-- If there are signals in the buffer, will return the first immediately.
 -- Otherwise will block the task until signal arrival, or a timeout.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
 	local my_task = coroutine.running()
-	
+
 	--if there are buffered signals, service the first
-	local buff = waitd.buff 
+	local buff = waitd.buff
 	if buff and buff:len()> 0 then
 		local ret = buff:popleft()
 		--print('W from buff')
@@ -520,12 +520,12 @@ M.yield = function ()
 	return coroutine.yield( my_task )
 end
 
---- Idle function. 
--- Function called by the scheduler when there is 
--- nothing else to do (e.g., all tasks are waiting for a signal). 
--- This function should idle up to t time units. Replace with 
--- whatever your app uses. LuaSocket's sleep works just fine. 
--- It is allowed to idle for less than t; the empty function will 
+--- Idle function.
+-- Function called by the scheduler when there is
+-- nothing else to do (e.g., all tasks are waiting for a signal).
+-- This function should idle up to t time units. Replace with
+-- whatever your app uses. LuaSocket's sleep works just fine.
+-- It is allowed to idle for less than t; the empty function will
 -- result in a busy wait. Defaults to execution of Linux's "sleep" command.
 -- @param t time to idle
 M.idle = function (t)
@@ -534,23 +534,23 @@ M.idle = function (t)
 end
 
 --- Function used by the scheduler to get current time.
--- Replace with whatever your app uses. LuaSocket's gettime works just fine. 
+-- Replace with whatever your app uses. LuaSocket's gettime works just fine.
 -- Defaults to os.time.
 -- @function get_time
 M.get_time = os.time
 
 local cycleready, cycletimeout = {}, {}
 --- Runs a single step of the scheduler.
--- @return the idle time available until more activity is expected; this 
+-- @return the idle time available until more activity is expected; this
 -- means it will be 0 if there are active tasks.
 M.step = function ()
 	next_waketime = nil
 
 	--find tasks ready to run (active) and ready to wakeup by timeout
 	for task, taskd in pairs (tasks) do
-		if taskd.waitingfor then 
+		if taskd.waitingfor then
 			local waketime = taskd.waketime
-			if waketime then 
+			if waketime then
 				next_waketime = next_waketime or waketime
 				if waketime <= M.get_time() then
 					cycletimeout[#cycletimeout+1]=task
@@ -572,7 +572,7 @@ M.step = function ()
 	end
 
 	--step active tasks (keeping track of impending timeouts)
-	--active means they yielded, so they receive as parameters timing data 
+	--active means they yielded, so they receive as parameters timing data
 	--see sched.yield()
 	if ncycleready==1 then
 		local available_time = compute_available_time()
@@ -587,7 +587,7 @@ M.step = function ()
 	end
 
 	--calculate available idle time to be returned
-	if ncycletimeout==0 and ncycleready==0 then 
+	if ncycletimeout==0 and ncycleready==0 then
 		if not next_waketime then
 			return nil
 		else
@@ -600,14 +600,14 @@ M.step = function ()
 	return 0
 end
 
---- Starts the scheduler. 
--- Will run until there is no more activity, i.e. there's no active task, 
+--- Starts the scheduler.
+-- Will run until there is no more activity, i.e. there's no active task,
 -- and none of the waiting tasks has a timeout set.
 M.go = function ()
 	repeat
 		local idle_time = M.step()
 		if idle_time and idle_time>0 then
-			M.idle( idle_time ) 
+			M.idle( idle_time )
 		end
 	until not idle_time
 end
@@ -620,23 +620,23 @@ end
 -- Wait descriptor.
 -- Specifies a condition on which wait. Includes a signal description,
 -- a optional timeout specification and buffer configuration.
--- A wait descriptor can be reused (for example, when waiting inside a 
--- loop) and shared amongst different tasks. If a wait descriptor changes 
--- while there is a task waiting, the behavior is unspecified. Notice that 
--- when sharing a wait descriptor between several tasks, the buffer is 
--- associated to the wait descriptor, and tasks will service buffered signals 
+-- A wait descriptor can be reused (for example, when waiting inside a
+-- loop) and shared amongst different tasks. If a wait descriptor changes
+-- while there is a task waiting, the behavior is unspecified. Notice that
+-- when sharing a wait descriptor between several tasks, the buffer is
+-- associated to the wait descriptor, and tasks will service buffered signals
 -- on first request basis.
 -- Can use @\{create_waitd} to create this table.
 -- @field emitter optional, task originating the signal we wait for. If nil, will
 -- only return on timeout. If '*', means anyone.
 -- @field timeout optional, time to wait. nil or negative waits for ever.
--- @field buff_len Maximum length of the buffer. A buffer allows for storing 
--- signals that arrived while the task is not blocked on the wait descriptor. 
--- Whenever there is an attempt to insert in a full buffer, the buffer.dropped 
+-- @field buff_len Maximum length of the buffer. A buffer allows for storing
+-- signals that arrived while the task is not blocked on the wait descriptor.
+-- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
 -- flag is set. nil o 0 disables, negative means no length limit.
--- @field buff_mode: Specifies how to behave when inserting in a full buffer. 
--- 'drop first' means drop the oldest signals to make space. 'drop last' 
--- or nil will skip the insertion in a full buffer. 
+-- @field buff_mode: Specifies how to behave when inserting in a full buffer.
+-- 'drop first' means drop the oldest signals to make space. 'drop last'
+-- or nil will skip the insertion in a full buffer.
 -- @field events optional, array with the events to wait.
 -- @table waitd
 
