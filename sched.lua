@@ -330,9 +330,13 @@ M.pipes.new = function(name, size, timeout)
 	--blocks on no-readers, replaced in piped.read
 	piped.write = function (...)
 		local ret, _ = M.wait(waitd_enable)
+
 		if not ret then return nil, 'timeout' end
 		M.signal(pipe_data, ...)
 		return true
+	end
+	piped.len=function ()
+		return buff_data:len()
 	end
 	
 	pipes[name]=piped

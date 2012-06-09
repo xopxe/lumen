@@ -21,56 +21,100 @@ assert(udpsend:setpeername("127.0.0.1", 8888))
 sched.get_time = socket.gettime
 sched.idle = socket.sleep
 
-sched.run(function() 
-	sched.catalog.register('MAIN')
-	local s = sched.run(socketeer.task)
-	print('SOCKETEER',s)
+sched.sigrun(print, {emitter="*", events={sched.EVENT_DIE}})
 
-	--udp
-	---[[
-	socketeer.register_client(udprecv)
-	sched.sigrun(function(_, d) print("!U", d) end, {emitter=s, events={udprecv}})
-	sched.run(function()
-		while true do
-			sched.sleep(3)
-			local m="ping! "..os.time()
-			print("udp sending",m)
-			assert(udpsend:send(m))
-		end
-	end)
-	--]]
+local s = sched.run(socketeer.task)
+print('SOCKETEER',s)
 
-	---tcp
-	---[[
-	sched.run(function()
-		sched.catalog.register('TCPLISTEN')
-		local server = assert(socket.bind('127.0.0.1', 8888))
-		socketeer.register_server(server, 3)--'*a')
-		while true do 
-			local skt, msg, inskt  = sched.wait({emitter=s, events={server}})
-			--print ("#", skt, msg, inskt )
-			if msg=='accepted' then 
-				sched.sigrun(function(_, d, e) 
-					print("!T", d, e or '') 
-				end, {emitter=s, events={inskt}})
-			end
-		end
-	end)
-	sched.run(function()
-		sched.catalog.register('TCPSEND')
-		local tcpcli = socket.connect('127.0.0.1', 8888)
-		sched.sleep(1)
-		--local m=string.rep('x',7)
-		local m='1234567'
-		print("tcp sending",m)
-		assert(tcpcli:send(m))
-		sched.sleep(1)
-		local m='890'
-		print("tcp sending",m)
-		assert(tcpcli:send(m))
-		tcpcli:close()
-	end)
-	--]]
+--udp
+--[[
+socketeer.register_client(udprecv)
+sched.sigrun(function(_, d) print("!U", d) end, {emitter=s, events={udprecv}})
+sched.run(function()
+	while true do
+		sched.sleep(3)
+		local m="ping! "..os.time()
+		print("udp sending",m)
+		--assert(udpsend:send(m))
+		socketeer.async_send(udpsend, m)
+	end
 end)
+--]]
+
+---tcp
+--[[
+sched.run(function()
+	sched.catalog.register('TCPLISTEN')
+	local server = assert(socket.bind('127.0.0.1', 8888))
+	socketeer.register_server(server, 3)--'*a')
+	while true do 
+		local skt, msg, inskt  = sched.wait({emitter=s, events={server}})
+		--print ("#", skt, msg, inskt )
+		if msg=='accepted' then 
+			sched.sigrun(function(_, d, e) 
+				print("!T", d, e or '') 
+			end, {emitter=s, events={inskt}})
+		end
+	end
+end)
+sched.run(function()
+	sched.catalog.register('TCPSEND')
+	local tcpcli = socket.connect('127.0.0.1', 8888)
+	sched.sleep(1)
+	--local m=string.rep('x',7)
+	local m='1234567'
+	print("tcp sending",m)
+	assert(tcpcli:send(m))
+	sched.sleep(1)
+	local m='890'
+	print("tcp sending",m)
+	assert(tcpcli:send(m))
+	tcpcli:close()
+end)
+--]]
+
+--async
+---[[
+sched.run(function()
+	sched.catalog.register('TCPLISTEN')
+	local server = assert(socket.bind('127.0.0.1', 8888))
+	socketeer.register_server(server, 100)--'*a')
+	while true do 
+		local skt, msg, inskt  = sched.wait({emitter=s, events={server}})
+		--print ("#", skt, msg, inskt )
+		if msg=='accepted' then 
+			sched.sigrun(function(_, d, e) 
+				--print("!T", #d, e or '') 
+			end, {emitter=s, events={inskt}})
+		end
+	end
+end)
+sched.run(function()
+	local listener = sched.catalog.waitfor('TCPLISTEN')
+	local tcpcli = socket.connect('127.0.0.1', 8888)
+	local s=string.rep("x", 50000)
+
+	local tini, tfin
+
+	tini = socket.gettime()
+	for i=1,1000 do
+		assert(udpsend:send(s))
+		sched.yield()
+	end
+	tfin = socket.gettime()
+	print("sync:", tfin-tini)
+
+	tini = socket.gettime()
+	for i=1,1000 do
+--print("async",i)
+		socketeer.async_send(tcpcli, s)
+	end
+	tfin = socket.gettime()
+	print("async:", tfin-tini)
+
+	sched.kill(listener)
+end)
+--]]
+
 
 sched.go()
