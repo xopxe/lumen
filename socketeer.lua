@@ -47,23 +47,22 @@ local function send_from_pipe (skt)
 		local pipe = write_pipes[skt] ; if not pipe then return end
 --print('aB:',pipe.len())
 		local data = pipe.read()
-		while data do
---print("S p+" , #data)
+		if  data then 
+--print("S p+" , pipe.len(), #data)
 			local last , err, lasterr = skt:send(data, 1, CHUNK_SIZE)
 --print("S p-" , last,err, lasterr)
 			last = last or lasterr
 			if last < #data then
 				outstanding_data[skt] = {data=data,last=last}
-				return
 			end
-			data = pipe.read()
-		end
-		--emptied the outgoing pipe, stop selecting to write
-		for i=1, #sendt do
-			if sendt[i] == skt then
-				table.remove(sendt, i)
-				sendt[skt] = nil
-				break
+		else	
+			--emptied the outgoing pipe, stop selecting to write
+			for i=1, #sendt do
+				if sendt[i] == skt then
+					table.remove(sendt, i)
+					sendt[skt] = nil
+					break
+				end
 			end
 		end
 	end

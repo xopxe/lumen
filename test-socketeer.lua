@@ -78,7 +78,7 @@ end)
 sched.run(function()
 	sched.catalog.register('TCPLISTEN')
 	local server = assert(socket.bind('127.0.0.1', 8888))
-	socketeer.register_server(server, 100)--'*a')
+	socketeer.register_server(server, -1)--'*a')
 	while true do 
 		local skt, msg, inskt  = sched.wait({emitter=s, events={server}})
 		--print ("#", skt, msg, inskt )
@@ -95,9 +95,10 @@ sched.run(function()
 	local s=string.rep("x", 50000)
 
 	local tini, tfin
+	local count = 1000
 
 	tini = socket.gettime()
-	for i=1,1000 do
+	for i=1,count do
 		assert(udpsend:send(s))
 		sched.yield()
 	end
@@ -105,7 +106,7 @@ sched.run(function()
 	print("sync:", tfin-tini)
 
 	tini = socket.gettime()
-	for i=1,1000 do
+	for i=1,count do
 --print("async",i)
 		socketeer.async_send(tcpcli, s)
 	end
