@@ -406,8 +406,9 @@ M.run = function ( f, ... )
 	return co
 end
 
---- Run a task on a signal.
--- @param f function for the task
+--- Run a task that listens for a signal.
+-- @param f function to be called when the signal appears. the signal
+-- is passed to f as parameter.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
@@ -421,8 +422,9 @@ M.sigrun = function ( f, waitd )
 	return M.run( wrapper )
 end
 
---- Run a task on a signal, once.
--- @param f function for the task
+--- Run a task that listens for a signal, once.
+-- @param f function to be called when the signal appears. the signal
+-- is passed to f as parameter.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
