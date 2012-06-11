@@ -78,13 +78,15 @@ end)
 sched.run(function()
 	sched.catalog.register('TCPLISTEN')
 	local server = assert(socket.bind('127.0.0.1', 8888))
-	socketeer.register_server(server, -1)--'*a')
+	socketeer.register_server(server, 50000*100)--'*a')
 	while true do 
 		local skt, msg, inskt  = sched.wait({emitter=s, events={server}})
-		--print ("#", skt, msg, inskt )
+		print ("#", skt, msg, inskt )
 		if msg=='accepted' then 
+			--print("!T", #(d or ''), e or '')
 			sched.sigrun(function(_, d, e) 
-				--print("!T", #d, e or '') 
+				if e == 'closed' then sched.kill()  end
+				print('arrived!', #d)
 			end, {emitter=s, events={inskt}})
 		end
 	end
@@ -92,28 +94,30 @@ end)
 sched.run(function()
 	local listener = sched.catalog.waitfor('TCPLISTEN')
 	local tcpcli = socket.connect('127.0.0.1', 8888)
-	local s=string.rep("x", 50000)
+	sched.sleep(1)
 
 	local tini, tfin
-	local count = 1000
+	local count = 100
+	local s=string.rep("x", 50000)
+	local ss=string.rep(s, count)
 
+	print("sending sync...")
 	tini = socket.gettime()
 	for i=1,count do
-		assert(udpsend:send(s))
+		assert(tcpcli:send(s))
 		sched.yield()
 	end
 	tfin = socket.gettime()
 	print("sync:", tfin-tini)
 
+	print("sending async...")
 	tini = socket.gettime()
-	for i=1,count do
---print("async",i)
-		socketeer.async_send(tcpcli, s)
-	end
+	socketeer.async_send(tcpcli, ss)
 	tfin = socket.gettime()
 	print("async:", tfin-tini)
 
-	sched.kill(listener)
+	--tcpcli:close()
+	--sched.kill(listener)
 end)
 --]]
 
