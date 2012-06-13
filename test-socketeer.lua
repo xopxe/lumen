@@ -18,9 +18,6 @@ assert(udpsend:setsockname("127.0.0.1", 0))
 assert(udpsend:setpeername("127.0.0.1", 8888))
 --]]
 
-sched.get_time = socket.gettime
-sched.idle = socket.sleep
-
 sched.sigrun(print, {emitter="*", events={sched.EVENT_DIE}})
 
 local s = sched.run(socketeer.task)

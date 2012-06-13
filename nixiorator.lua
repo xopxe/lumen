@@ -9,6 +9,12 @@ local sched = require("sched")
 require ("nixio.util")
 local pollt={}
 
+-- replace sched's default get_time with nixio's (if available)
+if nixio.gettime and sched.get_time == os.time then
+	sched.get_time = nixio.gettime 
+end
+sched.idle = nixio.idle or sched.idle
+
 --get locals for some useful things
 local math, ipairs, table = math, ipairs, table 
 
