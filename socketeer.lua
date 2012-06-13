@@ -18,6 +18,12 @@ local sktmode = setmetatable({}, weak_key)
 local isserver = setmetatable({}, weak_key)
 local partial = setmetatable({}, weak_key)
 
+-- replace sched's default get_time with luasocket's
+if sched.get_time == os.time then
+	sched.get_time = socket.gettime 
+end
+sched.idle = socket.sleep
+
 local M = {socket=socket}
 
 --- Registers a TCP server socket with socketeer.

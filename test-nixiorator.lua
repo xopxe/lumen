@@ -12,11 +12,6 @@ local nixio = nixiorator.nixio
 local udprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'dgram'))
 local fdrecv = nixio.open('/dev/input/mice', nixio.open_flags('rdonly', 'sync'))
 
-sched.idle = nixio.idle or sched.idle
-if nixio.gettime then
-	sched.get_time = nixio.gettime
-end
-
 nixiorator.register_client(udprecv, 1500)
 nixiorator.register_client(fdrecv, 10)
 local nxtask = sched.run(nixiorator.task)
