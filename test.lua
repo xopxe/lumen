@@ -4,16 +4,16 @@
 
 local sched = require "sched"
 
-sched.run(function() 
+sched.run(function()
 	sched.catalog.register('main')
-	local A=sched.run(function() 
+	local A=sched.run(function()
 		sched.catalog.register('A')
 		sched.sleep(2)
 		print("A says: emittig 'ev, data!'")
 		sched.signal('ev', 'data!')
 		print("A says: finishing")
 	end)
-	local B=sched.run(function() 
+	local B=sched.run(function()
 		sched.catalog.register('B')
 		local A = sched.catalog.waitfor('A')
 		print ("B says: A found at", A)

@@ -64,7 +64,7 @@
 <h1>Module <code>nixiorator</code></h1>
 
 <p>Task for accessing nixio library.</p>
-<p> Nixiorator is a Lumen task that allow to interface with nixio. </p>
+<p> Nixiorator is a Lumen task that allow to interface with nixio.</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local nixiorator = require 'nixiorator'</pre>
@@ -118,8 +118,8 @@
     </dt>
     <dd>
     Registers a TCP server socket with nixiorator. 
- nixiorator will signal fd, 'accepted', client when establishing a connection, 
- where fd is the server socket and client is the new client socket. 
+ nixiorator will signal fd, 'accepted', client when establishing a connection,
+ where fd is the server socket and client is the new client socket.
  The client socket is automatically registered into nixiorator.
 
     <h3>Parameters:</h3>
@@ -186,11 +186,11 @@
     <strong>step&nbsp;(timeout)</strong>
     </dt>
     <dd>
-    Performs a single step for nixiorator. <br/>
- Will block at the OS level for up to timeout seconds. 
- Usually this method is not used (probably what you want is to 
+    Performs a single step for nixiorator. 
+ Will block at the OS level for up to timeout seconds.
+ Usually this method is not used (probably what you want is to
  register <a href="../modules/nixiorator.html#task">task</a> with the Lumen scheduler).
- Nixiorator will emit the signals from registered sockets 
+ Nixiorator will emit the signals from registered sockets
  (see <a href="../modules/nixiorator.html#register_server">register_server</a> and <a href="../modules/nixiorator.html#register_client">register_client</a>).
 
     <h3>Parameters:</h3>
@@ -208,7 +208,7 @@
     </dt>
     <dd>
     The function to be registered with the Lumen scheduler to receive the nixiorator signals. 
- Whe running, nixiorator will emit the signals from registered sockets 
+ Whe running, nixiorator will emit the signals from registered sockets
  (see <a href="../modules/nixiorator.html#register_server">register_server</a> and <a href="../modules/nixiorator.html#register_client">register_client</a>).
 
 
