@@ -122,15 +122,17 @@ end
 -- resumes a task and handles finalization conditions
 -- @local 
 step_task = function(t, ...)
-	local ok, ret = coroutine.resume(t, ...)
+	local ret = table.pack(coroutine.resume(t, ...))
 	if tasks[t] and coroutine.status(t)=='dead' then
 		tasks[t]=nil
+		local ok=ret[1]
+		local skip1ret = function(_, ...) return ... end
 		if ok then 
 			--print('task return:', t, ret)
-			return emit_signal(t, event_die, true, ret)
+			return emit_signal(t, event_die, true, skip1ret(unpack(ret)))
 		else
 			--print('task error:', t, ret)
-			return emit_signal(t, event_die, nil, ret)
+			return emit_signal(t, event_die, nil, skip1ret(unpack(ret)))
 		end
 	end
 end
