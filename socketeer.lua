@@ -14,8 +14,8 @@ local weak_key = { __mode = 'k' }
 
 local CHUNK_SIZE = 65536
 
---number of entries in pipe for asynchrous sending
-local ASYNC_SEND_BUFFER=3
+--size paramter for pipe for asynchrous sending
+local ASYNC_SEND_BUFFER=10
 
 local recvt, sendt={}, {}
 
@@ -32,8 +32,8 @@ sched.idle = socket.sleep
 local M = {socket=socket}
 
 -- pipe for async writing
-local write_pipes = {}
-local outstanding_data = {}
+local write_pipes = setmetatable({}, weak_key)
+local outstanding_data = setmetatable({}, weak_key)
 
 local function send_from_pipe (skt)
 	local out_data = outstanding_data[skt]
@@ -44,6 +44,9 @@ local function send_from_pipe (skt)
 			-- all the oustanding data sent
 			outstanding_data[skt] = nil
 			return
+		elseif err == 'closed' then 
+			M.unregister(skt)
+			return
 		end
 		outstanding_data[skt].last = last or lasterr
 	else
@@ -52,6 +55,10 @@ local function send_from_pipe (skt)
 		local data = pipe.read()
 		if  data then 
 			local last , err, lasterr = skt:send(data, 1, CHUNK_SIZE)
+			if err == 'closed' then
+				M.unregister(skt)
+				return
+			end
 			last = last or lasterr
 			if last < #data then
 				outstanding_data[skt] = {data=data,last=last}
@@ -125,14 +132,25 @@ end
 --- Unregisters a socket from socketeer
 -- @param skt the socket to unregister.
 M.unregister = function (skt)
-	for k, v in ipairs(recvt) do 
-		if skt==v then 
-			table.remove(recvt,k) 
+	for i=1, #recvt do
+		if recvt[i] == skt then
+			table.remove(recvt, i)
+			recvt[skt] = nil
 			break
 		end
 	end
-	local i=sendt[skt]
-	if i then sendt[i]=nil end
+	if sendt[skt] then
+		for i=1, #sendt do
+			if sendt[i] == skt then
+				table.remove(sendt, i)
+				sendt[skt] = nil
+				break
+			end
+		end
+		write_pipes[skt] = nil
+		outstanding_data[skt] = nil
+	end
+	partial[skt] = nil
 end
 
 --- Performs a single step for socketeer. 
@@ -144,9 +162,9 @@ end
 -- @param timeout Max allowed blocking time.
 M.step = function (timeout)
 	--print('+', #recvt, #sendt,timeout)
-	local recvt_ready, send_ready, err = socket.select(recvt, sendt, timeout)
+	local recvt_ready, send_ready, err_sel = socket.select(recvt, sendt, timeout)
 	--print('-', #recvt, #sendt,#recvt_ready, #send_ready, err)
-	if err~='timeout' then
+	if err_sel~='timeout' then
 		for _, skt in ipairs(send_ready) do
 			send_from_pipe(skt)
 		end
