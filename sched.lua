@@ -6,7 +6,7 @@
 -- @usage local sched = require 'sched'
 -- @alias M
 
-local log=require 'log/init'
+local log=require 'log' or function() end
 
 --get locals for some useful things
 local pairs, ipairs, next, coroutine, setmetatable, os
