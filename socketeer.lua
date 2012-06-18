@@ -14,6 +14,9 @@ local weak_key = { __mode = 'k' }
 
 local CHUNK_SIZE = 65536
 
+--number of entries in pipe for asynchrous sending
+local ASYNC_SEND_BUFFER=3
+
 local recvt, sendt={}, {}
 
 local sktmode = setmetatable({}, weak_key)
@@ -33,14 +36,10 @@ local write_pipes = {}
 local outstanding_data = {}
 
 local function send_from_pipe (skt)
---print('a')
 	local out_data = outstanding_data[skt]
 	if out_data then 
---print('aA')
 		local data, next = out_data.data, out_data.last+1
---print("S o+" , #data, next)
 		local last, err, lasterr = skt:send(data, next, next+CHUNK_SIZE )
---print("S o-" , last,err,lasterr)
 		if last == #data then
 			-- all the oustanding data sent
 			outstanding_data[skt] = nil
@@ -48,15 +47,11 @@ local function send_from_pipe (skt)
 		end
 		outstanding_data[skt].last = last or lasterr
 	else
---print('aB')
 		--local pipe = assert(write_pipes[skt] , "socket not registered?")
 		local pipe = write_pipes[skt] ; if not pipe then return end
---print('aB:',pipe.len())
 		local data = pipe.read()
 		if  data then 
---print("S p+" , pipe.len(), #data)
 			local last , err, lasterr = skt:send(data, 1, CHUNK_SIZE)
---print("S p-" , last,err, lasterr)
 			last = last or lasterr
 			if last < #data then
 				outstanding_data[skt] = {data=data,last=last}
@@ -85,16 +80,11 @@ M.async_send = function (skt, s)
 	
 	-- initialize the pipe on first send
 	if not pipe then
---print('0')
-		pipe = sched.pipes.new(skt, 30, 0) --FIXME 30?
---print('0.1')
+		pipe = sched.pipes.new(skt, ASYNC_SEND_BUFFER, 0)
 		write_pipes[skt]  = pipe
---print('0.2')
 	end
 
---print('1')
 	pipe.write(s)
---print('2')	
 
 	sched.yield()
 end
@@ -173,12 +163,12 @@ M.step = function (timeout)
 			else
 				--print('&+', skt, mode, partial[skt])
 				if type(mode) == "number" and mode <= 0 then
-					local data,err,part = skt:receive(65536)
+					local data,err,part = skt:receive(CHUNK_SIZE)
 					--print('&-',data,err,part, #part)
 					if err=='closed' then
 						M.unregister(skt)
 						sched.signal(skt, nil, err, part)
-					else
+					elseif data then
 						sched.signal(skt, data)
 					end
 				else
