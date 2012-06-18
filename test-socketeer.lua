@@ -18,7 +18,6 @@ assert(udpsend:setsockname("127.0.0.1", 0))
 assert(udpsend:setpeername("127.0.0.1", 8888))
 --]]
 
-sched.catalog.register('MAIN')
 local s = sched.run(socketeer.task)
 print('SOCKETEER',s)
 

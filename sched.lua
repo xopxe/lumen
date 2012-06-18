@@ -1,10 +1,12 @@
 --- Lumen cooperative scheduler.
--- Lumen (Lua Multitasking Environment) is a simple environment
--- for coroutine based multitasking. Consists of a signal scheduler,
+-- Lumen (Lua Multitasking Environment) is a simple environment 
+-- for coroutine based multitasking. Consists of a signal scheduler, 
 -- and that's it.
 -- @module sched
 -- @usage local sched = require 'sched'
 -- @alias M
+
+local log=require 'log' or function() end
 
 --get locals for some useful things
 local pairs, ipairs, next, coroutine, setmetatable, os
@@ -128,10 +130,10 @@ step_task = function(t, ...)
 		local ok=ret[1]
 		local skip1ret = function(_, ...) return ... end
 		if ok then 
-			--print('task return:', t, ret)
+			log('SCHED', 'INFO', 'task %s returning %d parameters', tostring(t), #ret-1)
 			return emit_signal(t, event_die, true, skip1ret(unpack(ret)))
 		else
-			--print('task error:', t, ret)
+			log('SCHED', 'WARNING', 'task %s die on error, returning %d parameters', tostring(t), #ret-1)
 			return emit_signal(t, event_die, nil, skip1ret(unpack(ret)))
 		end
 	end
@@ -140,7 +142,7 @@ end
 
 local clean_up = function()
 	--clean up waiting table
-	--print("cleanup!")
+	log('SCHED', 'DEBUG', 'collecting garbage')
 	for event, eventt in pairs(waiting) do
 		for emitter, emittert in pairs(eventt) do
 			for task, taskt in pairs(emittert) do
@@ -228,7 +230,7 @@ M.catalog.register = function ( name )
 	if tasknames[name] and tasknames[name] ~= co then
 		return nil, 'used'
 	end
-	--print('catalog register', co, name)
+	log('SCHED', 'INFO', 'task %s registered in catalog as %s', tostring(co), tostring(name))
 	tasknames[name] = co
 	emit_signal(CATALOG_EV, name, 'registered', co)
 	return true
@@ -241,7 +243,7 @@ end
 -- @return the task if successful; on timeout expiration returns nil, 'timeout'.
 M.catalog.waitfor = function ( name, timeout )
 	local co = tasknames[name]
-	--print('catalog query', coroutine.running(), name, timeout, co)
+	log('SCHED', 'INFO', 'catalog queried by task %s for name %s', tostring(co), tostring(name))
 	if co then
 		return co
 	else
@@ -297,6 +299,7 @@ M.pipes.new = function(name, size, timeout)
 	if pipes[name] then
 		return nil, 'exists'
 	end
+	log('SCHED', 'INFO', 'pipe with name %s created', tostring(name))
 	local piped = {}
 	local pipe_enable = {} --singleton event for pipe control
 	local pipe_data = {} --singleton event for pipe data
@@ -336,7 +339,10 @@ M.pipes.new = function(name, size, timeout)
 		M.signal(pipe_data, ...)
 		return true
 	end
-
+	piped.len=function ()
+		return buff_data:len()
+	end
+	
 	pipes[name]=piped
 	emit_signal(PIPES_EV, name, 'created', piped)
 	return piped
@@ -347,6 +353,7 @@ end
 -- @param name of the pipe to get
 -- @param timeout max. time time to wait. -1 or nil disables timeout.
 M.pipes.waitfor = function(name, timeout)
+	log('SCHED', 'INFO', 'requesting a pipe with name %s', tostring(name))
 	local piped = pipes[name]
 	if piped then
 		return piped
@@ -374,20 +381,6 @@ end
 -- Main API of the scheduler.
 -- @section scheduler
 
---- task dying event.
--- This event will be emitted when a task dies. When the task dies a natural
--- death (finishes), the first parameter is true, followed by
--- the task returns. Otherwise, the first parameter is nil and the second
--- is 'killed' if the task was killed, or the error message if the task errore'd.
--- @usage --prints each time a task dies
---sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})
-M.EVENT_DIE = event_die
-
---- control memory collection.
--- number of new insertions in waiting[event] before triggering clean_up.
--- Defaults to 1000
-M.to_clean_up = 1000
-
 --- Create and run a task.
 -- The task will emit a sched.EVENT_DIE, true, params...
 -- signal upon normal finalization, were params are the returns of f.
@@ -398,14 +391,15 @@ M.to_clean_up = 1000
 -- @return task in the scheduler.
 M.run = function ( f, ... )
 	local co = coroutine.create( f )
-	--print('newtask', co, ...)
+	log('SCHED', 'INFO', 'created task %s from function %s, with %d parameters', tostring(co), tostring(f), select('#', ...))
 	tasks[co] = {status='ready'}
 	step_task(co, ...)
 	return co
 end
 
---- Run a task on a signal.
--- @param f function for the task
+--- Run a task that listens for a signal.
+-- @param f function to be called when the signal appears. the signal
+-- is passed to f as parameter.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
@@ -419,8 +413,9 @@ M.sigrun = function ( f, waitd )
 	return M.run( wrapper )
 end
 
---- Run a task on a signal, once.
--- @param f function for the task
+--- Run a task that listens for a signal, once.
+-- @param f function to be called when the signal appears. the signal
+-- is passed to f as parameter.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
@@ -436,8 +431,9 @@ end
 -- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
 -- @param t task to terminate. If nil, terminates the current task.
 M.kill = function ( t )
-	t=t or coroutine.running()
-	--print('kill',t,tasks[t])
+	local my_task = coroutine.running()
+	t=t or my_task
+	log('SCHED', 'INFO', 'killing task %s from task %s', tostring(t), tostring(my_task))
 	tasks[t].status = 'killed'
 	tasks[t] = nil
 	emit_signal(t, event_die, false, 'killed')
@@ -448,6 +444,8 @@ end
 -- @param ... further parameters to be sent with the signal.
 M.signal = function ( event, ... )
 	local emitter=coroutine.running()
+	log('SCHED', 'DETAIL', 'task %s emitting event %s with %d parameters', 
+		tostring(emitter), tostring(event), select('#', ...))
 	emit_signal( emitter, event, ... )
 end
 
@@ -613,6 +611,24 @@ M.go = function ()
 		end
 	until not idle_time
 end
+
+--- Fields.
+--
+-- @section descriptors
+
+--- task dying event.
+-- This event will be emitted when a task dies. When the task dies a natural 
+-- death (finishes), the first parameter is true, followed by 
+-- the task returns. Otherwise, the first parameter is nil and the second 
+-- is 'killed' if the task was killed, or the error message if the task errore'd.
+-- @usage --prints each time a task dies
+--sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})
+M.EVENT_DIE = event_die
+
+--- control memory collection.
+-- number of new insertions in waiting[event] before triggering clean_up.
+-- Defaults to 1000
+M.to_clean_up = 1000
 
 --- Data structures.
 -- Main structures used.
