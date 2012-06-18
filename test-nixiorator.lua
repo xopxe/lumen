@@ -1,5 +1,5 @@
 ---
--- A task that interfaces with nixio. Supports UDP, TCP and async 
+-- A task that interfaces with nixio. Supports UDP, TCP and async
 -- file I/O.
 -- Should run as root or sudo, for reading /dev/input/mice
 
@@ -35,30 +35,30 @@ sched.run(function()
 				if not data then sched.kill() end
 			end, {emitter=nxtask, events={inskt}})
 		end
-	end)
-	sched.run(function()
-		sched.catalog.waitfor('accepter')
-		local tcpsend = assert(nixio.bind("127.0.0.1", 0, 'inet', 'stream'))
-		tcpsend:connect("127.0.0.1",8888)
-		while true do
-			local m="ping! "..os.time()
-			print("tcp sending",m)
-			tcpsend:writeall(m.."\n")
-			sched.sleep(3)
-		end
-	end)
-	sched.run(function()
-		local udpsend = assert(nixio.bind("127.0.0.1", 0, 'inet', 'dgram'))
-		udpsend:connect("127.0.0.1",8888)
-		while true do
-			local m="ping! "..os.time()
-			print("udp sending",m)
-			udpsend:send(m)
-			sched.sleep(2)
-		end
-	end)
+	end
+end)
 
+sched.run(function()
+	sched.catalog.waitfor('accepter')
+	local tcpsend = assert(nixio.bind("127.0.0.1", 0, 'inet', 'stream'))
+	tcpsend:connect("127.0.0.1",8888)
+	while true do
+		local m="ping! "..os.time()
+		print("tcp sending",m)
+		tcpsend:writeall(m.."\n")
+		sched.sleep(3)
+	end
+end)
 
+sched.run(function()
+	local udpsend = assert(nixio.bind("127.0.0.1", 0, 'inet', 'dgram'))
+	udpsend:connect("127.0.0.1",8888)
+	while true do
+		local m="ping! "..os.time()
+		print("udp sending",m)
+		udpsend:send(m)
+		sched.sleep(2)
+	end
 end)
 
 
