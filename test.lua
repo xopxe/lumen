@@ -3,6 +3,7 @@
 --require "strict"
 
 local sched = require "sched"
+--require "log".setlevel('ALL')
 
 sched.run(function()
 	sched.catalog.register('main')
