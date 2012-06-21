@@ -6,11 +6,11 @@
 -- @usage local sched = require 'sched'
 -- @alias M
 
-local log=require 'log' or function() end
+local log=require 'log'
 
 --get locals for some useful things
-local pairs, ipairs, next, coroutine, setmetatable, os
-	= pairs, ipairs, next, coroutine, setmetatable, os
+local pairs, ipairs, next, coroutine, setmetatable, os, tostring, select
+	= pairs, ipairs, next, coroutine, setmetatable, os, tostring, select
 
 table.pack=table.pack or function (...)
 	return {n=select('#',...),...}
@@ -69,6 +69,7 @@ local to_buffer = function (waitd, event, ...)
 			if overpopulation<0 then
 				buff:pushright(table.pack(event, ...))
 			else
+				log('SCHED', 'DETAIL', 'buffer from waitd  %s is dropping', tostring(waitd))
 				buff.dropped = true
 				if waitd.buff_mode == 'drop_first' then
 					for _ = 0, overpopulation do
@@ -130,10 +131,10 @@ step_task = function(t, ...)
 		local ok=ret[1]
 		local skip1ret = function(_, ...) return ... end
 		if ok then 
-			log('SCHED', 'INFO', 'task %s returning %d parameters', tostring(t), #ret-1)
+			log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), #ret-1)
 			return emit_signal(t, event_die, true, skip1ret(unpack(ret)))
 		else
-			log('SCHED', 'WARNING', 'task %s die on error, returning %d parameters', tostring(t), #ret-1)
+			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret-1)
 			return emit_signal(t, event_die, nil, skip1ret(unpack(ret)))
 		end
 	end
@@ -175,6 +176,8 @@ local register_signal = function(task, waitd)
 		if t<next_waketime then next_waketime=t end
 	end
 	--print('registersignal', task, emitter, timeout, #events)
+	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(task), tostring(waitd))
+
 
 	if events and emitter then
 		for _, event in ipairs(events) do
@@ -230,7 +233,7 @@ M.catalog.register = function ( name )
 	if tasknames[name] and tasknames[name] ~= co then
 		return nil, 'used'
 	end
-	log('SCHED', 'INFO', 'task %s registered in catalog as %s', tostring(co), tostring(name))
+	log('SCHED', 'INFO', '%s registered in catalog as "%s"', tostring(co), tostring(name))
 	tasknames[name] = co
 	emit_signal(CATALOG_EV, name, 'registered', co)
 	return true
@@ -243,7 +246,7 @@ end
 -- @return the task if successful; on timeout expiration returns nil, 'timeout'.
 M.catalog.waitfor = function ( name, timeout )
 	local co = tasknames[name]
-	log('SCHED', 'INFO', 'catalog queried by task %s for name %s', tostring(co), tostring(name))
+	log('SCHED', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(co))
 	if co then
 		return co
 	else
@@ -299,7 +302,7 @@ M.pipes.new = function(name, size, timeout)
 	if pipes[name] then
 		return nil, 'exists'
 	end
-	log('SCHED', 'INFO', 'pipe with name %s created', tostring(name))
+	log('SCHED', 'INFO', 'pipe with name "%s" created', tostring(name))
 	local piped = {}
 	local pipe_enable = {} --singleton event for pipe control
 	local pipe_data = {} --singleton event for pipe data
@@ -353,8 +356,8 @@ end
 -- @param name of the pipe to get
 -- @param timeout max. time time to wait. -1 or nil disables timeout.
 M.pipes.waitfor = function(name, timeout)
-	log('SCHED', 'INFO', 'requesting a pipe with name %s', tostring(name))
 	local piped = pipes[name]
+	log('SCHED', 'INFO', 'a pipe with name "%s" requested, found %s', tostring(name), tostring(piped))
 	if piped then
 		return piped
 	else
@@ -391,7 +394,7 @@ end
 -- @return task in the scheduler.
 M.run = function ( f, ... )
 	local co = coroutine.create( f )
-	log('SCHED', 'INFO', 'created task %s from function %s, with %d parameters', tostring(co), tostring(f), select('#', ...))
+	log('SCHED', 'INFO', 'created %s from %s, with %d parameters', tostring(co), tostring(f), select('#', ...))
 	tasks[co] = {status='ready'}
 	step_task(co, ...)
 	return co
@@ -410,6 +413,8 @@ M.sigrun = function ( f, waitd )
 			f(M.wait(waitd))
 		end
 	end
+	log('SCHED', 'INFO', 'sigrun wrapper %s created from %s and waitd %s', 
+		tostring(wrapper), tostring(f), tostring(waitd))
 	return M.run( wrapper )
 end
 
@@ -424,6 +429,8 @@ M.sigrunonce = function ( f, waitd )
 	local wrapper = function()
 		f(M.wait(waitd))
 	end
+	log('SCHED', 'INFO', 'sigrunonce wrapper %s created from %s and waitd %s', 
+		tostring(wrapper), tostring(f), tostring(waitd))
 	return M.run( wrapper )
 end
 
@@ -433,7 +440,7 @@ end
 M.kill = function ( t )
 	local my_task = coroutine.running()
 	t=t or my_task
-	log('SCHED', 'INFO', 'killing task %s from task %s', tostring(t), tostring(my_task))
+	log('SCHED', 'INFO', 'killing %s from %s', tostring(t), tostring(my_task))
 	tasks[t].status = 'killed'
 	tasks[t] = nil
 	emit_signal(t, event_die, false, 'killed')
@@ -479,7 +486,9 @@ end
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
 	local my_task = coroutine.running()
+	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(my_task), tostring(waitd))
 
+	
 	--if there are buffered signals, service the first
 	local buff = waitd.buff
 	if buff and buff:len()> 0 then
