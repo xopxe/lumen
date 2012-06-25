@@ -17,7 +17,7 @@ nixiorator.register_client(fdrecv, 10)
 local nxtask = sched.run(nixiorator.task)
 print('NIXIORATOR',nxtask)
 
-sched.sigrun(function(file, data) print("!F", file, string.byte(data)) end, {emitter=nxtask, events={fdrecv}})
+sched.sigrun(function(file, data) print("!F", file, data:byte(1, #data)) end, {emitter=nxtask, events={fdrecv}})
 
 sched.sigrun(function(...) print("!U", ...) end, {emitter=nxtask, events={udprecv}})
 

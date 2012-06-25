@@ -9,12 +9,6 @@ local sched = require("sched")
 require ("nixio.util")
 local pollt={}
 
--- replace sched's default get_time with nixio's (if available)
-if nixio.gettime and sched.get_time == os.time then
-	sched.get_time = nixio.gettime 
-end
-sched.idle = nixio.idle or sched.idle
-
 --get locals for some useful things
 local math, ipairs, table = math, ipairs, table
 
@@ -143,6 +137,16 @@ M.idle = function (t)
 	local nsec = (t-sec)*1000000000
 	nixio.nanosleep(sec, nsec)
 end
+
+-- replace sched's default get_time with nixio's
+if sched.get_time == os.time then
+	sched.get_time = function()
+		local sec, usec = nixio.gettimeofday()
+		return sec + usec/1000000
+	end
+end
+sched.idle = M.idle
+
 
 return M
 
