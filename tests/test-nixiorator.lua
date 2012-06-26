@@ -3,19 +3,22 @@
 -- file I/O.
 -- Should run as root or sudo, for reading /dev/input/mice
 
+--look for packages one folder up.
+package.path = package.path .. ";;;../?.lua"
+
 require "strict"
 
 local sched = require "sched"
-local nixiorator = require "nixiorator"
+local nixiorator = require "tasks/nixiorator"
 local nixio = nixiorator.nixio
 
 local udprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'dgram'))
-local fdrecv = nixio.open('/dev/input/mice', nixio.open_flags('rdonly', 'sync'))
+local fdrecv = assert(nixio.open('/dev/input/mice', 
+			nixio.open_flags('rdonly', 'sync')), 'run as root!')
 
 nixiorator.register_client(udprecv, 1500)
 nixiorator.register_client(fdrecv, 10)
-local nxtask = sched.run(nixiorator.task)
-print('NIXIORATOR',nxtask)
+local nxtask = sched.run(nixiorator.taskf)
 
 sched.sigrun(function(file, data) print("!F", file, data:byte(1, #data)) end, {emitter=nxtask, events={fdrecv}})
 

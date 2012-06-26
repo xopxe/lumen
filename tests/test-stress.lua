@@ -2,6 +2,9 @@
 -- A test program with two tasks, one emitting signals and the other accepting them.
 --See how fast it can run.
 
+--look for packages one folder up.
+package.path = package.path .. ";;;../?.lua"
+
 --require "strict"
 --require "profiler"
 

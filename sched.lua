@@ -621,10 +621,6 @@ M.go = function ()
 	until not idle_time
 end
 
---- Fields.
---
--- @section descriptors
-
 --- task dying event.
 -- This event will be emitted when a task dies. When the task dies a natural 
 -- death (finishes), the first parameter is true, followed by 
@@ -641,7 +637,7 @@ M.to_clean_up = 1000
 
 --- Data structures.
 -- Main structures used.
--- @section descriptors
+-- @section structures
 
 ------
 -- Wait descriptor.

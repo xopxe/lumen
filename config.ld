@@ -1,8 +1,8 @@
-file = {"sched.lua", "nixiorator.lua", "socketeer.lua"}
+file = {"sched.lua", "tasks/nixiorator.lua", "tasks/socketeer.lua"}
 project = "Lumen"
 description = "A cooperative scheduler for Lua tasks"
 format = 'markdown'
-examples={'test.lua', 'test-buff.lua', 'test-nixiorator.lua'
-	, 'test-socketeer.lua', 'test-pipe.lua', 'test-stress.lua'}
+examples={'tests/test.lua', 'tests/test-buff.lua', 'tests/test-nixiorator.lua'
+	, 'tests/test-socketeer.lua', 'tests/test-pipe.lua', 'tests/test-stress.lua'}
 readme = "README.md"
 

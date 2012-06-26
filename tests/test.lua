@@ -2,6 +2,10 @@
 
 --require "strict"
 
+--look for packages one folder up.
+package.path = package.path .. ";;;../?.lua"
+
+
 local sched = require "sched"
 --require "log".setlevel('ALL')
 
