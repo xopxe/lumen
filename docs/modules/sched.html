@@ -688,9 +688,11 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
  signals that arrived while the task is not blocked on the wait descriptor.
  Whenever there is an attempt to insert in a full buffer, the buffer.dropped
  flag is set. nil o 0 disables, negative means no length limit.</li>
-       <li><code><em>buff_mode:</em></code>:  Specifies how to behave when inserting in a full buffer.
+       <li><code><em>buff_mode</em></code>:  Specifies how to behave when inserting in a full buffer.
  'drop first' means drop the oldest signals to make space. 'drop last'
  or nil will skip the insertion in a full buffer.</li>
+       <li><code><em>dropped</em></code>:  the scheduler will set this to true when dropping events
+ from the buffer. Can be reset by the user.</li>
        <li><code><em>events</em></code>:  optional, array with the events to wait.</li>
     </ul>
 

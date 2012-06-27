@@ -70,7 +70,7 @@ local to_buffer = function (waitd, event, ...)
 				buff:pushright(table.pack(event, ...))
 			else
 				log('SCHED', 'DETAIL', 'buffer from waitd  %s is dropping', tostring(waitd))
-				buff.dropped = true
+				waitd.dropped = true
 				if waitd.buff_mode == 'drop_first' then
 					for _ = 0, overpopulation do
 						buff:popleft()
@@ -657,9 +657,11 @@ M.to_clean_up = 1000
 -- signals that arrived while the task is not blocked on the wait descriptor.
 -- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
 -- flag is set. nil o 0 disables, negative means no length limit.
--- @field buff_mode: Specifies how to behave when inserting in a full buffer.
+-- @field buff_mode Specifies how to behave when inserting in a full buffer.
 -- 'drop first' means drop the oldest signals to make space. 'drop last'
 -- or nil will skip the insertion in a full buffer.
+-- @field dropped the scheduler will set this to true when dropping events
+-- from the buffer. Can be reset by the user.
 -- @field events optional, array with the events to wait.
 -- @table waitd
 
