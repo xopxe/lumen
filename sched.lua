@@ -178,20 +178,30 @@ local register_signal = function(task, waitd)
 	--print('registersignal', task, emitter, timeout, #events)
 	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(task), tostring(waitd))
 
-
-	if events and emitter then
+	local function register_emitter(etask)
+		assert(type(etask)=='thread')
 		for _, event in ipairs(events) do
 			--print('',':', event)
 			waiting[event]=waiting[event] or setmetatable({}, weak_key)
-			if not waiting[event][emitter] then
-				waiting[event][emitter] = setmetatable({}, { __mode = 'kv' })
+			if not waiting[event][etask] then
+				waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
 				waiting_emitter_counter = waiting_emitter_counter +1
 			end
-			waiting[event][emitter][task]=waitd
+			waiting[event][etask][task]=waitd
 		end
 		if waiting_emitter_counter>M.to_clean_up then
 			waiting_emitter_counter = 0
 			clean_up()
+		end
+	end
+
+	if events and emitter then
+		if type(emitter)=='table' then
+			for _, e in ipairs(emitter) do 
+				register_emitter(e)
+			end
+		else
+			register_emitter(emitter)
 		end
 	end
 end
