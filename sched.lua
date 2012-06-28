@@ -661,7 +661,8 @@ M.to_clean_up = 1000
 -- on first request basis.
 -- Can use @\{create_waitd} to create this table.
 -- @field emitter optional, task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone.
+-- only return on timeout. If '*', means anyone. I also can be an array of 
+-- tasks, in which case any of them is accepted as a source.
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.

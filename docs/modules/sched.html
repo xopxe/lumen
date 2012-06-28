@@ -683,7 +683,8 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
     <h3>Fields:</h3>
     <ul>
        <li><code><em>emitter</em></code>:  optional, task originating the signal we wait for. If nil, will
- only return on timeout. If '*', means anyone.</li>
+ only return on timeout. If '*', means anyone. I also can be an array of 
+ tasks, in which case any of them is accepted as a source.</li>
        <li><code><em>timeout</em></code>:  optional, time to wait. nil or negative waits for ever.</li>
        <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing
  signals that arrived while the task is not blocked on the wait descriptor.
