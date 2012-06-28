@@ -470,9 +470,9 @@ end</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>emitter</em></code>:  Event of the signal. Can be of any type.
- task originating the signal we wait for. If nil, will
- only return on timeout. If '*', means anyone.</li>
+       <li><code><em>emitter</em></code>:  task originating the signal we wait for. If nil, will
+ only return on timeout. If '*', means anyone. Can also be an array of
+ tasks</li>
        <li><code><em>timeout</em></code>:  Time to wait. nil or negative waits for ever.</li>
        <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing
  signals that arrived while the task is not blocked on the wait descriptor.
@@ -695,7 +695,8 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
  or nil will skip the insertion in a full buffer.</li>
        <li><code><em>dropped</em></code>:  the scheduler will set this to true when dropping events
  from the buffer. Can be reset by the user.</li>
-       <li><code><em>events</em></code>:  optional, array with the events to wait.</li>
+       <li><code><em>events</em></code>:  optional, array with the events to wait. Can contain a '*', 
+ or be '*' instead of a table, to mark interest in any event</li>
     </ul>
 
 
