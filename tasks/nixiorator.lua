@@ -9,12 +9,6 @@ local sched = require("sched")
 require ("nixio.util")
 local pollt={}
 
--- replace sched's default get_time with nixio's (if available)
-if nixio.gettime and sched.get_time == os.time then
-	sched.get_time = nixio.gettime 
-end
-sched.idle = nixio.idle or sched.idle
-
 --get locals for some useful things
 local math, ipairs, table = math, ipairs, table
 
@@ -102,7 +96,7 @@ end
 --- Performs a single step for nixiorator.
 -- Will block at the OS level for up to timeout seconds.
 -- Usually this method is not used (probably what you want is to
--- register @{task} with the Lumen scheduler).
+-- register @{taskf} with the Lumen scheduler).
 -- Nixiorator will emit the signals from registered sockets
 -- (see @{register_server} and @{register_client}).
 -- @param timeout Max allowed blocking time.
@@ -119,22 +113,19 @@ M.step = function (timeout)
 
 end
 
---- The function to be registered with the Lumen scheduler to receive the nixiorator signals.
--- Whe running, nixiorator will emit the signals from registered sockets
+--- The function to be registered with the Lumen scheduler.
+-- With this task running, nixiorator will emit the signals from registered sockets.
 -- (see @{register_server} and @{register_client}).
 -- @usage local sched = require "sched"
 --local nixiorator = require "nixiorator"
---local n = sched.run(nixiorator.task)
-M.task = function ()
+--local n = sched.run(nixiorator.taskf)
+M.taskf = function ()
 	sched.catalog.register('nixiorator')
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )
 	end
 end
-
---- A reference to the nixio library.
-M.nixio=nixio
 
 --- A idling function.
 -- this is valid replacement function for Lumen's sched.idle
@@ -143,6 +134,19 @@ M.idle = function (t)
 	local nsec = (t-sec)*1000000000
 	nixio.nanosleep(sec, nsec)
 end
+
+--- A reference to the nixio library.
+M.nixio = nixio
+
+-- replace sched's default get_time with nixio's
+if sched.get_time == os.time then
+	sched.get_time = function()
+		local sec, usec = nixio.gettimeofday()
+		return sec + usec/1000000
+	end
+end
+sched.idle = M.idle
+
 
 return M
 

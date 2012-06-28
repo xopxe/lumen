@@ -156,7 +156,7 @@ end
 --- Performs a single step for socketeer. 
 -- Will block at the OS level for up to timeout seconds. 
 -- Usually this method is not used (probably what you want is to 
--- register @{task} with the Lumen scheduler).
+-- register @{taskf} with the Lumen scheduler).
 -- Socketeer will emit the signals from registered sockets 
 -- (see @{register_server} and @{register_client}).
 -- @param timeout Max allowed blocking time.
@@ -209,13 +209,13 @@ M.step = function (timeout)
 	end
 end
 
---- The function to be registered with the Lumen scheduler to receive the nixiorator signals.
--- Whe running, socketeer will emit the signals from registered sockets 
+--- The function to be registered with the Lumen scheduler.
+-- With this task running, socketeer will emit the signals from registered sockets 
 -- (see @{register_server} and @{register_client}).
 -- @usage local sched = require 'sched'
 --local socketter = require 'socketeer'
---local n = sched.run(socketeer.task)
-M.task = function ()
+--local n = sched.run(socketeer.taskf)
+M.taskf = function ()
 	sched.catalog.register('socketeer')
 	while true do
 		local t, _ = sched.yield()

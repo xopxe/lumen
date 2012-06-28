@@ -1,6 +1,9 @@
 ---
 -- A demonstration of pipes.
 
+--look for packages one folder up.
+package.path = package.path .. ";;;../?.lua"
+
 local sched=require 'sched'
 
 -- sender --
