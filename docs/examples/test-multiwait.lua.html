@@ -68,6 +68,7 @@
 
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
 
+sched.sigrun( <span class="global">print</span>, {emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}})
 
 <span class="comment">-- 3 tasks, each emitting a combination of 2 events out of 3 possible,
 </span><span class="comment">-- and sending it's own number as data
@@ -96,9 +97,17 @@
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
 
-<span class="comment">-- we are only interested in events B and C, emitted by tasks 2 and 3
+<span class="comment">---[[
+</span><span class="comment">-- we are only interested in events B and C, emitted by tasks 2 and 3
 </span>sched.sigrun( <span class="global">print</span>, 
 	{emitter={emitter2, emitter3}, events={<span class="string">'evB'</span>, <span class="string">'evC'</span>}})
+<span class="comment">--]]
+</span>
+<span class="comment">--[[
+-- we are interested in all events
+sched.sigrun( print, 
+	{emitter='*', events='*'})
+--]]</span>
 
 sched.go()
 

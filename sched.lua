@@ -119,6 +119,12 @@ local emit_signal = function (emitter, event, ...)
 		if waiting1 then walktasks(waiting1, event, ...) end
 		if waiting2 then walktasks(waiting2, event, ...) end
 	end
+	onevent=waiting['*']
+	if onevent then
+		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
+		if waiting1 then walktasks(waiting1, event, ...) end
+		if waiting2 then walktasks(waiting2, event, ...) end
+	end
 end
 
 ---
@@ -135,6 +141,8 @@ step_task = function(t, ...)
 			return emit_signal(t, event_die, true, skip1ret(unpack(ret)))
 		else
 			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret-1)
+			
+			print('!!!!!', ret[1], ret[2], ret[3])
 			return emit_signal(t, event_die, nil, skip1ret(unpack(ret)))
 		end
 	end
@@ -168,6 +176,7 @@ local register_signal = function(task, waitd)
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
 	local taskd = tasks[task]
 	taskd.waitingfor = waitd
+	if events=='*' then events={'*'} end
 
 	if timeout and timeout>=0 then
 		local t = timeout + M.get_time()
@@ -179,7 +188,7 @@ local register_signal = function(task, waitd)
 	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(task), tostring(waitd))
 
 	local function register_emitter(etask)
-		assert(type(etask)=='thread')
+		assert ( type(etask)=='thread' or etask=='*' )
 		for _, event in ipairs(events) do
 			--print('',':', event)
 			waiting[event]=waiting[event] or setmetatable({}, weak_key)
@@ -467,9 +476,9 @@ M.signal = function ( event, ... )
 end
 
 --- Auxiliar function for instantiating waitd tables.
--- @param emitter Event of the signal. Can be of any type.
--- task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone.
+-- @param emitter task originating the signal we wait for. If nil, will
+-- only return on timeout. If '*', means anyone. Can also be an array of
+-- tasks
 -- @param timeout Time to wait. nil or negative waits for ever.
 -- @param buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
@@ -673,7 +682,8 @@ M.to_clean_up = 1000
 -- or nil will skip the insertion in a full buffer.
 -- @field dropped the scheduler will set this to true when dropping events
 -- from the buffer. Can be reset by the user.
--- @field events optional, array with the events to wait.
+-- @field events optional, array with the events to wait. Can contain a '\*', 
+-- or be '\*' instead of a table, to mark interest in any event
 -- @table waitd
 
 return M
