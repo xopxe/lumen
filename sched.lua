@@ -9,8 +9,8 @@
 local log=require 'log'
 
 --get locals for some useful things
-local pairs, ipairs, next, coroutine, setmetatable, os, tostring, select
-	= pairs, ipairs, next, coroutine, setmetatable, os, tostring, select
+local pairs, ipairs, next, coroutine, setmetatable, os, tostring, select, unpack
+	= pairs, ipairs, next, coroutine, setmetatable, os, tostring, select, unpack
 
 table.pack=table.pack or function (...)
 	return {n=select('#',...),...}
