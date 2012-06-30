@@ -28,7 +28,7 @@ sched.run(function()
 	local waitd=sched.create_waitd(emitter_task, nil, nil, nil, 'ev')
 	while true do
 		--uncomment this to create huge ammount of waitds:
-		--local waitd=sched.create_waitd(t1, nil, nil, nil,  'ev', 'ev'..i)
+		--local waitd=sched.create_waitd(emitter_task, nil, nil, nil,  'ev', 'ev'..i)
 		sched.wait(waitd)
 		i=i+1
 		if i==1000000 then

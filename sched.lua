@@ -141,8 +141,6 @@ step_task = function(t, ...)
 			return emit_signal(t, event_die, true, skip1ret(unpack(ret)))
 		else
 			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret-1)
-			
-			print('!!!!!', ret[1], ret[2], ret[3])
 			return emit_signal(t, event_die, nil, skip1ret(unpack(ret)))
 		end
 	end
@@ -174,9 +172,9 @@ end
 --blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(task, waitd)
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
+	if events=='*' then events={'*'} end
 	local taskd = tasks[task]
 	taskd.waitingfor = waitd
-	if events=='*' then events={'*'} end
 
 	if timeout and timeout>=0 then
 		local t = timeout + M.get_time()
