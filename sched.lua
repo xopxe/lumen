@@ -91,8 +91,13 @@ end
 --list can change during iteration. it also sees if a event should be buffered
 local walktasks = function (waitingtasks, event, ...)
 	local waked_up, bufferable = {}, {}
+	local my_task = coroutine.running()
 	for task, waitd in pairs(waitingtasks) do
 		--print('',':',task, waitd, waiting[task])
+		if task==my_task then 
+			log('SCHED', 'WARNING', '%s trying signal itself on waitd %s'
+				, tostring(task), tostring(waitd))
+		end
 		if wake_up( task, waitd ) then
 			waked_up[task]=waitd
 		else
@@ -504,7 +509,6 @@ end
 M.wait = function ( waitd )
 	local my_task = coroutine.running()
 	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(my_task), tostring(waitd))
-
 	
 	--if there are buffered signals, service the first
 	local buff = waitd.buff
