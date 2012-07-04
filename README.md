@@ -53,7 +53,7 @@ sched.run(function()
 	local waitd={emitter=emitter_task, events={'an_event'}}
 	while true do
 		local ev, data = sched.wait(waitd)
-		print (e, data)
+		print (ev, data)
 	end
 end)
 
