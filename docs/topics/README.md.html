@@ -35,6 +35,7 @@
 <li><a href="#Introduction">Introduction</a></li>
 <li><a href="#Tasks">Tasks</a></li>
 <li><a href="#Pipes">Pipes</a></li>
+<li><a href="#How_does_it_look_">How does it look?</a></li>
 <li><a href="#How_to_try_it_out_">How to try it out?</a></li>
 <li><a href="#License">License</a></li>
 <li><a href="#Who_">Who?</a></li>
@@ -82,6 +83,8 @@ The API was inspired by a brief description of <a href="https://github.com/Sierr
 Lumen has no external dependencies nor C code, and runs on unmodified Lua (works with Lua 5.1, 5.2 and LuaJIT).
 Tasks that interface with LuaSocket and nixio for socket and async file I/O support are provided.</p>
 
+<p>Lumen's <a href="http://xopxe.github.com/Lumen/">API reference</a> is available online.</p>
+
 <p>WARNING: Lumen is under heavy development, and API changes happen rather 
 frequently, as other weird breakages.</p>
 
@@ -109,6 +112,41 @@ frequently, as other weird breakages.</p>
     <li>Multiple readers and writers per pipe supported. </li>
     <li>For when no signal can get lost!</li>
 </ul>
+
+<p><a name="How_does_it_look_"></a></p>
+<h2>How does it look?</h2>
+
+<p>Here is a small program, with two tasks: one emits ten numbered signals, 
+one second apart. Another tasks receives those signals and prints them.</p>
+
+<p>```lua
+local sched=require 'sched'</p>
+
+<p>-- task emits signals
+local emitter_task = sched.run(function()</p>
+
+<pre>
+ <span class="keyword">for</span> i = <span class="number">1</span>, <span class="number">10</span> <span class="keyword">do</span>
+     sched.signal(<span class="string">'an_event'</span>, i)
+     sched.sleep(<span class="number">1</span>)
+</pre>
+
+<p>end)</p>
+
+<p>-- task receives signals
+sched.run(function()</p>
+
+<pre>
+ <span class="keyword">local</span> waitd = {emitter=emitter_task, events={<span class="string">'an_event'</span>}}
+ <span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+     <span class="keyword">local</span> ev, data = sched.wait(waitd)
+     <span class="global">print</span> (ev, data)
+</pre>
+
+<p>end)</p>
+
+<p>sched.go()
+```</p>
 
 <p><a name="How_to_try_it_out_"></a></p>
 <h2>How to try it out?</h2>
