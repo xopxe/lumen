@@ -25,10 +25,10 @@ end)
 
 -- task receives the messages and counts them
 sched.run(function()
-	local waitd=sched.create_waitd(emitter_task, nil, nil, nil, 'ev')
+	local waitd={emitter=emitter_task, events={'ev'}
 	while true do
 		--uncomment this to create huge ammount of waitds:
-		--local waitd=sched.create_waitd(emitter_task, nil, nil, nil,  'ev', 'ev'..i)
+		--local waitd={emitter=emitter_task, events={'ev','ev'..i}
 		sched.wait(waitd)
 		i=i+1
 		if i==1000000 then

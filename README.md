@@ -39,28 +39,28 @@ There are also named pipes, for intertask communications.
 Here is a small program, with two tasks: one emits ten numbered signals, 
 one second apart. Another tasks receives those signals and prints them.
 
-```lua
-local sched=require 'sched'
 
--- task emits signals
-local emitter_task = sched.run(function()
-	for i = 1, 10 do
-		sched.signal('an_event', i)
-		sched.sleep(1)
-	end
-end)
+    local sched=require 'sched'
+    
+    -- task emits signals
+    local emitter_task = sched.run(function()
+    	for i = 1, 10 do
+    		sched.signal('an_event', i)
+    		sched.sleep(1)
+    	end
+    end)
+    
+    -- task receives signals
+    sched.run(function()
+    	local waitd = {emitter=emitter_task, events={'an_event'}}
+    	while true do
+    		local ev, data = sched.wait(waitd)
+    		print (ev, data)
+    	end
+    end)
+    
+    sched.go()
 
--- task receives signals
-sched.run(function()
-	local waitd = {emitter=emitter_task, events={'an_event'}}
-	while true do
-		local ev, data = sched.wait(waitd)
-		print (ev, data)
-	end
-end)
-
-sched.go()
-```
 
 ## How to try it out?
 

@@ -119,34 +119,30 @@ frequently, as other weird breakages.</p>
 <p>Here is a small program, with two tasks: one emits ten numbered signals, 
 one second apart. Another tasks receives those signals and prints them.</p>
 
-<p>```lua
-local sched=require 'sched'</p>
 
-<p>-- task emits signals
-local emitter_task = sched.run(function()</p>
 
 <pre>
- <span class="keyword">for</span> i = <span class="number">1</span>, <span class="number">10</span> <span class="keyword">do</span>
-     sched.signal(<span class="string">'an_event'</span>, i)
-     sched.sleep(<span class="number">1</span>)
+ <span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'sched'</span>
+
+ <span class="comment">-- task emits signals
+</span> <span class="keyword">local</span> emitter_task = sched.run(<span class="keyword">function</span>()
+     <span class="keyword">for</span> i = <span class="number">1</span>, <span class="number">10</span> <span class="keyword">do</span>
+         sched.signal(<span class="string">'an_event'</span>, i)
+         sched.sleep(<span class="number">1</span>)
+     <span class="keyword">end</span>
+ <span class="keyword">end</span>)
+
+ <span class="comment">-- task receives signals
+</span> sched.run(<span class="keyword">function</span>()
+     <span class="keyword">local</span> waitd = {emitter=emitter_task, events={<span class="string">'an_event'</span>}}
+     <span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+         <span class="keyword">local</span> ev, data = sched.wait(waitd)
+         <span class="global">print</span> (ev, data)
+     <span class="keyword">end</span>
+ <span class="keyword">end</span>)
+
+ sched.go()
 </pre>
-
-<p>end)</p>
-
-<p>-- task receives signals
-sched.run(function()</p>
-
-<pre>
- <span class="keyword">local</span> waitd = {emitter=emitter_task, events={<span class="string">'an_event'</span>}}
- <span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-     <span class="keyword">local</span> ev, data = sched.wait(waitd)
-     <span class="global">print</span> (ev, data)
-</pre>
-
-<p>end)</p>
-
-<p>sched.go()
-```</p>
 
 <p><a name="How_to_try_it_out_"></a></p>
 <h2>How to try it out?</h2>
