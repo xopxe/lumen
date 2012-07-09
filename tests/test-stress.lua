@@ -25,7 +25,7 @@ end)
 
 -- task receives the messages and counts them
 sched.run(function()
-	local waitd={emitter=emitter_task, events={'ev'}
+	local waitd={emitter=emitter_task, events={'ev'}}
 	while true do
 		--uncomment this to create huge ammount of waitds:
 		--local waitd={emitter=emitter_task, events={'ev','ev'..i}
