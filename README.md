@@ -54,8 +54,8 @@ one second apart. Another tasks receives those signals and prints them.
     sched.run(function()
     	local waitd = {emitter=emitter_task, events={'an_event'}}
     	while true do
-    		local ev, data = sched.wait(waitd)
-    		print (ev, data)
+    		local _, _, data = sched.wait(waitd)
+    		print (data)
     	end
     end)
     

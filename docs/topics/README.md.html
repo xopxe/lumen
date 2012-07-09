@@ -136,8 +136,8 @@ one second apart. Another tasks receives those signals and prints them.</p>
 </span> sched.run(<span class="keyword">function</span>()
      <span class="keyword">local</span> waitd = {emitter=emitter_task, events={<span class="string">'an_event'</span>}}
      <span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-         <span class="keyword">local</span> ev, data = sched.wait(waitd)
-         <span class="global">print</span> (ev, data)
+         <span class="keyword">local</span> _, _, data = sched.wait(waitd)
+         <span class="global">print</span> (data)
      <span class="keyword">end</span>
  <span class="keyword">end</span>) 
 </pre>
