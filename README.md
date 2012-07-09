@@ -39,7 +39,7 @@ There are also named pipes, for intertask communications.
 Here is a small program, with two tasks: one emits ten numbered signals, 
 one second apart. Another tasks receives those signals and prints them.
 
-
+```lua
     local sched=require 'sched'
     
     -- task emits signals
@@ -60,14 +60,19 @@ one second apart. Another tasks receives those signals and prints them.
     end)
     
     sched.go()
-
+```
 
 ## How to try it out?
 
-This example has a few tasks exchanging messages, showing off basic 
-functionality:
+There several test programs in the tests folder. This example has a 
+few tasks exchanging messages, showing off basic functionality:
 
     lua test.lua
+
+You can wait on multiple events, from multiple sources. Check some
+possibilities here:
+
+    lua test-multiwait.lua
 
 If you want to see LuaSocket integration working, try:
 
