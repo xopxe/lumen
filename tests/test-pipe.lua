@@ -5,6 +5,7 @@
 package.path = package.path .. ";;;../?.lua"
 
 local sched=require 'sched'
+--require "log".setlevel('ALL')
 
 -- sender --
 sched.run(function()
@@ -25,6 +26,5 @@ sched.run(function()
 		print("received", n)
 	end
 end)
-
 
 sched.go()

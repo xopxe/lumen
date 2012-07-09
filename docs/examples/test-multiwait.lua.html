@@ -68,7 +68,8 @@
 
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
 
-sched.sigrun( <span class="global">print</span>, {emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}})
+<span class="comment">-- Watch for some task dying.
+</span>sched.sigrun( <span class="global">print</span>, {emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}})
 
 <span class="comment">-- 3 tasks, each emitting a combination of 2 events out of 3 possible,
 </span><span class="comment">-- and sending it's own number as data

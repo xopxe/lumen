@@ -67,7 +67,8 @@
 </span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
 
 <span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'sched'</span>
-
+<span class="comment">--require "log".setlevel('ALL')
+</span>
 <span class="comment">-- sender --
 </span>sched.run(<span class="keyword">function</span>()
 	<span class="keyword">local</span> apipe=sched.pipes.new(<span class="string">'apipe'</span>, <span class="number">3</span>)
@@ -87,7 +88,6 @@
 		<span class="global">print</span>(<span class="string">"received"</span>, n)
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
-
 
 sched.go()
 

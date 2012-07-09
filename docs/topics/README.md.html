@@ -119,7 +119,7 @@ frequently, as other weird breakages.</p>
 <p>Here is a small program, with two tasks: one emits ten numbered signals, 
 one second apart. Another tasks receives those signals and prints them.</p>
 
-
+<p>```lua</p>
 
 <pre>
  <span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'sched'</span>
@@ -139,20 +139,28 @@ one second apart. Another tasks receives those signals and prints them.</p>
          <span class="keyword">local</span> ev, data = sched.wait(waitd)
          <span class="global">print</span> (ev, data)
      <span class="keyword">end</span>
- <span class="keyword">end</span>)
-
- sched.go()
+ <span class="keyword">end</span>) 
 </pre>
+
+<p>```</p>
 
 <p><a name="How_to_try_it_out_"></a></p>
 <h2>How to try it out?</h2>
 
-<p>This example has a few tasks exchanging messages, showing off basic 
-functionality:</p>
+<p>There several test programs in the tests folder. This example has a 
+few tasks exchanging messages, showing off basic functionality:</p>
 
 
 <pre>
  lua test.lua
+</pre>
+
+<p>You can wait on multiple events, from multiple sources. Check some
+possibilities here:</p>
+
+
+<pre>
+ lua test-multiwait.lua
 </pre>
 
 <p>If you want to see LuaSocket integration working, try:</p>

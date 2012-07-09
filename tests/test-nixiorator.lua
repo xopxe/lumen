@@ -20,9 +20,9 @@ nixiorator.register_client(udprecv, 1500)
 nixiorator.register_client(fdrecv, 10)
 local nxtask = sched.run(nixiorator.taskf)
 
-sched.sigrun(function(file, data) print("!F", file, data:byte(1, #data)) end, {emitter=nxtask, events={fdrecv}})
+sched.sigrun(function(_, file, data) print("!F", file, data:byte(1, #data)) end, {emitter=nxtask, events={fdrecv}})
 
-sched.sigrun(function(...) print("!U", ...) end, {emitter=nxtask, events={udprecv}})
+sched.sigrun(function(_, ...) print("!U", ...) end, {emitter=nxtask, events={udprecv}})
 
 sched.run(function()
 	local tcprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'stream'))
@@ -30,10 +30,10 @@ sched.run(function()
 	sched.catalog.register("accepter")
 	local waitd={emitter=nxtask, events={tcprecv}}
 	while true do
-		local skt, msg, inskt  = sched.wait(waitd)
+		local _,skt, msg, inskt  = sched.wait(waitd)
 		print ("#", os.time(), skt, msg, inskt )
 		if msg=='accepted' then
-			sched.sigrun(function(skt, data, err)
+			sched.sigrun(function(_, skt, data, err)
 				print("!T", skt, data, err)
 				if not data then sched.kill() end
 			end, {emitter=nxtask, events={inskt}})

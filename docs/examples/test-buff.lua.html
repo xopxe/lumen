@@ -84,7 +84,7 @@ sched.run(<span class="keyword">function</span>()
 	<span class="comment">-- receiver --
 </span>	<span class="keyword">local</span> waitd = {emitter=sender, events={<span class="string">'tick'</span>}}
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		<span class="keyword">local</span>  _, n = sched.wait(waitd)
+		<span class="keyword">local</span>  _, _, n = sched.wait(waitd)
 		<span class="global">print</span>(<span class="string">"received"</span>, n)
 		sched.sleep(<span class="number">3</span>)
 	<span class="keyword">end</span>
@@ -110,11 +110,11 @@ sched.run(<span class="keyword">function</span>()
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
 		<span class="comment">--consume buffered signals
 </span>		<span class="keyword">while</span> waitd.buff <span class="keyword">and</span> waitd.buff:len()&gt;<span class="number">0</span> <span class="keyword">do</span>
-			<span class="keyword">local</span>  _, n = sched.wait(waitd)
+			<span class="keyword">local</span>  _, _, n = sched.wait(waitd)
 			<span class="global">print</span>(<span class="string">"received (buff)"</span>, n)
 		<span class="keyword">end</span>
 		<span class="global">print</span>(<span class="string">"waiting"</span>)
-		<span class="keyword">local</span>  _, n = sched.wait(waitd)
+		<span class="keyword">local</span>  _, _, n = sched.wait(waitd)
 		<span class="global">print</span>(<span class="string">"received"</span>, n)
 		sched.sleep(<span class="number">3</span>)
 	<span class="keyword">end</span>

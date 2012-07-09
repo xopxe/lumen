@@ -22,7 +22,7 @@ assert(udpsend:setsockname("127.0.0.1", 0))
 assert(udpsend:setpeername("127.0.0.1", 8888))
 
 socketeer.register_client(udprecv)
-sched.sigrun(function(_, data) print("!U", data) end, 
+sched.sigrun(function(_, _, data) print("!U", data) end, 
 		{emitter=s, events={udprecv}})
 sched.run(function()
 	while true do
@@ -41,7 +41,7 @@ sched.run(function()
 	local server = assert(socket.bind('127.0.0.1', 8888))
 	socketeer.register_server(server, 3)-- -1)
 	while true do
-		local skt, msg, inskt = sched.wait({emitter=s, events={server}})
+		local _, _, msg, inskt = sched.wait({emitter=s, events={server}})
 		-- a connection was accepted, create a listener task
 		if msg=='accepted' then
 			sched.sigrun(function(_, data, err)

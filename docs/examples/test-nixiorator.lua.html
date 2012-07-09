@@ -82,9 +82,9 @@ nixiorator.register_client(udprecv, <span class="number">1500</span>)
 nixiorator.register_client(fdrecv, <span class="number">10</span>)
 <span class="keyword">local</span> nxtask = sched.run(nixiorator.taskf)
 
-sched.sigrun(<span class="keyword">function</span>(file, data) <span class="global">print</span>(<span class="string">"!F"</span>, file, data:byte(<span class="number">1</span>, #data)) <span class="keyword">end</span>, {emitter=nxtask, events={fdrecv}})
+sched.sigrun(<span class="keyword">function</span>(_, file, data) <span class="global">print</span>(<span class="string">"!F"</span>, file, data:byte(<span class="number">1</span>, #data)) <span class="keyword">end</span>, {emitter=nxtask, events={fdrecv}})
 
-sched.sigrun(<span class="keyword">function</span>(...) <span class="global">print</span>(<span class="string">"!U"</span>, ...) <span class="keyword">end</span>, {emitter=nxtask, events={udprecv}})
+sched.sigrun(<span class="keyword">function</span>(_, ...) <span class="global">print</span>(<span class="string">"!U"</span>, ...) <span class="keyword">end</span>, {emitter=nxtask, events={udprecv}})
 
 sched.run(<span class="keyword">function</span>()
 	<span class="keyword">local</span> tcprecv = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="string">'inet'</span>, <span class="string">'stream'</span>))
@@ -92,10 +92,10 @@ sched.run(<span class="keyword">function</span>()
 	sched.catalog.register(<span class="string">"accepter"</span>)
 	<span class="keyword">local</span> waitd={emitter=nxtask, events={tcprecv}}
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		<span class="keyword">local</span> skt, msg, inskt  = sched.wait(waitd)
+		<span class="keyword">local</span> _,skt, msg, inskt  = sched.wait(waitd)
 		<span class="global">print</span> (<span class="string">"#"</span>, <span class="global">os</span>.time(), skt, msg, inskt )
 		<span class="keyword">if</span> msg==<span class="string">'accepted'</span> <span class="keyword">then</span>
-			sched.sigrun(<span class="keyword">function</span>(skt, data, err)
+			sched.sigrun(<span class="keyword">function</span>(_, skt, data, err)
 				<span class="global">print</span>(<span class="string">"!T"</span>, skt, data, err)
 				<span class="keyword">if</span> <span class="keyword">not</span> data <span class="keyword">then</span> sched.kill() <span class="keyword">end</span>
 			<span class="keyword">end</span>, {emitter=nxtask, events={inskt}})

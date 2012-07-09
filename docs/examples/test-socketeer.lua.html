@@ -84,7 +84,7 @@
 <span class="global">assert</span>(udpsend:setpeername(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>))
 
 socketeer.register_client(udprecv)
-sched.sigrun(<span class="keyword">function</span>(_, data) <span class="global">print</span>(<span class="string">"!U"</span>, data) <span class="keyword">end</span>, 
+sched.sigrun(<span class="keyword">function</span>(_, _, data) <span class="global">print</span>(<span class="string">"!U"</span>, data) <span class="keyword">end</span>, 
 		{emitter=s, events={udprecv}})
 sched.run(<span class="keyword">function</span>()
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
@@ -103,7 +103,7 @@ sched.run(<span class="keyword">function</span>()
 	<span class="keyword">local</span> server = <span class="global">assert</span>(socket.bind(<span class="string">'127.0.0.1'</span>, <span class="number">8888</span>))
 	socketeer.register_server(server, <span class="number">3</span>)<span class="comment">-- -1)
 </span>	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		<span class="keyword">local</span> skt, msg, inskt = sched.wait({emitter=s, events={server}})
+		<span class="keyword">local</span> _, _, msg, inskt = sched.wait({emitter=s, events={server}})
 		<span class="comment">-- a connection was accepted, create a listener task
 </span>		<span class="keyword">if</span> msg==<span class="string">'accepted'</span> <span class="keyword">then</span>
 			sched.sigrun(<span class="keyword">function</span>(_, data, err)
