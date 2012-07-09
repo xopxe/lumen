@@ -94,10 +94,12 @@ local walktasks = function (waitingtasks, event, ...)
 	local my_task = coroutine.running()
 	for task, waitd in pairs(waitingtasks) do
 		--print('',':',task, waitd, waiting[task])
+		--[[
 		if task==my_task then 
 			log('SCHED', 'WARNING', '%s trying signal itself on waitd %s'
 				, tostring(task), tostring(waitd))
 		end
+		--]]
 		if wake_up( task, waitd ) then
 			waked_up[task]=waitd
 		else
@@ -330,7 +332,6 @@ M.pipes.new = function(name, size, timeout)
 	local pipe_data = {} --singleton event for pipe data
 	local buff_data = queue:new()
 	local waitd_data={emitter='*', buff_len=size+1, timeout=timeout, events = {pipe_data}, buff = buff_data}
-	M.wait_feed(waitd_data)
 	local waitd_enable={emitter='*', buff_len=1, timeout=timeout, buff_mode='drop_last', events = {pipe_enable}, buff = queue:new()}
 	local piped_read = function ()
 		local function format_signal(ev, ...)
@@ -369,6 +370,7 @@ M.pipes.new = function(name, size, timeout)
 	end
 	
 	pipes[name]=piped
+	M.wait_feed(waitd_data)
 	emit_signal(PIPES_EV, name, 'created', piped)
 	return piped
 end
