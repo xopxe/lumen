@@ -244,10 +244,10 @@ end
 
 M.catalog = {}
 
-local CATALOG_EV = {} --singleton origin for catalog events
+local CATALOG_EV = coroutine.create(function () end) --singleton origin for catalog events
 --register of names for tasks
 --tasknames[co]=name
-local tasknames = setmetatable({CATALOG_EV = CATALOG_EV}, { __mode = 'v' })
+local tasknames = setmetatable({}, { __mode = 'v' })
 
 --- Register a name for the current task
 -- @param name a name for the task
@@ -274,7 +274,7 @@ M.catalog.waitfor = function ( name, timeout )
 	if co then
 		return co
 	else
-		local _, action, received_co = M.wait({emitter=CATALOG_EV, timeout=timeout, events={name}})
+		local _, _, action, received_co = M.wait({emitter=CATALOG_EV, timeout=timeout, events={name}})
 		if action == 'registered' then
 			return received_co
 		else
@@ -309,7 +309,7 @@ M.pipes={}
 -- Return data if available, nil, 'timeout' on timeout
 -- @table piped
 
-local PIPES_EV={} --singleton origin for pipes events
+local PIPES_EV=coroutine.create(function () end)  --singleton origin for pipes events
 tasknames[PIPES_EV]=PIPES_EV
 --register of pipes
 local pipes =  setmetatable({}, { __mode = 'kv' })
