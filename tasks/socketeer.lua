@@ -6,6 +6,7 @@
 
 local socket = require("socket")
 local sched = require("sched")
+local catalog = require "catalog"
 
 --get locals for some useful things
 local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type 
@@ -124,7 +125,7 @@ end
 --local socketeer = require 'socketeer'
 --local n = sched.run(socketeer.taskf)
 M.taskf = function ()
-	sched.catalog.register('socketeer')
+	catalog.register('socketeer')
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )

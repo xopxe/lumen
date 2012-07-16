@@ -74,8 +74,10 @@
 <span class="global">require</span> <span class="string">"strict"</span>
 
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
+<span class="keyword">local</span> catalog = <span class="global">require</span> <span class="string">"catalog"</span>
 <span class="keyword">local</span> nixiorator = <span class="global">require</span> <span class="string">"tasks/nixiorator"</span>
 <span class="keyword">local</span> nixio = nixiorator.nixio
+
 
 <span class="keyword">local</span> udprecv = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="string">'inet'</span>, <span class="string">'dgram'</span>))
 <span class="keyword">local</span> fdrecv = <span class="global">assert</span>(nixio.open(<span class="string">'/dev/input/mice'</span>, 
@@ -92,7 +94,7 @@ sched.sigrun(<span class="keyword">function</span>(_, ...) <span class="global">
 sched.run(<span class="keyword">function</span>()
 	<span class="keyword">local</span> tcprecv = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="string">'inet'</span>, <span class="string">'stream'</span>))
 	nixiorator.register_server(tcprecv, <span class="string">'line'</span>)
-	sched.catalog.register(<span class="string">"accepter"</span>)
+	catalog.register(<span class="string">"accepter"</span>)
 	<span class="keyword">local</span> waitd={emitter=nxtask, events={tcprecv}}
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
 		<span class="keyword">local</span> _,skt, msg, inskt  = sched.wait(waitd)
@@ -107,7 +109,7 @@ sched.run(<span class="keyword">function</span>()
 <span class="keyword">end</span>)
 
 sched.run(<span class="keyword">function</span>()
-	sched.catalog.waitfor(<span class="string">'accepter'</span>)
+	catalog.waitfor(<span class="string">'accepter'</span>)
 	<span class="keyword">local</span> tcpsend = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">0</span>, <span class="string">'inet'</span>, <span class="string">'stream'</span>))
 	tcpsend:connect(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>

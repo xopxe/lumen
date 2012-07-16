@@ -8,21 +8,21 @@ package.path = package.path .. ";;;../?.lua"
 
 local sched = require "sched"
 --require "log".setlevel('ALL')
-sched.catalog = require 'catalog'
+local catalog = require 'catalog'
 
 
 sched.run(function()
-	sched.catalog.register('main')
+	catalog.register('main')
 	local A=sched.run(function()
-		sched.catalog.register('A')
+		catalog.register('A')
 		sched.sleep(2)
 		print("A says: emittig 'ev, data!'")
 		sched.signal('ev', 'data!')
 		print("A says: finishing")
 	end)
 	local B=sched.run(function()
-		sched.catalog.register('B')
-		local A = sched.catalog.waitfor('A')
+		catalog.register('B')
+		local A = catalog.waitfor('A')
 		print ("B says: A found at", A)
 		print ("B says: waiting for a 'die' from A")
 		local _, _, status = sched.wait({emitter=A, events={sched.EVENT_DIE}})
