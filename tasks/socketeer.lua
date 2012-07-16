@@ -121,7 +121,7 @@ end
 -- With this task running, socketeer will emit the signals from registered sockets 
 -- (see @{register_server} and @{register_client}).
 -- @usage local sched = require 'sched'
---local socketter = require 'socketeer'
+--local socketeer = require 'socketeer'
 --local n = sched.run(socketeer.taskf)
 M.taskf = function ()
 	sched.catalog.register('socketeer')

@@ -1,4 +1,5 @@
-file = {"sched.lua", "tasks/nixiorator.lua", "tasks/socketeer.lua"}
+file = {"sched.lua", "mutex.lua", "catalog.lua", "pipes.lua"
+	, "tasks/nixiorator.lua", "tasks/socketeer.lua"}
 project = "Lumen"
 description = "A cooperative scheduler for Lua tasks"
 format = 'markdown'

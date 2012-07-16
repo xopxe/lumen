@@ -1,0 +1,206 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>Lumen</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><strong>pipes</strong></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/socketeer.html">socketeer</a></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
+  <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>pipes</code></h1>
+
+<p>Named pipes.</p>
+<p> Pipes allow can be used to communicate tasks. Unlike plain signals,
+ no message can get lost: writers get blocked when the pipe is full</p>
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">local pipes = require 'pipes'</pre>
+    </ul>
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#new">new&nbsp;(name, size, timeout)</a></td>
+	<td class="summary">Create a new pipe.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#waitfor">waitfor&nbsp;(name, timeout)</a></td>
+	<td class="summary">Look for a pipe with the given name.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#iterator">iterator&nbsp;()</a></td>
+	<td class="summary">Iterator for all pipes.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#piped">piped</a></td>
+	<td class="summary">Pipe descriptor.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "new"></a>
+    <strong>new&nbsp;(name, size, timeout)</strong>
+    </dt>
+    <dd>
+    Create a new pipe. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>name</em></code>:  a name for the pipe</li>
+       <li><code><em>size</em></code>:  maximum number of signals in the pipe</li>
+       <li><code><em>timeout</em></code>:  timeout for blocking on pipe operations. -1 or nil disable
+ timeout</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        the pipe descriptor (see <a href="../modules/pipes.html#piped">piped</a>) on success, or nil,'exists' if a pipe
+ with the given name already exists
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "waitfor"></a>
+    <strong>waitfor&nbsp;(name, timeout)</strong>
+    </dt>
+    <dd>
+    Look for a pipe with the given name. 
+ Can wait up to timeout until it appears.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>name</em></code>:  of the pipe to get</li>
+       <li><code><em>timeout</em></code>:  max. time time to wait. -1 or nil disables timeout.</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "iterator"></a>
+    <strong>iterator&nbsp;()</strong>
+    </dt>
+    <dd>
+    Iterator for all pipes. 
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">for name, pipe in sched.pipes.iterator() do
+	print(name, pipe)
+end</pre>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        iterator
+    </ol>
+
+
+</dd>
+</dl>
+    <h2><a name="Tables"></a>Tables</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "piped"></a>
+    <strong>piped</strong>
+    </dt>
+    <dd>
+    Pipe descriptor. 
+ A named pipe.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>write</em></code>:  writes to the pipe. Will block when writing to a full pipe.
+ Return true on success, nil, 'timeout' on timeout</li>
+       <li><code><em>read</em></code>:  reads from the pipe. Will block on a empty pipe.
+ Return data if available, nil, 'timeout' on timeout</li>
+    </ul>
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

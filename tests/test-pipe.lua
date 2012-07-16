@@ -6,6 +6,9 @@ package.path = package.path .. ";;;../?.lua"
 
 local sched=require 'sched'
 --require "log".setlevel('ALL')
+sched.pipes=require 'pipes'
+
+sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})
 
 -- sender --
 sched.run(function()

@@ -44,7 +44,10 @@
 </ul>
 <h2>Modules</h2>
 <ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
@@ -68,7 +71,10 @@
 
 <span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'sched'</span>
 <span class="comment">--require "log".setlevel('ALL')
-</span>
+</span>sched.pipes=<span class="global">require</span> <span class="string">'pipes'</span>
+
+sched.sigrun( <span class="global">print</span>, {emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}})
+
 <span class="comment">-- sender --
 </span>sched.run(<span class="keyword">function</span>()
 	<span class="keyword">local</span> apipe=sched.pipes.new(<span class="string">'apipe'</span>, <span class="number">3</span>)

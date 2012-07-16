@@ -51,7 +51,6 @@ sched.run(function()
 			local  _, _, n = sched.wait(waitd)
 			print("received (buff)", n)
 		end
-		print("waiting")
 		local  _, _, n = sched.wait(waitd)
 		print("received", n)
 		sched.sleep(3)

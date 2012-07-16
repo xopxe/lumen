@@ -8,6 +8,8 @@ package.path = package.path .. ";;;../?.lua"
 
 local sched = require "sched"
 --require "log".setlevel('ALL')
+sched.catalog = require 'catalog'
+
 
 sched.run(function()
 	sched.catalog.register('main')
