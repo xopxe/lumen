@@ -396,7 +396,7 @@ end
 
 --- Iterator for all pipes
 -- @return iterator
--- @usage for name, pipe in sched.pipes.tasks() do
+-- @usage for name, pipe in sched.pipes.iterator() do
 --	print(name, pipe)
 --end
 M.pipes.iterator = function ()
@@ -406,16 +406,25 @@ end
 
 M.mutex = {}
 
+local waitd_locks = setmetatable({}, {__mode = "kv"}) 
+
 M.mutex.new = function ()
 	local m = {}
 	local event_release = {}
-	local waitd_lock = {emitter='*', events={event_release, event_die}, buff_length=1}
-	M.waitd_feed(waitd_lock)
+	local events_release = {event_release, event_die}
+	local function get_waitd_lock (task) --memoize waitds
+		if waitd_locks[task] then return waitd_locks[task] 
+		else
+			local waitd = {emitter=task, events=events_release}
+			waitd_locks[task] = waitd
+			return waitd
+		end
+	end
 	
 	m.acquire = function()
-		repeat 
-			local emitter, event = M.wait(waitd_lock)
-		until emitter == m.locker 
+		if m.locker and coroutine.status(m.locker)~='dead' then 
+			M.wait(get_waitd_lock (m.locker))
+		end
 		m.locker = coroutine.running()
 	end
 	
@@ -423,6 +432,7 @@ M.mutex.new = function ()
 		if coroutine.running()~=m.locker then
 			error('Attempt to release a non-acquired lock')
 		end
+		m.locker = nil
 		M.signal(event_release)
 	end
 
@@ -435,8 +445,6 @@ M.mutex.new = function ()
 		return wrapper
 	end
 	
-	m.locker = coroutine.running()
-	M.signal(event_release)
 	return m
 end
 
