@@ -9,8 +9,10 @@ package.path = package.path .. ";;;../?.lua"
 require "strict"
 
 local sched = require "sched"
+local catalog = require "catalog"
 local nixiorator = require "tasks/nixiorator"
 local nixio = nixiorator.nixio
+
 
 local udprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'dgram'))
 local fdrecv = assert(nixio.open('/dev/input/mice', 
@@ -27,7 +29,7 @@ sched.sigrun(function(_, ...) print("!U", ...) end, {emitter=nxtask, events={udp
 sched.run(function()
 	local tcprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'stream'))
 	nixiorator.register_server(tcprecv, 'line')
-	sched.catalog.register("accepter")
+	catalog.register("accepter")
 	local waitd={emitter=nxtask, events={tcprecv}}
 	while true do
 		local _,skt, msg, inskt  = sched.wait(waitd)
@@ -42,7 +44,7 @@ sched.run(function()
 end)
 
 sched.run(function()
-	sched.catalog.waitfor('accepter')
+	catalog.waitfor('accepter')
 	local tcpsend = assert(nixio.bind("127.0.0.1", 0, 'inet', 'stream'))
 	tcpsend:connect("127.0.0.1",8888)
 	while true do

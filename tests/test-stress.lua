@@ -16,7 +16,6 @@ local i=0
 
 -- task emits as fast as it can (but also yields to be realistic)
 local emitter_task=sched.run(function()
-	sched.catalog.register('A')
 	while true do
 		sched.signal('ev', 'data!')
 		sched.yield()
