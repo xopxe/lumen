@@ -394,7 +394,7 @@ M.pipes.waitfor = function(name, timeout)
 	end
 end
 
---- Iterator for all pipes
+--- Iterator for all pipes.
 -- @return iterator
 -- @usage for name, pipe in sched.pipes.iterator() do
 --	print(name, pipe)
@@ -403,11 +403,16 @@ M.pipes.iterator = function ()
 	return function (_, v) return next(pipes, v) end
 end
 
-
+--- Mutex operations.
+-- mutexes are used to ensure portions of code are accessed by a single
+-- task at a time
+-- @section mutex
 M.mutex = {}
 
 local waitd_locks = setmetatable({}, {__mode = "kv"}) 
 
+--- Create a new mutex object.
+-- @return mutex object (see @{mutexd})
 M.mutex.new = function ()
 	local m = {}
 	local event_release = {}
@@ -738,6 +743,20 @@ M.to_clean_up = 1000
 -- @field events optional, array with the events to wait. Can contain a '\*', 
 -- or be '\*' instead of a table, to mark interest in any event
 -- @table waitd
+
+------
+-- Mutex object.
+-- mutexes are used to ensure portions of code are accessed by a single
+-- task at a time. Said portions are called "critical sections", and are delimited by
+-- a lock acquisition at the beginning, a a lock release at the end. Only one task can acquire
+-- a lock at a time, so there is only on task inside the critical section at a time.
+-- @field acquire acquires a lock. If the mutex is already acquired, will block until the task that 
+-- holds it releases the mutex or finshes
+-- @field release releases the lock. A task can only release a lock it acquired before, otherwise a
+-- error is triggered.
+-- @field synchronize  a helper that takes a function, a returns a wrapper that is locked with 
+-- the mutex.
+-- @table mutexd
 
 return M
 

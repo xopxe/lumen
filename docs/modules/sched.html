@@ -34,6 +34,7 @@
 <ul>
 <li><a href="#Catalog_operations">Catalog operations</a></li>
 <li><a href="#Named_pipes">Named pipes</a></li>
+<li><a href="#Mutex_operations">Mutex operations</a></li>
 <li><a href="#Scheduler_operations">Scheduler operations</a></li>
 <li><a href="#Data_structures">Data structures</a></li>
 </ul>
@@ -106,7 +107,14 @@
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#M.pipes.iterator">M.pipes.iterator&nbsp;()</a></td>
-	<td class="summary">Iterator for all pipes</td>
+	<td class="summary">Iterator for all pipes.</td>
+	</tr>
+</table>
+<h2><a href="#Mutex_operations">Mutex operations</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#M.mutex.new">M.mutex.new&nbsp;()</a></td>
+	<td class="summary">Create a new mutex object.</td>
 	</tr>
 </table>
 <h2><a href="#Scheduler_operations">Scheduler operations</a></h2>
@@ -181,6 +189,10 @@
 	<tr>
 	<td class="name" nowrap><a href="#waitd">waitd</a></td>
 	<td class="summary">Wait descriptor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#mutexd">mutexd</a></td>
+	<td class="summary">Mutex object.</td>
 	</tr>
 </table>
 
@@ -327,12 +339,12 @@ end</pre>
     <strong>M.pipes.iterator&nbsp;()</strong>
     </dt>
     <dd>
-    Iterator for all pipes 
+    Iterator for all pipes. 
 
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">for name, pipe in sched.pipes.tasks() do
+        <pre class="example">for name, pipe in sched.pipes.iterator() do
 	print(name, pipe)
 end</pre>
     </ul>
@@ -340,6 +352,27 @@ end</pre>
     <h3>Returns:</h3>
     <ol>
         iterator
+    </ol>
+
+
+</dd>
+</dl>
+    <h2><a name="Mutex_operations"></a>Mutex operations</h2>
+     mutexes are used to ensure portions of code are accessed by a single
+ task at a time
+    <dl class="function">
+    <dt>
+    <a name = "M.mutex.new"></a>
+    <strong>M.mutex.new&nbsp;()</strong>
+    </dt>
+    <dd>
+    Create a new mutex object. 
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+        mutex object (see <a href="../modules/sched.html#mutexd">mutexd</a>)
     </ol>
 
 
@@ -704,6 +737,31 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
  from the buffer. Can be reset by the user.</li>
        <li><code><em>events</em></code>:  optional, array with the events to wait. Can contain a '*', 
  or be '*' instead of a table, to mark interest in any event</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "mutexd"></a>
+    <strong>mutexd</strong>
+    </dt>
+    <dd>
+    Mutex object. 
+ mutexes are used to ensure portions of code are accessed by a single
+ task at a time. Said portions are called "critical sections", and are delimited by
+ a lock acquisition at the beginning, a a lock release at the end. Only one task can acquire
+ a lock at a time, so there is only on task inside the critical section at a time.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>acquire</em></code>:  acquires a lock. If the mutex is already acquired, will block until the task that 
+ holds it releases the mutex or finshes</li>
+       <li><code><em>release</em></code>:  releases the lock. A task can only release a lock it acquired before, otherwise a
+ error is triggered.</li>
+       <li><code><em>synchronize</em></code>:   a helper that takes a function, a returns a wrapper that is locked with 
+ the mutex.</li>
     </ul>
 
 
