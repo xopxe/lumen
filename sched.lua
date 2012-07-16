@@ -404,6 +404,43 @@ M.pipes.iterator = function ()
 end
 
 
+M.mutex = {}
+
+M.mutex.new = function ()
+	local m = {}
+	local event_release = {}
+	local waitd_lock = {emitter='*', events={event_release, event_die}, buff_length=1}
+	M.waitd_feed(waitd_lock)
+	
+	m.acquire = function()
+		repeat 
+			local emitter, event = M.wait(waitd_lock)
+		until emitter == m.locker 
+		m.locker = coroutine.running()
+	end
+	
+	m.release = function()
+		if coroutine.running()~=m.locker then
+			error('Attempt to release a non-acquired lock')
+		end
+		M.signal(event_release)
+	end
+
+	m.synchornize = function (f)
+		local wrapper = function(...)
+			m.acquire()
+			f(...)
+			m.release()
+		end
+		return wrapper
+	end
+	
+	m.locker = coroutine.running()
+	M.signal(event_release)
+	return m
+end
+
+
 --- Scheduler operations.
 -- Main API of the scheduler.
 -- @section scheduler
