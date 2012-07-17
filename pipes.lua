@@ -121,7 +121,7 @@ end
 
 --- Iterator for all pipes.
 -- @return iterator
--- @usage for name, pipe in sched.pipes.iterator() do
+-- @usage for name, pipe in pipes.iterator() do
 --	print(name, pipe)
 --end
 M.iterator = function ()
