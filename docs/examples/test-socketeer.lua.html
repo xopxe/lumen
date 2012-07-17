@@ -76,8 +76,6 @@
 <span class="keyword">local</span> socketeer = <span class="global">require</span> <span class="string">"tasks/socketeer"</span>
 <span class="keyword">local</span> socket = socketeer.socket
 
-<span class="keyword">local</span> s = sched.run(socketeer.taskf)
-
 <span class="comment">--udp
 </span><span class="comment">---[[
 </span><span class="keyword">local</span> udprecv = <span class="global">assert</span>(socket.udp())
@@ -89,7 +87,7 @@
 
 socketeer.register_client(udprecv)
 sched.sigrun(<span class="keyword">function</span>(_, _, data) <span class="global">print</span>(<span class="string">"!U"</span>, data) <span class="keyword">end</span>, 
-		{emitter=s, events={udprecv}})
+		{emitter=socketeer.task, events={udprecv}})
 sched.run(<span class="keyword">function</span>()
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
 		<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
@@ -107,12 +105,12 @@ sched.run(<span class="keyword">function</span>()
 	<span class="keyword">local</span> server = <span class="global">assert</span>(socket.bind(<span class="string">'127.0.0.1'</span>, <span class="number">8888</span>))
 	socketeer.register_server(server, <span class="number">3</span>)<span class="comment">-- -1)
 </span>	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		<span class="keyword">local</span> _, _, msg, inskt = sched.wait({emitter=s, events={server}})
+		<span class="keyword">local</span> _, _, msg, inskt = sched.wait({emitter=socketeer.task, events={server}})
 		<span class="comment">-- a connection was accepted, create a listener task
 </span>		<span class="keyword">if</span> msg==<span class="string">'accepted'</span> <span class="keyword">then</span>
-			sched.sigrun(<span class="keyword">function</span>(_, data, err)
+			sched.sigrun(<span class="keyword">function</span>(_,_, data, err)
 				<span class="global">print</span>(<span class="string">"!T"</span>, data, err <span class="keyword">or</span> <span class="string">''</span>)
-			<span class="keyword">end</span>, {emitter=s, events={inskt}})
+			<span class="keyword">end</span>, {emitter=socketeer.task, events={inskt}})
 		<span class="keyword">end</span>
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)

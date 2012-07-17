@@ -20,25 +20,24 @@ local fdrecv = assert(nixio.open('/dev/input/mice',
 
 nixiorator.register_client(udprecv, 1500)
 nixiorator.register_client(fdrecv, 10)
-local nxtask = sched.run(nixiorator.taskf)
 
-sched.sigrun(function(_, file, data) print("!F", file, data:byte(1, #data)) end, {emitter=nxtask, events={fdrecv}})
+sched.sigrun(function(_, _, data) print("!F", data:byte(1, #data)) end, {emitter=nixiorator.task, events={fdrecv}})
 
-sched.sigrun(function(_, ...) print("!U", ...) end, {emitter=nxtask, events={udprecv}})
+sched.sigrun(function(_, _, ...) print("!U", ...) end, {emitter=nixiorator.task, events={udprecv}})
 
 sched.run(function()
 	local tcprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'stream'))
 	nixiorator.register_server(tcprecv, 'line')
 	catalog.register("accepter")
-	local waitd={emitter=nxtask, events={tcprecv}}
+	local waitd={emitter=nixiorator.task, events={tcprecv}}
 	while true do
 		local _,skt, msg, inskt  = sched.wait(waitd)
 		print ("#", os.time(), skt, msg, inskt )
 		if msg=='accepted' then
-			sched.sigrun(function(_, skt, data, err)
-				print("!T", skt, data, err)
+			sched.sigrun(function(_, _, data, err)
+				print("!T", data, err or '')
 				if not data then sched.kill() end
-			end, {emitter=nxtask, events={inskt}})
+			end, {emitter=nixiorator.task, events={inskt}})
 		end
 	end
 end)

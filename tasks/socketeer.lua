@@ -36,7 +36,7 @@ M.register_server = function (skt, pattern)
 end
 
 --- Registers a client socket (TCP or UDP) with socketeer.
--- socketeer will signal skt, data, error On data read. data is the string read. 
+-- socketeer will signal skt, data, error on data read. data is the string read. 
 -- Data can be nil if error is 'closed'. A 'closed' error also means the skt got unregistered. 
 -- When reading from TCP with pattern>0, the last signal can provide a partial read after 
 -- the err return.
@@ -68,7 +68,7 @@ end
 --- Performs a single step for socketeer. 
 -- Will block at the OS level for up to timeout seconds. 
 -- Usually this method is not used (probably what you want is to 
--- register @{taskf} with the Lumen scheduler).
+-- use @{task}).
 -- Socketeer will emit the signals from registered sockets 
 -- (see @{register_server} and @{register_client}).
 -- @param timeout Max allowed blocking time.
@@ -118,19 +118,22 @@ M.step = function (timeout)
 	end
 end
 
---- The function to be registered with the Lumen scheduler.
--- With this task running, socketeer will emit the signals from registered sockets 
--- (see @{register_server} and @{register_client}).
--- @usage local sched = require 'sched'
+--- A reference to the LuaSocket library.
+M.socket = socket
+
+--- The socketeer task.
+-- This task will emit the signals from registered sockets (see @{register_server} and @{register_client}). 
+-- This task  is registered in the catalog with the name 'socketeer'.
+-- @usage local sched = require "sched"
 --local socketeer = require 'socketeer'
---local n = sched.run(socketeer.taskf)
-M.taskf = function ()
+--sched.sigrun(print, {emitter=socketeer.task, events='*'})
+M.task = sched.run( function ()
 	catalog.register('socketeer')
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )
 	end
-end
+end)
 
 return M
 

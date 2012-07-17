@@ -96,8 +96,8 @@ end
 
 --- Performs a single step for nixiorator.
 -- Will block at the OS level for up to timeout seconds.
--- Usually this method is not used (probably what you want is to
--- register @{taskf} with the Lumen scheduler).
+-- Usually this method is not used (probably what you want is to 
+-- use @{task}).
 -- Nixiorator will emit the signals from registered sockets
 -- (see @{register_server} and @{register_client}).
 -- @param timeout Max allowed blocking time.
@@ -114,19 +114,19 @@ M.step = function (timeout)
 
 end
 
---- The function to be registered with the Lumen scheduler.
--- With this task running, nixiorator will emit the signals from registered sockets.
--- (see @{register_server} and @{register_client}).
+--- The nixiorator task.
+-- This task will emit the signals from registered sockets (see @{register_server} and @{register_client}). 
+-- This task is registered in the catalog with the name 'nixiorator'.
 -- @usage local sched = require "sched"
 --local nixiorator = require "nixiorator"
---local n = sched.run(nixiorator.taskf)
-M.taskf = function ()
+--sched.sigrun(print, {emitter=nixiorator.task, events='*'})
+M.task = sched.run( function ()
 	catalog.register('nixiorator')
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )
 	end
-end
+end)
 
 --- A idling function.
 -- this is valid replacement function for Lumen's sched.idle
