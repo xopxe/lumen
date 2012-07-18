@@ -57,7 +57,7 @@ local M = function()
 		sched.signal(event_release)
 	end
 
-	m.synchornize = function (f)
+	m.synchronize = function (f)
 		local wrapper = function(...)
 			m.acquire()
 			f(...)
