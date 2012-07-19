@@ -36,6 +36,7 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><strong>test-pipe.lua</strong></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
@@ -44,7 +45,10 @@
 </ul>
 <h2>Modules</h2>
 <ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
@@ -67,10 +71,12 @@
 </span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
 
 <span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'sched'</span>
+<span class="comment">--require "log".setlevel('ALL')
+</span><span class="keyword">local</span> pipes=<span class="global">require</span> <span class="string">'pipes'</span>
 
 <span class="comment">-- sender --
 </span>sched.run(<span class="keyword">function</span>()
-	<span class="keyword">local</span> apipe=sched.pipes.new(<span class="string">'apipe'</span>, <span class="number">3</span>)
+	<span class="keyword">local</span> apipe=pipes.new(<span class="string">'apipe'</span>, <span class="number">3</span>)
 	<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">10</span> <span class="keyword">do</span>
 		<span class="global">print</span>(<span class="string">'writing'</span>, i )
 		apipe.write(i)
@@ -80,14 +86,13 @@
 
 <span class="comment">--receiver
 </span>sched.run(<span class="keyword">function</span>()
-	<span class="keyword">local</span> apipe=sched.pipes.waitfor(<span class="string">'apipe'</span>)
+	<span class="keyword">local</span> apipe=pipes.waitfor(<span class="string">'apipe'</span>)
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
 		sched.sleep(<span class="number">3</span>)
 		<span class="keyword">local</span> n = apipe.read()
 		<span class="global">print</span>(<span class="string">"received"</span>, n)
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
-
 
 sched.go()
 

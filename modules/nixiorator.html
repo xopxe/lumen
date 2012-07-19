@@ -39,7 +39,10 @@
 
 <h2>Modules</h2>
 <ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
   <li><strong>nixiorator</strong></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
@@ -51,6 +54,7 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
@@ -90,16 +94,16 @@
 	<td class="summary">Performs a single step for nixiorator.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#taskf">taskf&nbsp;()</a></td>
-	<td class="summary">The function to be registered with the Lumen scheduler.</td>
-	</tr>
-	<tr>
 	<td class="name" nowrap><a href="#idle">idle&nbsp;()</a></td>
 	<td class="summary">A idling function.</td>
 	</tr>
 </table>
 <h2><a href="#Fields">Fields</a></h2>
 <table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#task">task</a></td>
+	<td class="summary">The nixiorator task.</td>
+	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#nixio">nixio</a></td>
 	<td class="summary">A reference to the nixio library.</td>
@@ -189,8 +193,8 @@
     <dd>
     Performs a single step for nixiorator. 
  Will block at the OS level for up to timeout seconds.
- Usually this method is not used (probably what you want is to
- register <a href="../modules/nixiorator.html#taskf">taskf</a> with the Lumen scheduler).
+ Usually this method is not used (probably what you want is to 
+ use <a href="../modules/nixiorator.html#task">task</a>).
  Nixiorator will emit the signals from registered sockets
  (see <a href="../modules/nixiorator.html#register_server">register_server</a> and <a href="../modules/nixiorator.html#register_client">register_client</a>).
 
@@ -199,26 +203,6 @@
        <li><code><em>timeout</em></code>:  Max allowed blocking time.</li>
     </ul>
 
-
-
-
-</dd>
-    <dt>
-    <a name = "taskf"></a>
-    <strong>taskf&nbsp;()</strong>
-    </dt>
-    <dd>
-    The function to be registered with the Lumen scheduler. 
- With this task running, nixiorator will emit the signals from registered sockets.
- (see <a href="../modules/nixiorator.html#register_server">register_server</a> and <a href="../modules/nixiorator.html#register_client">register_client</a>).
-
-
-    <h3>Usage:</h3>
-    <ul>
-        <pre class="example">local sched = require "sched"
-local nixiorator = require "nixiorator"
-local n = sched.run(nixiorator.taskf)</pre>
-    </ul>
 
 
 
@@ -240,6 +224,26 @@ local n = sched.run(nixiorator.taskf)</pre>
     <h2><a name="Fields"></a>Fields</h2>
     
     <dl class="function">
+    <dt>
+    <a name = "task"></a>
+    <strong>task</strong>
+    </dt>
+    <dd>
+    The nixiorator task. 
+ This task will emit the signals from registered sockets (see <a href="../modules/nixiorator.html#register_server">register_server</a> and <a href="../modules/nixiorator.html#register_client">register_client</a>). 
+ This task is registered in the catalog with the name 'nixiorator'.
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">local sched = require "sched"
+local nixiorator = require "nixiorator"
+sched.sigrun(print, {emitter=nixiorator.task, events='*'})</pre>
+    </ul>
+
+
+
+</dd>
     <dt>
     <a name = "nixio"></a>
     <strong>nixio</strong>

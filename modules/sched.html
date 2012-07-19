@@ -41,7 +41,10 @@
 
 <h2>Modules</h2>
 <ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><strong>sched</strong></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
@@ -53,6 +56,7 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
@@ -382,8 +386,9 @@ end</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>f</em></code>:  function to be called when the signal appears. the signal
- is passed to f as parameter.</li>
+       <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
+ is passed to f as parameter.The signal will be provided as 
+ emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
        <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
     </ul>
 
@@ -409,8 +414,9 @@ end</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>f</em></code>:  function to be called when the signal appears. the signal
- is passed to f as parameter.</li>
+       <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
+ is passed to f as parameter. The signal will be provided as 
+ emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
        <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
     </ul>
 
@@ -508,6 +514,11 @@ end</pre>
     </ul>
 
 
+    <h3>Returns:</h3>
+    <ol>
+        On event returns emitter, event, event_parameters. On timeout
+ returns nil, 'timeout'
+    </ol>
 
 
 </dd>
