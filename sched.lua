@@ -145,10 +145,10 @@ step_task = function(t, ...)
 		local skip1ret = function(_, ...) return ... end
 		if ok then 
 			log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, true, skip1ret(unpack(ret)))
+			return emit_signal(t, event_die, true, skip1ret(unpack(ret,1,ret.n)))
 		else
 			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, nil, skip1ret(unpack(ret)))
+			return emit_signal(t, event_die, nil, skip1ret(unpack(ret,1,ret.n)))
 		end
 	end
 end
