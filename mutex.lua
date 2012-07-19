@@ -1,7 +1,11 @@
 --- Mutex operations.
--- mutexes are used to ensure portions of code are accessed by a single
+-- Mutexes are used to ensure portions of code are accessed by a single
 -- task at a time. The module is a function that will return a new 
 -- mutex object (see @{mutexd}) when invoked.
+-- Notice that Lumen being a cooperative scheduler, it will never preempt
+-- control from a task. Thus mutexes only make are needed if the fragment of code 
+-- being locked contains a call that explicitly relinquish control, such as 
+-- sched.sleep(), sched.yield(), sched.signal() or sched.wait().
 -- @module mutex
 -- @usage local mutex = require 'mutex'()
 --
@@ -86,7 +90,7 @@ end
 -- holds it releases the lock or finshes
 -- @field release releases the lock. A task can only release a lock it acquired before, otherwise a
 -- error is triggered.
--- @field synchronize  a helper that takes a function, a returns a wrapper that is locked with 
+-- @field synchronize  a helper that takes a function, and returns a wrapper that is locked with 
 -- the mutex.
 -- @table mutexd
 

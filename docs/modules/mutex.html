@@ -53,6 +53,7 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
@@ -67,9 +68,13 @@
 <h1>Module <code>mutex</code></h1>
 
 <p>Mutex operations.</p>
-<p> mutexes are used to ensure portions of code are accessed by a single
+<p> Mutexes are used to ensure portions of code are accessed by a single
  task at a time. The module is a function that will return a new 
- mutex object (see <a href="../modules/mutex.html#mutexd">mutexd</a>) when invoked.</p>
+ mutex object (see <a href="../modules/mutex.html#mutexd">mutexd</a>) when invoked.
+ Notice that Lumen being a cooperative scheduler, it will never preempt
+ control from a task. Thus mutexes only make are needed if the fragment of code 
+ being locked contains a call that explicitly relinquish control, such as 
+ sched.sleep(), sched.yield(), sched.signal() or sched.wait().</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local mutex = require 'mutex'()
@@ -115,7 +120,7 @@ local critical = mutex.synchronize(function() ... end) --other method</pre>
  holds it releases the lock or finshes</li>
        <li><code><em>release</em></code>:  releases the lock. A task can only release a lock it acquired before, otherwise a
  error is triggered.</li>
-       <li><code><em>synchronize</em></code>:   a helper that takes a function, a returns a wrapper that is locked with 
+       <li><code><em>synchronize</em></code>:   a helper that takes a function, and returns a wrapper that is locked with 
  the mutex.</li>
     </ul>
 

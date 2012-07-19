@@ -33,9 +33,10 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Introduction">Introduction</a></li>
+<li><a href="#How_does_it_look_">How does it look?</a></li>
 <li><a href="#Tasks">Tasks</a></li>
 <li><a href="#Pipes">Pipes</a></li>
-<li><a href="#How_does_it_look_">How does it look?</a></li>
+<li><a href="#Mutex">Mutex</a></li>
 <li><a href="#How_to_try_it_out_">How to try it out?</a></li>
 <li><a href="#License">License</a></li>
 <li><a href="#Who_">Who?</a></li>
@@ -59,6 +60,7 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
@@ -91,31 +93,6 @@ Tasks that interface with LuaSocket and nixio for socket and async file I/O supp
 <p>WARNING: Lumen is under heavy development, and API changes happen rather 
 frequently, as other weird breakages.</p>
 
-<p><a name="Tasks"></a></p>
-<h2>Tasks</h2>
-
-<p>Tasks can emit signals, and block waiting for them, and that's it.</p>
-
-<ul>
-    <li>A signal can be of any type, and carry any parameters</li>
-    <li>A task can wait on several signals, with a timeout.</li>
-    <li>Signals can be buffered; this helps avoid losing signals when waiting signals in a loop.</li>
-    <li>Tasks can register a name, and query for tasks by name.</li>
-    <li>Tasks also can wait for a given name to get registered.</li>
-</ul>
-
-<p><a name="Pipes"></a></p>
-<h2>Pipes</h2>
-
-<p>There are also named pipes, for intertask communications. </p>
-
-<ul>
-    <li>Similar to signals, but writers can get blocked too (when pipe gets full).</li>
-    <li>Synchronous and asynchronous (with a timeout) modes supported.</li>
-    <li>Multiple readers and writers per pipe supported. </li>
-    <li>For when no signal can get lost!</li>
-</ul>
-
 <p><a name="How_does_it_look_"></a></p>
 <h2>How does it look?</h2>
 
@@ -147,10 +124,45 @@ one second apart. Another tasks receives those signals and prints them.</p>
 
 <p>```</p>
 
+<p><a name="Tasks"></a></p>
+<h2>Tasks</h2>
+
+<p>Tasks can emit signals, and block waiting for them, and that's it.</p>
+
+<ul>
+    <li>A signal can be of any type, and carry any parameters</li>
+    <li>A task can wait on several signals, from several emitters, with a timeout.</li>
+    <li>Signals can be buffered; this helps avoid losing signals when waiting signals in a loop.</li>
+    <li>Tasks can register a name, and query for tasks by name.</li>
+    <li>Tasks also can wait for a given name to get registered.</li>
+</ul>
+
+<p><a name="Pipes"></a></p>
+<h2>Pipes</h2>
+
+<p>There are also named pipes, for intertask communications. </p>
+
+<ul>
+    <li>Similar to signals, but writers can get blocked too (when pipe gets full).</li>
+    <li>Synchronous and asynchronous (with a timeout) modes supported.</li>
+    <li>Multiple readers and writers per pipe supported. </li>
+    <li>For when no signal can get lost!</li>
+</ul>
+
+<p><a name="Mutex"></a></p>
+<h2>Mutex</h2>
+
+<p>There are cases when you must guarantee that only one task is accessing a piece 
+of code at a time. Mutexes provide a mechanism for that. Notice that Lumen, being a 
+cooperative scheduler, will never preempt control from a task. That means you only 
+may have to resort to mutexes when your critical piece of code relinquish 
+control explicitly, for example with a call to sleep, emitting a signal or blocking 
+waiting for a signal.</p>
+
 <p><a name="How_to_try_it_out_"></a></p>
 <h2>How to try it out?</h2>
 
-<p>There several test programs in the tests folder. This example has a 
+<p>There several test programs in the tests/ folder. This example has a 
 few tasks exchanging messages, showing off basic functionality:</p>
 
 
@@ -182,12 +194,13 @@ installed, and in Linux, you can try (root needed as it reads from
  sudo lua test-nixiorator.lua
 </pre>
 
-<p>To see how buffers and pipes work and what they are for, try:</p>
+<p>To see how buffers, pipes and mutexes work and what they are for, try:</p>
 
 
 <pre>
  lua test-buff.lua
  lua test-pipe.lua
+ lua test-mutex.lua
 </pre>
 
 <p><a name="License"></a></p>
