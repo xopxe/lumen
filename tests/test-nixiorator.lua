@@ -9,8 +9,10 @@ package.path = package.path .. ";;;../?.lua"
 require "strict"
 
 local sched = require "sched"
+local catalog = require "catalog"
 local nixiorator = require "tasks/nixiorator"
 local nixio = nixiorator.nixio
+
 
 local udprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'dgram'))
 local fdrecv = assert(nixio.open('/dev/input/mice', 
@@ -18,31 +20,30 @@ local fdrecv = assert(nixio.open('/dev/input/mice',
 
 nixiorator.register_client(udprecv, 1500)
 nixiorator.register_client(fdrecv, 10)
-local nxtask = sched.run(nixiorator.taskf)
 
-sched.sigrun(function(file, data) print("!F", file, data:byte(1, #data)) end, {emitter=nxtask, events={fdrecv}})
+sched.sigrun(function(_, _, data) print("!F", data:byte(1, #data)) end, {emitter=nixiorator.task, events={fdrecv}})
 
-sched.sigrun(function(...) print("!U", ...) end, {emitter=nxtask, events={udprecv}})
+sched.sigrun(function(_, _, ...) print("!U", ...) end, {emitter=nixiorator.task, events={udprecv}})
 
 sched.run(function()
 	local tcprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'stream'))
 	nixiorator.register_server(tcprecv, 'line')
-	sched.catalog.register("accepter")
-	local waitd={emitter=nxtask, events={tcprecv}}
+	catalog.register("accepter")
+	local waitd={emitter=nixiorator.task, events={tcprecv}}
 	while true do
-		local skt, msg, inskt  = sched.wait(waitd)
+		local _,skt, msg, inskt  = sched.wait(waitd)
 		print ("#", os.time(), skt, msg, inskt )
 		if msg=='accepted' then
-			sched.sigrun(function(skt, data, err)
-				print("!T", skt, data, err)
+			sched.sigrun(function(_, _, data, err)
+				print("!T", data, err or '')
 				if not data then sched.kill() end
-			end, {emitter=nxtask, events={inskt}})
+			end, {emitter=nixiorator.task, events={inskt}})
 		end
 	end
 end)
 
 sched.run(function()
-	sched.catalog.waitfor('accepter')
+	catalog.waitfor('accepter')
 	local tcpsend = assert(nixio.bind("127.0.0.1", 0, 'inet', 'stream'))
 	tcpsend:connect("127.0.0.1",8888)
 	while true do

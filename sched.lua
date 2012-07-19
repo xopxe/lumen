@@ -18,7 +18,7 @@ end
 
 local M = {}
 
-local queue = require 'queue'
+local queue = require 'lib/queue'
 
 local weak_key = { __mode = 'k' }
 
@@ -55,19 +55,19 @@ local wake_up = function (task, waitd)
 	return true
 end
 
-local to_buffer = function (waitd, event, ...)
+local to_buffer = function (waitd, emitter, event, ...)
 	local buff_len = waitd.buff_len
 	--print('add to buffer',buff_len,waitd, event, ...)
 	if buff_len and buff_len~=0 then
 		waitd.buff = waitd.buff or queue:new()
 		local buff=waitd.buff
 		if buff_len<0 then
-			buff:pushright(table.pack(event, ...))
+			buff:pushright(table.pack(emitter, event, ...))
 		else
 			local overpopulation = buff:len()-buff_len
 			--print('OP', buff_len,buff:len(),overpopulation)
 			if overpopulation<0 then
-				buff:pushright(table.pack(event, ...))
+				buff:pushright(table.pack(emitter, event, ...))
 			else
 				log('SCHED', 'DETAIL', 'buffer from waitd  %s is dropping', tostring(waitd))
 				waitd.dropped = true
@@ -75,7 +75,7 @@ local to_buffer = function (waitd, event, ...)
 					for _ = 0, overpopulation do
 						buff:popleft()
 					end
-					buff:pushright(table.pack(event, ...))
+					buff:pushright(table.pack(emitter, event, ...))
 				else --'drop_last', default
 					for _ = 1, overpopulation do
 						buff:popright()
@@ -89,14 +89,14 @@ end
 
 --iterates over a list of tasks sending them events. the iteration is split as the
 --list can change during iteration. it also sees if a event should be buffered
-local walktasks = function (waitingtasks, event, ...)
+local walktasks = function (waitingtasks, emitter, event, ...)
 	local waked_up, bufferable = {}, {}
-	local my_task = coroutine.running()
+	--local my_task = coroutine.running()
 	for task, waitd in pairs(waitingtasks) do
 		--print('',':',task, waitd, waiting[task])
 		--[[
-		if task==my_task then 
-			log('SCHED', 'WARNING', '%s trying signal itself on waitd %s'
+		if task==emitter then 
+			log('SCHED', 'INFO', '%s trying signal itself on waitd %s'
 				, tostring(task), tostring(waitd))
 		end
 		--]]
@@ -110,10 +110,10 @@ local walktasks = function (waitingtasks, event, ...)
 		bufferable[waitd]=nil
 	end
 	for waitd, _ in pairs(bufferable) do
-		to_buffer(waitd, event, ...)
+		to_buffer(waitd, emitter, event, ...)
 	end
 	for task, _ in pairs(waked_up) do
-		step_task(task, event, ...)
+		step_task(task, emitter, event, ...)
 	end
 end
 
@@ -123,14 +123,14 @@ local emit_signal = function (emitter, event, ...)
 	local onevent=waiting[event]
 	if onevent then
 		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
-		if waiting1 then walktasks(waiting1, event, ...) end
-		if waiting2 then walktasks(waiting2, event, ...) end
+		if waiting1 then walktasks(waiting1, emitter, event, ...) end
+		if waiting2 then walktasks(waiting2, emitter, event, ...) end
 	end
 	onevent=waiting['*']
 	if onevent then
 		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
-		if waiting1 then walktasks(waiting1, event, ...) end
-		if waiting2 then walktasks(waiting2, event, ...) end
+		if waiting1 then walktasks(waiting1, emitter, event, ...) end
+		if waiting2 then walktasks(waiting2, emitter, event, ...) end
 	end
 end
 
@@ -145,10 +145,10 @@ step_task = function(t, ...)
 		local skip1ret = function(_, ...) return ... end
 		if ok then 
 			log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, true, skip1ret(unpack(ret)))
+			return emit_signal(t, event_die, true, skip1ret(unpack(ret,1,ret.n)))
 		else
 			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, nil, skip1ret(unpack(ret)))
+			return emit_signal(t, event_die, nil, skip1ret(unpack(ret,1,ret.n)))
 		end
 	end
 end
@@ -332,6 +332,7 @@ M.pipes.new = function(name, size, timeout)
 	local pipe_data = {} --singleton event for pipe data
 	local buff_data = queue:new()
 	local waitd_data={emitter='*', buff_len=size+1, timeout=timeout, events = {pipe_data}, buff = buff_data}
+	M.wait_feed(waitd_data)
 	local waitd_enable={emitter='*', buff_len=1, timeout=timeout, buff_mode='drop_last', events = {pipe_enable}, buff = queue:new()}
 	local piped_read = function ()
 		local function format_signal(ev, ...)
@@ -370,7 +371,6 @@ M.pipes.new = function(name, size, timeout)
 	end
 	
 	pipes[name]=piped
-	M.wait_feed(waitd_data)
 	emit_signal(PIPES_EV, name, 'created', piped)
 	return piped
 end
@@ -425,8 +425,9 @@ M.run = function ( f, ... )
 end
 
 --- Run a task that listens for a signal.
--- @param f function to be called when the signal appears. the signal
--- is passed to f as parameter.
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter.The signal will be provided as 
+-- emitter, event, event_parameters, just as the result of a @{wait}
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
@@ -443,8 +444,9 @@ M.sigrun = function ( f, waitd )
 end
 
 --- Run a task that listens for a signal, once.
--- @param f function to be called when the signal appears. the signal
--- is passed to f as parameter.
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter. The signal will be provided as 
+-- emitter, event, event_parameters, just as the result of a @{wait}
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
@@ -507,6 +509,8 @@ end
 -- Pauses the task until (one of) the specified signal(s) is available.
 -- If there are signals in the buffer, will return the first immediately.
 -- Otherwise will block the task until signal arrival, or a timeout.
+-- @return On event returns emitter, event, event_parameters. On timeout
+-- returns nil, 'timeout'
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
 	local my_task = coroutine.running()

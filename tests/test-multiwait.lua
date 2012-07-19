@@ -6,6 +6,7 @@ package.path = package.path .. ";;;../?.lua"
 
 local sched = require "sched"
 
+-- Watch for some task dying.
 sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})
 
 -- 3 tasks, each emitting a combination of 2 events out of 3 possible,

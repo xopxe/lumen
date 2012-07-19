@@ -33,12 +33,16 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
+<li><a href="#Fields">Fields</a></li>
 </ul>
 
 
 <h2>Modules</h2>
 <ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><strong>socketeer</strong></li>
 </ul>
@@ -50,6 +54,7 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
@@ -88,9 +93,16 @@
 	<td class="name" nowrap><a href="#step">step&nbsp;(timeout)</a></td>
 	<td class="summary">Performs a single step for socketeer.</td>
 	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#taskf">taskf&nbsp;()</a></td>
-	<td class="summary">The function to be registered with the Lumen scheduler.</td>
+	<td class="name" nowrap><a href="#socket">socket</a></td>
+	<td class="summary">A reference to the LuaSocket library.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#task">task</a></td>
+	<td class="summary">The socketeer task.</td>
 	</tr>
 </table>
 
@@ -128,7 +140,7 @@
     </dt>
     <dd>
     Registers a client socket (TCP or UDP) with socketeer. 
- socketeer will signal skt, data, error On data read. data is the string read. 
+ socketeer will signal skt, data, error on data read. data is the string read. 
  Data can be nil if error is 'closed'. A 'closed' error also means the skt got unregistered. 
  When reading from TCP with pattern>0, the last signal can provide a partial read after 
  the err return.
@@ -176,7 +188,7 @@
     Performs a single step for socketeer. <br/>
  Will block at the OS level for up to timeout seconds. 
  Usually this method is not used (probably what you want is to 
- register <a href="../modules/socketeer.html#taskf">taskf</a> with the Lumen scheduler).
+ use <a href="../modules/socketeer.html#task">task</a>).
  Socketeer will emit the signals from registered sockets 
  (see <a href="../modules/socketeer.html#register_server">register_server</a> and <a href="../modules/socketeer.html#register_client">register_client</a>).
 
@@ -189,21 +201,37 @@
 
 
 </dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+    
+    <dl class="function">
     <dt>
-    <a name = "taskf"></a>
-    <strong>taskf&nbsp;()</strong>
+    <a name = "socket"></a>
+    <strong>socket</strong>
     </dt>
     <dd>
-    The function to be registered with the Lumen scheduler. 
- With this task running, socketeer will emit the signals from registered sockets 
- (see <a href="../modules/socketeer.html#register_server">register_server</a> and <a href="../modules/socketeer.html#register_client">register_client</a>).
+    A reference to the LuaSocket library. 
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "task"></a>
+    <strong>task</strong>
+    </dt>
+    <dd>
+    The socketeer task. 
+ This task will emit the signals from registered sockets (see <a href="../modules/socketeer.html#register_server">register_server</a> and <a href="../modules/socketeer.html#register_client">register_client</a>). 
+ This task  is registered in the catalog with the name 'socketeer'.
 
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local sched = require 'sched'
-local socketter = require 'socketeer'
-local n = sched.run(socketeer.taskf)</pre>
+        <pre class="example">local sched = require "sched"
+local socketeer = require 'socketeer'
+sched.sigrun(print, {emitter=socketeer.task, events='*'})</pre>
     </ul>
 
 

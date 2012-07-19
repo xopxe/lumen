@@ -36,6 +36,7 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><strong>test-multiwait.lua</strong></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
@@ -44,7 +45,10 @@
 </ul>
 <h2>Modules</h2>
 <ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
@@ -68,7 +72,8 @@
 
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
 
-sched.sigrun( <span class="global">print</span>, {emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}})
+<span class="comment">-- Watch for some task dying.
+</span>sched.sigrun( <span class="global">print</span>, {emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}})
 
 <span class="comment">-- 3 tasks, each emitting a combination of 2 events out of 3 possible,
 </span><span class="comment">-- and sending it's own number as data
