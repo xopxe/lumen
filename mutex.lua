@@ -17,6 +17,10 @@
 local sched=require 'sched'
 local log=require 'log'
 
+table.pack=table.pack or function (...)
+	return {n=select('#',...),...}
+end
+
 --get locals for some useful things
 local coroutine, setmetatable = coroutine, setmetatable
 
@@ -60,8 +64,9 @@ local M = function()
 	m.synchronize = function (f)
 		local wrapper = function(...)
 			m.acquire()
-			f(...)
+			local ret = table.pack(f(...))
 			m.release()
+			return unpack(ret,1, ret.n)
 		end
 		log('MUTEX', 'INFO', '%s synchronized on mutex %s as %s'
 			, tostring(f), tostring(m), tostring(wrapper))
