@@ -119,7 +119,7 @@ local critical = mutex.synchronize(function() ... end) --other method</pre>
        <li><code><em>acquire</em></code>:  acquires a lock. If the lock is already acquired, will block until the task that 
  holds it releases the lock or finshes</li>
        <li><code><em>release</em></code>:  releases the lock. A task can only release a lock it acquired before, otherwise a
- error is triggered.</li>
+ error is triggered. If a task finishes or is killed, all locks it held will be released automatically.</li>
        <li><code><em>synchronize</em></code>:   a helper that takes a function, and returns a wrapper that is locked with 
  the mutex.</li>
     </ul>

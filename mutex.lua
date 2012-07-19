@@ -89,7 +89,7 @@ end
 -- @field acquire acquires a lock. If the lock is already acquired, will block until the task that 
 -- holds it releases the lock or finshes
 -- @field release releases the lock. A task can only release a lock it acquired before, otherwise a
--- error is triggered.
+-- error is triggered. If a task finishes or is killed, all locks it held will be released automatically.
 -- @field synchronize  a helper that takes a function, and returns a wrapper that is locked with 
 -- the mutex.
 -- @table mutexd
