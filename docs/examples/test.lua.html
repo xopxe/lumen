@@ -73,14 +73,15 @@
 
 
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
-<span class="comment">--require "log".setlevel('ALL')
-</span><span class="keyword">local</span> catalog = <span class="global">require</span> <span class="string">'catalog'</span>
+<span class="global">require</span> <span class="string">"log"</span>.setlevel(<span class="string">'NONE'</span>)
+<span class="keyword">local</span> catalog = <span class="global">require</span> <span class="string">'catalog'</span>
 
 
 sched.run(<span class="keyword">function</span>()
 	catalog.register(<span class="string">'main'</span>)
 	<span class="keyword">local</span> A=sched.run(<span class="keyword">function</span>()
 		catalog.register(<span class="string">'A'</span>)
+		<span class="global">print</span>(<span class="string">"A says: going to sleep couple seconds"</span>)
 		sched.sleep(<span class="number">2</span>)
 		<span class="global">print</span>(<span class="string">"A says: emittig 'ev, data!'"</span>)
 		sched.signal(<span class="string">'ev'</span>, <span class="string">'data!'</span>)

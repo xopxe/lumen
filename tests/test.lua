@@ -5,16 +5,15 @@
 --look for packages one folder up.
 package.path = package.path .. ";;;../?.lua"
 
-
 local sched = require "sched"
---require "log".setlevel('ALL')
 local catalog = require 'catalog'
-
+require "log".setlevel('NONE')
 
 sched.run(function()
 	catalog.register('main')
 	local A=sched.run(function()
 		catalog.register('A')
+		print("A says: going to sleep couple seconds")
 		sched.sleep(2)
 		print("A says: emittig 'ev, data!'")
 		sched.signal('ev', 'data!')
@@ -40,6 +39,5 @@ sched.run(function()
 	print("0 says: finishing, returning", x)
 	return x
 end)
-
 
 sched.go()
