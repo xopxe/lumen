@@ -48,7 +48,7 @@ local M = function()
 	end
 	
 	m.acquire = function()
-		if m.locker and coroutine.status(m.locker)~='dead' then 
+		while m.locker and coroutine.status(m.locker)~='dead' do
 			sched.wait(get_waitd_lock (m.locker))
 		end
 		local co = coroutine.running()
