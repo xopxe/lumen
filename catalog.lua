@@ -16,6 +16,7 @@ local M = {}
 --register of names for tasks
 --tasknames[co]=name
 local tasknames = setmetatable({}, { __mode = 'v' })
+local namestask = setmetatable({}, { __mode = 'kv' })
 
 local register_events = setmetatable({}, {__mode = "kv"}) 
 function get_register_event (name)
@@ -37,6 +38,7 @@ M.register = function ( name )
 	end
 	log('CATALOG', 'INFO', '%s registered in catalog as "%s"', tostring(co), tostring(name))
 	tasknames[name] = co
+	namestask[co] = name
 	sched.signal(get_register_event (name))
 	return true
 end
@@ -59,6 +61,13 @@ M.waitfor = function ( name, timeout )
 			return nil, 'timeout'
 		end
 	end
+end
+
+--- Find the name of a given task.
+-- @param task to lookup.
+-- @return the name if successful; If the task has not been given a name, returns nil.
+M.namefor = function ( task )
+	return namestask[task]
 end
 
 --- Iterator for registered tasks.

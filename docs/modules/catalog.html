@@ -85,6 +85,10 @@
 	<td class="summary">Find task with a given name.</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#namefor">namefor&nbsp;(task)</a></td>
+	<td class="summary">Find the name of a given task.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#iterator">iterator&nbsp;()</a></td>
 	<td class="summary">Iterator for registered tasks.</td>
 	</tr>
@@ -135,6 +139,26 @@
     <h3>Returns:</h3>
     <ol>
         the task if successful; on timeout expiration returns nil, 'timeout'.
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "namefor"></a>
+    <strong>namefor&nbsp;(task)</strong>
+    </dt>
+    <dd>
+    Find the name of a given task. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>task</em></code>:  to lookup.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        the name if successful; If the task has not been given a name, returns nil.
     </ol>
 
 
