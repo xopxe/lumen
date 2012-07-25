@@ -18,7 +18,7 @@ end
 
 local M = {}
 
-local queue = require 'queue'
+local queue = require 'lib/queue'
 
 local weak_key = { __mode = 'k' }
 
@@ -55,19 +55,19 @@ local wake_up = function (task, waitd)
 	return true
 end
 
-local to_buffer = function (waitd, event, ...)
+local to_buffer = function (waitd, emitter, event, ...)
 	local buff_len = waitd.buff_len
 	--print('add to buffer',buff_len,waitd, event, ...)
 	if buff_len and buff_len~=0 then
 		waitd.buff = waitd.buff or queue:new()
 		local buff=waitd.buff
 		if buff_len<0 then
-			buff:pushright(table.pack(event, ...))
+			buff:pushright(table.pack(emitter, event, ...))
 		else
 			local overpopulation = buff:len()-buff_len
 			--print('OP', buff_len,buff:len(),overpopulation)
 			if overpopulation<0 then
-				buff:pushright(table.pack(event, ...))
+				buff:pushright(table.pack(emitter, event, ...))
 			else
 				log('SCHED', 'DETAIL', 'buffer from waitd  %s is dropping', tostring(waitd))
 				waitd.dropped = true
@@ -75,7 +75,7 @@ local to_buffer = function (waitd, event, ...)
 					for _ = 0, overpopulation do
 						buff:popleft()
 					end
-					buff:pushright(table.pack(event, ...))
+					buff:pushright(table.pack(emitter, event, ...))
 				else --'drop_last', default
 					for _ = 1, overpopulation do
 						buff:popright()
@@ -89,10 +89,17 @@ end
 
 --iterates over a list of tasks sending them events. the iteration is split as the
 --list can change during iteration. it also sees if a event should be buffered
-local walktasks = function (waitingtasks, event, ...)
+local walktasks = function (waitingtasks, emitter, event, ...)
 	local waked_up, bufferable = {}, {}
+	--local my_task = coroutine.running()
 	for task, waitd in pairs(waitingtasks) do
 		--print('',':',task, waitd, waiting[task])
+		--[[
+		if task==emitter then 
+			log('SCHED', 'INFO', '%s trying signal itself on waitd %s'
+				, tostring(task), tostring(waitd))
+		end
+		--]]
 		if wake_up( task, waitd ) then
 			waked_up[task]=waitd
 		else
@@ -103,10 +110,10 @@ local walktasks = function (waitingtasks, event, ...)
 		bufferable[waitd]=nil
 	end
 	for waitd, _ in pairs(bufferable) do
-		to_buffer(waitd, event, ...)
+		to_buffer(waitd, emitter, event, ...)
 	end
 	for task, _ in pairs(waked_up) do
-		step_task(task, event, ...)
+		step_task(task, emitter, event, ...)
 	end
 end
 
@@ -116,8 +123,14 @@ local emit_signal = function (emitter, event, ...)
 	local onevent=waiting[event]
 	if onevent then
 		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
-		if waiting1 then walktasks(waiting1, event, ...) end
-		if waiting2 then walktasks(waiting2, event, ...) end
+		if waiting1 then walktasks(waiting1, emitter, event, ...) end
+		if waiting2 then walktasks(waiting2, emitter, event, ...) end
+	end
+	onevent=waiting['*']
+	if onevent then
+		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
+		if waiting1 then walktasks(waiting1, emitter, event, ...) end
+		if waiting2 then walktasks(waiting2, emitter, event, ...) end
 	end
 end
 
@@ -132,10 +145,10 @@ step_task = function(t, ...)
 		local skip1ret = function(_, ...) return ... end
 		if ok then 
 			log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, true, skip1ret(unpack(ret)))
+			return emit_signal(t, event_die, true, skip1ret(unpack(ret,1,ret.n)))
 		else
 			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, nil, skip1ret(unpack(ret)))
+			return emit_signal(t, event_die, nil, skip1ret(unpack(ret,1,ret.n)))
 		end
 	end
 end
@@ -166,6 +179,7 @@ end
 --blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(task, waitd)
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
+	if events=='*' then events={'*'} end
 	local taskd = tasks[task]
 	taskd.waitingfor = waitd
 
@@ -178,20 +192,30 @@ local register_signal = function(task, waitd)
 	--print('registersignal', task, emitter, timeout, #events)
 	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(task), tostring(waitd))
 
-
-	if events and emitter then
+	local function register_emitter(etask)
+		assert ( type(etask)=='thread' or etask=='*' )
 		for _, event in ipairs(events) do
 			--print('',':', event)
 			waiting[event]=waiting[event] or setmetatable({}, weak_key)
-			if not waiting[event][emitter] then
-				waiting[event][emitter] = setmetatable({}, { __mode = 'kv' })
+			if not waiting[event][etask] then
+				waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
 				waiting_emitter_counter = waiting_emitter_counter +1
 			end
-			waiting[event][emitter][task]=waitd
+			waiting[event][etask][task]=waitd
 		end
 		if waiting_emitter_counter>M.to_clean_up then
 			waiting_emitter_counter = 0
 			clean_up()
+		end
+	end
+
+	if events and emitter then
+		if type(emitter)=='table' then
+			for _, e in ipairs(emitter) do 
+				register_emitter(e)
+			end
+		else
+			register_emitter(emitter)
 		end
 	end
 end
@@ -401,8 +425,9 @@ M.run = function ( f, ... )
 end
 
 --- Run a task that listens for a signal.
--- @param f function to be called when the signal appears. the signal
--- is passed to f as parameter.
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter.The signal will be provided as 
+-- emitter, event, event_parameters, just as the result of a @{wait}
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
@@ -419,8 +444,9 @@ M.sigrun = function ( f, waitd )
 end
 
 --- Run a task that listens for a signal, once.
--- @param f function to be called when the signal appears. the signal
--- is passed to f as parameter.
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter. The signal will be provided as 
+-- emitter, event, event_parameters, just as the result of a @{wait}
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
@@ -457,9 +483,9 @@ M.signal = function ( event, ... )
 end
 
 --- Auxiliar function for instantiating waitd tables.
--- @param emitter Event of the signal. Can be of any type.
--- task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone.
+-- @param emitter task originating the signal we wait for. If nil, will
+-- only return on timeout. If '*', means anyone. Can also be an array of
+-- tasks
 -- @param timeout Time to wait. nil or negative waits for ever.
 -- @param buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
@@ -483,11 +509,12 @@ end
 -- Pauses the task until (one of) the specified signal(s) is available.
 -- If there are signals in the buffer, will return the first immediately.
 -- Otherwise will block the task until signal arrival, or a timeout.
+-- @return On event returns emitter, event, event_parameters. On timeout
+-- returns nil, 'timeout'
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
 	local my_task = coroutine.running()
 	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(my_task), tostring(waitd))
-
 	
 	--if there are buffered signals, service the first
 	local buff = waitd.buff
@@ -651,7 +678,8 @@ M.to_clean_up = 1000
 -- on first request basis.
 -- Can use @\{create_waitd} to create this table.
 -- @field emitter optional, task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone.
+-- only return on timeout. If '*', means anyone. I also can be an array of 
+-- tasks, in which case any of them is accepted as a source.
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
@@ -662,7 +690,8 @@ M.to_clean_up = 1000
 -- or nil will skip the insertion in a full buffer.
 -- @field dropped the scheduler will set this to true when dropping events
 -- from the buffer. Can be reset by the user.
--- @field events optional, array with the events to wait.
+-- @field events optional, array with the events to wait. Can contain a '\*', 
+-- or be '\*' instead of a table, to mark interest in any event
 -- @table waitd
 
 return M

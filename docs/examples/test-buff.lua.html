@@ -35,6 +35,8 @@
 <h2>Examples</h2>
 <ul>
   <li><strong>test-buff.lua</strong></li>
+  <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
@@ -43,7 +45,10 @@
 </ul>
 <h2>Modules</h2>
 <ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
@@ -83,7 +88,7 @@ sched.run(<span class="keyword">function</span>()
 	<span class="comment">-- receiver --
 </span>	<span class="keyword">local</span> waitd = {emitter=sender, events={<span class="string">'tick'</span>}}
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		<span class="keyword">local</span>  _, n = sched.wait(waitd)
+		<span class="keyword">local</span>  _, _, n = sched.wait(waitd)
 		<span class="global">print</span>(<span class="string">"received"</span>, n)
 		sched.sleep(<span class="number">3</span>)
 	<span class="keyword">end</span>
@@ -109,11 +114,10 @@ sched.run(<span class="keyword">function</span>()
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
 		<span class="comment">--consume buffered signals
 </span>		<span class="keyword">while</span> waitd.buff <span class="keyword">and</span> waitd.buff:len()&gt;<span class="number">0</span> <span class="keyword">do</span>
-			<span class="keyword">local</span>  _, n = sched.wait(waitd)
+			<span class="keyword">local</span>  _, _, n = sched.wait(waitd)
 			<span class="global">print</span>(<span class="string">"received (buff)"</span>, n)
 		<span class="keyword">end</span>
-		<span class="global">print</span>(<span class="string">"waiting"</span>)
-		<span class="keyword">local</span>  _, n = sched.wait(waitd)
+		<span class="keyword">local</span>  _, _, n = sched.wait(waitd)
 		<span class="global">print</span>(<span class="string">"received"</span>, n)
 		sched.sleep(<span class="number">3</span>)
 	<span class="keyword">end</span>

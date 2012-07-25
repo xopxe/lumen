@@ -36,11 +36,11 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
-  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><strong>test-mutex.lua</strong></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
-  <li><strong>test-stress.lua</strong></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 <h2>Modules</h2>
@@ -61,49 +61,63 @@
 
 <div id="content">
 
-<h1>Example <code>test-stress.lua</code></h1>
+<h1>Example <code>test-mutex.lua</code></h1>
 
     <pre>
 <span class="comment">---
-</span><span class="comment">-- A test program with two tasks, one emitting signals and the other accepting them.
-</span><span class="comment">--See how fast it can run.
+</span><span class="comment">-- A test program that uses a mutex to control concurrent access
+</span><span class="comment">-- to a function.
 </span>
 <span class="comment">--look for packages one folder up.
 </span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
 
 <span class="comment">--require "strict"
-</span><span class="comment">--require "profiler"
 </span>
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
+<span class="keyword">local</span> mutex = <span class="global">require</span> <span class="string">"mutex"</span>()
 
-<span class="keyword">local</span> i=<span class="number">0</span>
+<span class="keyword">local</span> <span class="keyword">function</span> func(n)
+	<span class="global">print</span>(<span class="string">'+'</span>..n)
+	sched.sleep(<span class="number">1</span>)
+	<span class="global">print</span>(<span class="string">''</span>, <span class="string">'-'</span>..n)
+<span class="keyword">end</span>
 
-<span class="comment">--profiler.start('profiler.out')
-</span>
-<span class="comment">-- task emits as fast as it can (but also yields to be realistic)
-</span><span class="keyword">local</span> emitter_task=sched.run(<span class="keyword">function</span>()
-	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		sched.signal(<span class="string">'ev'</span>, <span class="string">'data!'</span>)
+<span class="keyword">local</span> critical=mutex.synchronize(func)
+
+<span class="comment">---[[
+</span><span class="global">print</span> <span class="string">"non synchronized access"</span>
+sched.run(<span class="keyword">function</span>()
+	<span class="keyword">for</span> i=<span class="number">1</span>,<span class="number">5</span> <span class="keyword">do</span>
+		func(<span class="string">'A'</span>)
 		sched.yield()
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
-
-<span class="comment">-- task receives the messages and counts them
-</span>sched.run(<span class="keyword">function</span>()
-	<span class="keyword">local</span> waitd={emitter=emitter_task, events={<span class="string">'ev'</span>}}
-	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		<span class="comment">--uncomment this to create huge ammount of waitds:
-</span>		<span class="comment">--local waitd={emitter=emitter_task, events={'ev','ev'..i}
-</span>		sched.wait(waitd)
-		i=i+<span class="number">1</span>
-		<span class="keyword">if</span> i==<span class="number">1000000</span> <span class="keyword">then</span>
-			<span class="comment">--profiler.stop()
-</span>			<span class="global">os</span>.exit()
-		<span class="keyword">end</span>
+sched.run(<span class="keyword">function</span>()
+	<span class="keyword">for</span> i=<span class="number">1</span>,<span class="number">5</span> <span class="keyword">do</span>
+		func(<span class="string">'B'</span>)
+		sched.yield()
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
-
 sched.go()
+<span class="comment">--]]
+</span>
+<span class="comment">---[[
+</span><span class="global">print</span> <span class="string">"\nsynchronized access"</span>
+sched.run(<span class="keyword">function</span>()
+	<span class="keyword">for</span> i=<span class="number">1</span>,<span class="number">5</span> <span class="keyword">do</span>
+		critical(<span class="string">'A'</span>)
+		sched.yield()
+	<span class="keyword">end</span>
+<span class="keyword">end</span>)
+sched.run(<span class="keyword">function</span>()
+	<span class="keyword">for</span> i=<span class="number">1</span>,<span class="number">5</span> <span class="keyword">do</span>
+		critical(<span class="string">'B'</span>)
+		sched.yield()
+	<span class="keyword">end</span>
+<span class="keyword">end</span>)
+sched.go()
+<span class="comment">--]]
+</span>
 
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->

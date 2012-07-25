@@ -22,7 +22,7 @@ sched.run(function()
 	-- receiver --
 	local waitd = {emitter=sender, events={'tick'}}
 	while true do
-		local  _, n = sched.wait(waitd)
+		local  _, _, n = sched.wait(waitd)
 		print("received", n)
 		sched.sleep(3)
 	end
@@ -48,11 +48,10 @@ sched.run(function()
 	while true do
 		--consume buffered signals
 		while waitd.buff and waitd.buff:len()>0 do
-			local  _, n = sched.wait(waitd)
+			local  _, _, n = sched.wait(waitd)
 			print("received (buff)", n)
 		end
-		print("waiting")
-		local  _, n = sched.wait(waitd)
+		local  _, _, n = sched.wait(waitd)
 		print("received", n)
 		sched.sleep(3)
 	end
