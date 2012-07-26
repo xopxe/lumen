@@ -231,7 +231,7 @@
     <ul>
         <pre class="example">local sched = require "sched"
 local socketeer = require 'socketeer'
-sched.sigrun(print, {emitter=socketeer.task, events='*'})</pre>
+sched.sigrun({emitter=socketeer.task, events='*'}, print)</pre>
     </ul>
 
 
