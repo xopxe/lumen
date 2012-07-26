@@ -126,7 +126,7 @@ M.socket = socket
 -- This task  is registered in the catalog with the name 'socketeer'.
 -- @usage local sched = require "sched"
 --local socketeer = require 'socketeer'
---sched.sigrun(print, {emitter=socketeer.task, events='*'})
+--sched.sigrun({emitter=socketeer.task, events='*'}, print)
 M.task = sched.run( function ()
 	catalog.register('socketeer')
 	while true do

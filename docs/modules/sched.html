@@ -120,11 +120,11 @@
 	<td class="summary">Create and run a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(f, waitd)</a></td>
+	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(waitd, f)</a></td>
 	<td class="summary">Run a task that listens for a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(f, waitd)</a></td>
+	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(waitd, f)</a></td>
 	<td class="summary">Run a task that listens for a signal, once.</td>
 	</tr>
 	<tr>
@@ -379,17 +379,17 @@ end</pre>
 </dd>
     <dt>
     <a name = "sigrun"></a>
-    <strong>sigrun&nbsp;(f, waitd)</strong>
+    <strong>sigrun&nbsp;(waitd, f)</strong>
     </dt>
     <dd>
     Run a task that listens for a signal. 
 
     <h3>Parameters:</h3>
     <ul>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter.The signal will be provided as 
  emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
     </ul>
 
 
@@ -407,17 +407,17 @@ end</pre>
 </dd>
     <dt>
     <a name = "sigrunonce"></a>
-    <strong>sigrunonce&nbsp;(f, waitd)</strong>
+    <strong>sigrunonce&nbsp;(waitd, f)</strong>
     </dt>
     <dd>
     Run a task that listens for a signal, once. 
 
     <h3>Parameters:</h3>
     <ul>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter. The signal will be provided as 
  emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
     </ul>
 
 
@@ -651,7 +651,7 @@ end</pre>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">--prints each time a task dies
-sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
+sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
     </ul>
 
 

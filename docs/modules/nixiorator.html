@@ -238,7 +238,7 @@
     <ul>
         <pre class="example">local sched = require "sched"
 local nixiorator = require "nixiorator"
-sched.sigrun(print, {emitter=nixiorator.task, events='*'})</pre>
+sched.sigrun({emitter=nixiorator.task, events='*'}, print)</pre>
     </ul>
 
 

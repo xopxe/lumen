@@ -426,14 +426,14 @@ M.run = function ( f, ... )
 end
 
 --- Run a task that listens for a signal.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter.The signal will be provided as 
 -- emitter, event, event_parameters, just as the result of a @{wait}
--- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
 -- @see run
-M.sigrun = function ( f, waitd )
+M.sigrun = function ( waitd, f )
 	local wrapper = function()
 		while true do
 			f(M.wait(waitd))
@@ -445,14 +445,14 @@ M.sigrun = function ( f, waitd )
 end
 
 --- Run a task that listens for a signal, once.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter. The signal will be provided as 
 -- emitter, event, event_parameters, just as the result of a @{wait}
--- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @return task in the scheduler.
 -- @see wait
 -- @see run
-M.sigrunonce = function ( f, waitd )
+M.sigrunonce = function ( waitd, f )
 	local wrapper = function()
 		f(M.wait(waitd))
 	end
@@ -655,7 +655,7 @@ end
 -- the task returns. Otherwise, the first parameter is nil and the second 
 -- is 'killed' if the task was killed, or the error message if the task errore'd.
 -- @usage --prints each time a task dies
---sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})
+--sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
 M.EVENT_DIE = event_die
 
 --- control memory collection.
