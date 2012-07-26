@@ -483,29 +483,6 @@ M.signal = function ( event, ... )
 	emit_signal( emitter, event, ... )
 end
 
---- Auxiliar function for instantiating waitd tables.
--- @param emitter task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone. Can also be an array of
--- tasks
--- @param timeout Time to wait. nil or negative waits for ever.
--- @param buff_len Maximum length of the buffer. A buffer allows for storing
--- signals that arrived while the task is not blocked on the wait descriptor.
--- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
--- flag is set. nil o 0 disables, negative means no length limit.
--- @param buff_mode Specifies how to behave when inserting in a full buffer.
--- 'drop first' means drop the oldest signals to make space. 'drop last'
--- or nil will skip the insertion in a full buffer.
--- @param ... Events to wait.
--- @return a new waitd descriptor
-M.create_waitd = function ( emitter, timeout, buff_len, buff_mode, ... )
-	return {emitter = emitter,
-		timeout = timeout,
-		buff_len = buff_len,
-		buff_mode = buff_mode,
-		events = {...}
-	}
-end
-
 --- Wait for a signal.
 -- Pauses the task until (one of) the specified signal(s) is available.
 -- If there are signals in the buffer, will return the first immediately.
