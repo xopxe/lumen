@@ -15,6 +15,9 @@ local pairs, ipairs, next, coroutine, setmetatable, os, tostring, select, unpack
 table.pack=table.pack or function (...)
 	return {n=select('#',...),...}
 end
+table.pack2 = table.pack2 or function (first, ...)
+	return first, {n=select('#',...),...}
+end
 
 local M = {}
 
@@ -138,17 +141,15 @@ end
 -- resumes a task and handles finalization conditions
 -- @local
 step_task = function(t, ...)
-	local ret = table.pack(coroutine.resume(t, ...))
+	local ok, ret = table.pack2(coroutine.resume(t, ...))
 	if tasks[t] and coroutine.status(t)=='dead' then
 		tasks[t]=nil
-		local ok=ret[1]
-		local skip1ret = function(_, ...) return ... end
 		if ok then 
-			log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, true, skip1ret(unpack(ret,1,ret.n)))
+			log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), #ret)
+			return emit_signal(t, event_die, true, unpack(ret,1,ret.n))
 		else
-			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, nil, skip1ret(unpack(ret,1,ret.n)))
+			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret)
+			return emit_signal(t, event_die, nil, unpack(ret,1,ret.n))
 		end
 	end
 end
@@ -349,7 +350,7 @@ M.pipes.new = function(name, size, timeout)
 			local ret, _ = M.wait(waitd_enable)
 			if not ret then return nil, 'timeout' end
 		end
-		M.signal(pipe_data, ...) --table.pack(...))
+		M.signal(pipe_data, ...)
 		return true
 	end
 	--first run is a initialization, replaces functions with proper code

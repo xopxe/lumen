@@ -72,7 +72,7 @@ M.new = function(name, size, timeout)
 			local emitter, _, _ = sched.wait(waitd_enable)
 			if not emitter then return nil, 'timeout' end
 		end
-		sched.signal(pipe_data, ...) --table.pack(...))
+		sched.signal(pipe_data, ...) 
 		return true
 	end
 	--first run is a initialization, replaces functions with proper code
