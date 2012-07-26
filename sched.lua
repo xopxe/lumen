@@ -654,7 +654,6 @@ M.to_clean_up = 1000
 -- when sharing a wait descriptor between several tasks, the buffer is
 -- associated to the wait descriptor, and tasks will service buffered signals
 -- on first request basis.
--- Can use @\{create_waitd} to create this table.
 -- @field emitter optional, task originating the signal we wait for. If nil, will
 -- only return on timeout. If '*', means anyone. I also can be an array of 
 -- tasks, in which case any of them is accepted as a source.
