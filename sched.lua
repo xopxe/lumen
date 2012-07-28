@@ -27,9 +27,11 @@ local event_die = setmetatable({}, {__tostring=function() return "DIE" end})
 
 
 --table containing all the registered tasks.
---tasks[task]=taskd
+--tasks[co]=taskd
 --taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'killed'}
 local tasks = {}
+
+local running_task
 
 --table to keep track tasks waiting for signals
 --waiting[event][emitter][task]=waitd
@@ -43,8 +45,8 @@ local next_waketime
 local step_task
 
 --changes the status of a task from waiting to active (if everything is right)
-local wake_up = function (task, waitd)
-	local taskd = tasks[task]
+local wake_up = function (taskd, waitd)
+assert(type(taskd)=='table')
 	if not taskd or taskd.status~='ready'
 	or (waitd and waitd~=taskd.waitingfor) then
 		return false
@@ -92,7 +94,8 @@ end
 local walktasks = function (waitingtasks, emitter, event, ...)
 	local waked_up, bufferable = {}, {}
 	--local my_task = coroutine.running()
-	for task, waitd in pairs(waitingtasks) do
+	for taskd, waitd in pairs(waitingtasks) do
+assert(type(taskd)=='table')
 		--print('',':',task, waitd, waiting[task])
 		--[[
 		if task==emitter then 
@@ -100,8 +103,9 @@ local walktasks = function (waitingtasks, emitter, event, ...)
 				, tostring(task), tostring(waitd))
 		end
 		--]]
-		if wake_up( task, waitd ) then
-			waked_up[task] = waitd
+		if wake_up( taskd, waitd ) then
+assert(type(taskd)=='table')
+			waked_up[taskd] = waitd
 		else
 			bufferable[waitd] = true
 		end
@@ -112,8 +116,9 @@ local walktasks = function (waitingtasks, emitter, event, ...)
 	for waitd, _ in pairs(bufferable) do
 		to_buffer(waitd, emitter, event, ...)
 	end
-	for task, _ in pairs(waked_up) do
-		step_task(task, emitter, event, ...)
+	for taskd, _ in pairs(waked_up) do
+assert(type(taskd)=='table')
+		step_task(taskd, emitter, event, ...)
 	end
 end
 
@@ -137,20 +142,23 @@ end
 ---
 -- resumes a task and handles finalization conditions
 -- @local
-step_task = function(t, ...)
+step_task = function(taskd, ...)
+assert(type(taskd)=='table')
 	local check = function(ok, ...)
-		if tasks[t] and coroutine.status(t)=='dead' then
-			tasks[t]=nil
+		running_task = nil
+		if coroutine.status(taskd.co)=='dead' then
+			tasks[taskd.co]=nil
 			if ok then 
 				log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), select('#',...))
-				return emit_signal(t, event_die, true, ...)
+				return emit_signal(taskd, event_die, true, ...)
 			else
 				log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), select('#',...))
-				return emit_signal(t, event_die, nil, ...)
+				return emit_signal(taskd, event_die, nil, ...)
 			end
 		end
 	end
-	check(coroutine.resume(t, ...))
+	running_task = taskd
+	check(coroutine.resume(taskd.co, ...))
 end
 
 
@@ -177,10 +185,10 @@ end
 
 
 --blocks a task waiting for a signal. registers the task in waiting table.
-local register_signal = function(task, waitd)
+local register_signal = function(taskd, waitd)
+assert(type(taskd)=='table')
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
 	if events=='*' then events={'*'} end
-	local taskd = tasks[task]
 	taskd.waitingfor = waitd
 
 	if timeout and timeout>=0 then
@@ -190,7 +198,7 @@ local register_signal = function(task, waitd)
 		if t<next_waketime then next_waketime=t end
 	end
 	--print('registersignal', task, emitter, timeout, #events)
-	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(task), tostring(waitd))
+	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(taskd), tostring(waitd))
 
 	local function register_emitter(etask)
 		assert ( type(etask)=='thread' or etask=='*' )
@@ -201,7 +209,7 @@ local register_signal = function(task, waitd)
 				waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
 				waiting_emitter_counter = waiting_emitter_counter +1
 			end
-			waiting[event][etask][task]=waitd
+			waiting[event][etask][taskd]=waitd
 		end
 		if waiting_emitter_counter>M.to_clean_up then
 			waiting_emitter_counter = 0
@@ -220,10 +228,11 @@ local register_signal = function(task, waitd)
 	end
 end
 
-local emit_timeout = function (task)
+local emit_timeout = function (taskd)
+assert(type(taskd)=='table')
 	--print('emittimeout',task)
-	if wake_up( task ) then
-		step_task(task, nil, 'timeout')
+	if wake_up( taskd ) then
+		step_task(taskd, nil, 'timeout')
 	end
 end
 
@@ -250,11 +259,12 @@ M.run = function ( f, ... )
 	log('SCHED', 'INFO', 'created %s from %s, with %d parameters', tostring(co), tostring(f), select('#', ...))
 	local taskd = {
 		status='ready',
-		created_by=coroutine.running(),
+		created_by=running_task,
+		co=co,
 	}
 	tasks[co] = taskd
-	step_task(co, ...)
-	return co
+	step_task(taskd, ...)
+	return taskd
 end
 
 --- Run a task that listens for a signal.
@@ -295,24 +305,22 @@ end
 
 --- Finishes a task.
 -- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
--- @param task task to terminate. If nil, terminates the current task.
-M.kill = function ( t )
-	local my_task = coroutine.running()
-	t=t or my_task
-	log('SCHED', 'INFO', 'killing %s from %s', tostring(t), tostring(my_task))
-	tasks[t].status = 'killed'
-	tasks[t] = nil
-	emit_signal(t, event_die, false, 'killed')
+-- @param task task to terminate.
+M.kill = function ( taskd )
+assert(type(taskd)=='table')
+	log('SCHED', 'INFO', 'killing %s from %s', tostring(taskd), tostring(running_task))
+	taskd.status = 'killed'
+	tasks[taskd.co] = nil
+	emit_signal(taskd, event_die, false, 'killed')
 end
 
 --- Emit a signal.
 -- @param event event of the signal. Can be of any type.
 -- @param ... further parameters to be sent with the signal.
 M.signal = function ( event, ... )
-	local emitter=coroutine.running()
 	log('SCHED', 'DETAIL', 'task %s emitting event %s with %d parameters', 
-		tostring(emitter), tostring(event), select('#', ...))
-	emit_signal( emitter, event, ... )
+		tostring(running_task), tostring(event), select('#', ...))
+	emit_signal( running_task, event, ... )
 end
 
 --- Wait for a signal.
@@ -323,8 +331,7 @@ end
 -- returns nil, 'timeout'
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
-	local my_task = coroutine.running()
-	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(my_task), tostring(waitd))
+	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(running_task), tostring(waitd))
 	
 	--if there are buffered signals, service the first
 	local buff = waitd.buff
@@ -336,9 +343,9 @@ M.wait = function ( waitd )
 
 	--block on signal
 	--print('W+')
-	register_signal( my_task, waitd )
+	register_signal( running_task, waitd )
 	--print('W-')
-	return coroutine.yield( my_task )
+	return coroutine.yield( running_task.co )
 end
 
 --- Feeds a wait descriptor to the scheduler.
@@ -362,8 +369,7 @@ end
 
 --- Yields the execution of a task, as in cooperative multitasking.
 M.yield = function ()
-	local my_task = coroutine.running()
-	return coroutine.yield( my_task )
+	return coroutine.yield( running_task.co )
 end
 
 --- Idle function.
@@ -393,28 +399,28 @@ M.step = function ()
 	next_waketime = nil
 
 	--find tasks ready to run (active) and ready to wakeup by timeout
-	for task, taskd in pairs (tasks) do
+	for _, taskd in pairs (tasks) do
 		if taskd.waitingfor then
 			local waketime = taskd.waketime
 			if waketime then
 				next_waketime = next_waketime or waketime
 				if waketime <= M.get_time() then
-					cycletimeout[#cycletimeout+1]=task
+					cycletimeout[#cycletimeout+1]=taskd
 				end
 				if waketime < next_waketime then
 					next_waketime = waketime
 				end
 			end
 		elseif taskd.status=='ready' then
-			cycleready[#cycleready+1]=task
+			cycleready[#cycleready+1]=taskd
 		end
 	end
 	local ncycleready,ncycletimeout = #cycleready, #cycletimeout
 
 	--wake timeouted tasks
-	for i, task in ipairs(cycletimeout) do
+	for i, taskd in ipairs(cycletimeout) do
 		cycletimeout[i]=nil
-		emit_timeout( task )
+		emit_timeout( taskd )
 	end
 
 	--step active tasks (keeping track of impending timeouts)
@@ -425,9 +431,9 @@ M.step = function ()
 		step_task( cycleready[1], available_time, available_time )
 		cycleready[1]=nil
 	else
-		for i, task in ipairs(cycleready) do
+		for i, taskd in ipairs(cycleready) do
 			local available_time = compute_available_time()
-			step_task( task, 0, available_time )
+			step_task( taskd, 0, available_time )
 			cycleready[i]=nil
 		end
 	end
