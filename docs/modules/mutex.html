@@ -77,15 +77,15 @@
  sched.sleep(), sched.yield(), sched.signal() or sched.wait().</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local mutex = require 'mutex'()
+        <pre class="example">local mx = require 'mutex'()
 
 local function critical()
-  mutex.acquire()
+  mx.acquire()
   ...
-  mutex.release()
+  mx.release()
 end
 
-local critical = mutex.synchronize(function() ... end) --other method</pre>
+local critical = mx.synchronize(function() ... end) --other method</pre>
     </ul>
 
 <h2><a href="#Tables">Tables</a></h2>

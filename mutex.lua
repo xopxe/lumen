@@ -7,15 +7,15 @@
 -- being locked contains a call that explicitly relinquish control, such as 
 -- sched.sleep(), sched.yield(), sched.signal() or sched.wait().
 -- @module mutex
--- @usage local mutex = require 'mutex'()
+-- @usage local mx = require 'mutex'()
 --
 --local function critical()
---  mutex.acquire()
+--  mx.acquire()
 --  ...
---  mutex.release()
+--  mx.release()
 --end
 --
---local critical = mutex.synchronize(function() ... end) --other method
+--local critical = mx.synchronize(function() ... end) --other method
 -- @alias M
 
 local sched=require 'sched'
@@ -80,8 +80,7 @@ local M = function()
 	return m
 end
 
-------
--- Mutex object.
+--- Mutex object.
 -- mutexes are used to ensure portions of code are accessed by a single
 -- task at a time. Said portions are called "critical sections", and are delimited by
 -- a lock acquisition at the beginning, and a lock release at the end. Only one task can acquire

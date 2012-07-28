@@ -15,9 +15,6 @@ local pairs, ipairs, next, coroutine, setmetatable, os, tostring, select, unpack
 table.pack=table.pack or function (...)
 	return {n=select('#',...),...}
 end
-table.pack2 = table.pack2 or function (first, ...)
-	return first, {n=select('#',...),...}
-end
 
 local M = {}
 
@@ -104,13 +101,13 @@ local walktasks = function (waitingtasks, emitter, event, ...)
 		end
 		--]]
 		if wake_up( task, waitd ) then
-			waked_up[task]=waitd
+			waked_up[task] = waitd
 		else
 			bufferable[waitd] = true
 		end
 	end
 	for _, waitd in pairs(waked_up) do
-		bufferable[waitd]=nil
+		bufferable[waitd] = nil
 	end
 	for waitd, _ in pairs(bufferable) do
 		to_buffer(waitd, emitter, event, ...)
@@ -141,17 +138,19 @@ end
 -- resumes a task and handles finalization conditions
 -- @local
 step_task = function(t, ...)
-	local ok, ret = table.pack2(coroutine.resume(t, ...))
-	if tasks[t] and coroutine.status(t)=='dead' then
-		tasks[t]=nil
-		if ok then 
-			log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), #ret)
-			return emit_signal(t, event_die, true, unpack(ret,1,ret.n))
-		else
-			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret)
-			return emit_signal(t, event_die, nil, unpack(ret,1,ret.n))
+	local check = function(ok, ...)
+		if tasks[t] and coroutine.status(t)=='dead' then
+			tasks[t]=nil
+			if ok then 
+				log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), select('#',...))
+				return emit_signal(t, event_die, true, ...)
+			else
+				log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), select('#',...))
+				return emit_signal(t, event_die, nil, ...)
+			end
 		end
 	end
+	check(coroutine.resume(t, ...))
 end
 
 
@@ -249,7 +248,11 @@ end
 M.run = function ( f, ... )
 	local co = coroutine.create( f )
 	log('SCHED', 'INFO', 'created %s from %s, with %d parameters', tostring(co), tostring(f), select('#', ...))
-	tasks[co] = {status='ready'}
+	local taskd = {
+		status='ready',
+		created_by=coroutine.running(),
+	}
+	tasks[co] = taskd
 	step_task(co, ...)
 	return co
 end
@@ -292,7 +295,7 @@ end
 
 --- Finishes a task.
 -- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
--- @param t task to terminate. If nil, terminates the current task.
+-- @param task task to terminate. If nil, terminates the current task.
 M.kill = function ( t )
 	local my_task = coroutine.running()
 	t=t or my_task
