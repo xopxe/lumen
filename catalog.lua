@@ -8,8 +8,8 @@ local sched = require 'sched'
 local log=require 'log'
 
 --get locals for some useful things
-local next, coroutine, setmetatable, tostring
-	= next, coroutine, setmetatable, tostring
+local next,  setmetatable, tostring
+	= next,  setmetatable, tostring
 
 local M = {}
 
@@ -22,7 +22,8 @@ local register_events = setmetatable({}, {__mode = "kv"})
 function get_register_event (name)
 	if register_events[name] then return register_events[name]
 	else
-		local register_event = {}
+		local register_event = setmetatable({},
+			{__tostring=function() return 'EVENTREGISTER:'..tostring(name) end,})
 		register_events[name] = register_event
 		return register_event
 	end
@@ -32,13 +33,14 @@ end
 -- @param name a name for the task
 -- @return true is successful; nil, 'used' if the name is already used by another task.
 M.register = function ( name )
-	local co = coroutine.running()
-	if tasknames[name] and tasknames[name] ~= co then
+	local running_task = sched.running_task
+assert(type(running_task)=='table')
+	if tasknames[name] and tasknames[name] ~= running_task then
 		return nil, 'used'
 	end
-	log('CATALOG', 'INFO', '%s registered in catalog as "%s"', tostring(co), tostring(name))
-	tasknames[name] = co
-	namestask[co] = name
+	log('CATALOG', 'INFO', '%s registered in catalog as "%s"', tostring(running_task), tostring(name))
+	tasknames[name] = running_task
+	namestask[running_task] = name
 	sched.signal(get_register_event (name))
 	return true
 end
@@ -49,10 +51,11 @@ end
 -- @param timeout time to wait. nil or negative waits for ever.
 -- @return the task if successful; on timeout expiration returns nil, 'timeout'.
 M.waitfor = function ( name, timeout )
-	local co = tasknames[name]
-	log('CATALOG', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(co))
-	if co then
-		return co
+	local taskd = tasknames[name]
+assert(type(taskd)=='table')
+	log('CATALOG', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(taskd))
+	if taskd then
+		return taskd
 	else
 		local emitter, event = sched.wait({emitter='*', timeout=timeout, events={get_register_event (name)}})
 		if event then
@@ -64,10 +67,10 @@ M.waitfor = function ( name, timeout )
 end
 
 --- Find the name of a given task.
--- @param task to lookup.
+-- @param taskd task to lookup.
 -- @return the name if successful; If the task has not been given a name, returns nil.
-M.namefor = function ( task )
-	return namestask[task]
+M.namefor = function ( taskd )
+	return namestask[taskd]
 end
 
 --- Iterator for registered tasks.

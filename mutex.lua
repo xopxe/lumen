@@ -26,7 +26,7 @@ table.pack=table.pack or function (...)
 end
 
 --get locals for some useful things
-local coroutine, setmetatable = coroutine, setmetatable
+local setmetatable = setmetatable
 
 local waitd_locks = setmetatable({}, {__mode = "kv"}) 
 
@@ -48,16 +48,15 @@ local M = function()
 	end
 	
 	m.acquire = function()
-		while m.locker and coroutine.status(m.locker)~='dead' do
+		while m.locker and m.locker.status~='dead' do
 			sched.wait(get_waitd_lock (m.locker))
 		end
-		local co = coroutine.running()
-		m.locker = co
-		log('MUTEX', 'DETAIL', '%s locked %s', tostring(co), tostring(m))
+		m.locker = sched.running_task
+		log('MUTEX', 'DETAIL', '%s locked %s', tostring(m.locker), tostring(m))
 	end
 	
 	m.release = function()
-		if coroutine.running()~=m.locker then
+		if sched.running_task~=m.locker then
 			error('Attempt to release a non-acquired lock')
 		end
 		log('MUTEX', 'DETAIL', '%s released %s', tostring(m.locker), tostring(m))

@@ -27,11 +27,9 @@ local event_die = setmetatable({}, {__tostring=function() return "DIE" end})
 
 
 --table containing all the registered tasks.
---tasks[co]=taskd
---taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'killed'}
+--tasks[taskd] = true
+--taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'dead', co=coroutine}
 local tasks = {}
-
-local running_task
 
 --table to keep track tasks waiting for signals
 --waiting[event][emitter][task]=waitd
@@ -46,7 +44,6 @@ local step_task
 
 --changes the status of a task from waiting to active (if everything is right)
 local wake_up = function (taskd, waitd)
-assert(type(taskd)=='table')
 	if not taskd or taskd.status~='ready'
 	or (waitd and waitd~=taskd.waitingfor) then
 		return false
@@ -95,7 +92,6 @@ local walktasks = function (waitingtasks, emitter, event, ...)
 	local waked_up, bufferable = {}, {}
 	--local my_task = coroutine.running()
 	for taskd, waitd in pairs(waitingtasks) do
-assert(type(taskd)=='table')
 		--print('',':',task, waitd, waiting[task])
 		--[[
 		if task==emitter then 
@@ -104,7 +100,6 @@ assert(type(taskd)=='table')
 		end
 		--]]
 		if wake_up( taskd, waitd ) then
-assert(type(taskd)=='table')
 			waked_up[taskd] = waitd
 		else
 			bufferable[waitd] = true
@@ -117,7 +112,6 @@ assert(type(taskd)=='table')
 		to_buffer(waitd, emitter, event, ...)
 	end
 	for taskd, _ in pairs(waked_up) do
-assert(type(taskd)=='table')
 		step_task(taskd, emitter, event, ...)
 	end
 end
@@ -143,22 +137,25 @@ end
 -- resumes a task and handles finalization conditions
 -- @local
 step_task = function(taskd, ...)
-assert(type(taskd)=='table')
 	local check = function(ok, ...)
-		running_task = nil
+		--M.running_task = nil
 		if coroutine.status(taskd.co)=='dead' then
-			tasks[taskd.co]=nil
+			taskd.status='dead'
+			tasks[taskd]=nil
 			if ok then 
-				log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), select('#',...))
+				log('SCHED', 'INFO', '%s returning %d parameters', tostring(taskd), select('#',...))
 				return emit_signal(taskd, event_die, true, ...)
 			else
-				log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), select('#',...))
+				log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
+					, tostring(taskd), select('#',...), (...))
 				return emit_signal(taskd, event_die, nil, ...)
 			end
 		end
 	end
-	running_task = taskd
+	local previous_task = M.running_task
+	M.running_task = taskd
 	check(coroutine.resume(taskd.co, ...))
+	M.running_task = previous_task
 end
 
 
@@ -186,9 +183,9 @@ end
 
 --blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(taskd, waitd)
-assert(type(taskd)=='table')
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
 	if events=='*' then events={'*'} end
+	if emitter=='*' then emitter={'*'} end
 	taskd.waitingfor = waitd
 
 	if timeout and timeout>=0 then
@@ -201,7 +198,6 @@ assert(type(taskd)=='table')
 	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(taskd), tostring(waitd))
 
 	local function register_emitter(etask)
-		assert ( type(etask)=='thread' or etask=='*' )
 		for _, event in ipairs(events) do
 			--print('',':', event)
 			waiting[event]=waiting[event] or setmetatable({}, weak_key)
@@ -218,7 +214,7 @@ assert(type(taskd)=='table')
 	end
 
 	if events and emitter then
-		if type(emitter)=='table' then
+		if not emitter.co then --type(emitter)=='table' then
 			for _, e in ipairs(emitter) do 
 				register_emitter(e)
 			end
@@ -229,7 +225,6 @@ assert(type(taskd)=='table')
 end
 
 local emit_timeout = function (taskd)
-assert(type(taskd)=='table')
 	--print('emittimeout',task)
 	if wake_up( taskd ) then
 		step_task(taskd, nil, 'timeout')
@@ -246,6 +241,7 @@ local compute_available_time = function()
 	return available_time
 end
 
+local n_task = 0
 --- Create and run a task.
 -- The task will emit a sched.EVENT_DIE, true, params...
 -- signal upon normal finalization, were params are the returns of f.
@@ -256,13 +252,18 @@ end
 -- @return task in the scheduler.
 M.run = function ( f, ... )
 	local co = coroutine.create( f )
-	log('SCHED', 'INFO', 'created %s from %s, with %d parameters', tostring(co), tostring(f), select('#', ...))
-	local taskd = {
+	n_task = n_task + 1
+	local taskd = setmetatable({
 		status='ready',
-		created_by=running_task,
+		created_by=M.running_task,
 		co=co,
-	}
-	tasks[co] = taskd
+		--for : calls
+		kill=M.kill,
+	}, {
+		__tostring=function() return 'TASK#'..n_task end,
+	})
+	tasks[taskd] = true
+	log('SCHED', 'INFO', 'created %s from %s, with %d parameters', tostring(taskd), tostring(f), select('#', ...))
 	step_task(taskd, ...)
 	return taskd
 end
@@ -305,12 +306,11 @@ end
 
 --- Finishes a task.
 -- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
--- @param task task to terminate.
+-- @param taskd task to terminate.
 M.kill = function ( taskd )
-assert(type(taskd)=='table')
-	log('SCHED', 'INFO', 'killing %s from %s', tostring(taskd), tostring(running_task))
-	taskd.status = 'killed'
-	tasks[taskd.co] = nil
+	log('SCHED', 'INFO', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
+	taskd.status = 'dead'
+	tasks[taskd] = nil
 	emit_signal(taskd, event_die, false, 'killed')
 end
 
@@ -318,9 +318,9 @@ end
 -- @param event event of the signal. Can be of any type.
 -- @param ... further parameters to be sent with the signal.
 M.signal = function ( event, ... )
-	log('SCHED', 'DETAIL', 'task %s emitting event %s with %d parameters', 
-		tostring(running_task), tostring(event), select('#', ...))
-	emit_signal( running_task, event, ... )
+	log('SCHED', 'DETAIL', '%s emitting event %s with %d parameters', 
+		tostring(M.running_task), tostring(event), select('#', ...))
+	emit_signal( M.running_task, event, ... )
 end
 
 --- Wait for a signal.
@@ -331,7 +331,7 @@ end
 -- returns nil, 'timeout'
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
-	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(running_task), tostring(waitd))
+	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(M.running_task), tostring(waitd))
 	
 	--if there are buffered signals, service the first
 	local buff = waitd.buff
@@ -343,9 +343,9 @@ M.wait = function ( waitd )
 
 	--block on signal
 	--print('W+')
-	register_signal( running_task, waitd )
+	register_signal( M.running_task, waitd )
 	--print('W-')
-	return coroutine.yield( running_task.co )
+	return coroutine.yield( M.running_task.co )
 end
 
 --- Feeds a wait descriptor to the scheduler.
@@ -369,7 +369,7 @@ end
 
 --- Yields the execution of a task, as in cooperative multitasking.
 M.yield = function ()
-	return coroutine.yield( running_task.co )
+	return coroutine.yield( M.running_task.co )
 end
 
 --- Idle function.
@@ -399,7 +399,7 @@ M.step = function ()
 	next_waketime = nil
 
 	--find tasks ready to run (active) and ready to wakeup by timeout
-	for _, taskd in pairs (tasks) do
+	for taskd, _ in pairs (tasks) do
 		if taskd.waitingfor then
 			local waketime = taskd.waketime
 			if waketime then
@@ -464,7 +464,7 @@ M.go = function ()
 	until not idle_time
 end
 
---- task dying event.
+--- Task dying event.
 -- This event will be emitted when a task dies. When the task dies a natural 
 -- death (finishes), the first parameter is true, followed by 
 -- the task returns. Otherwise, the first parameter is nil and the second 
@@ -473,10 +473,14 @@ end
 --sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
 M.EVENT_DIE = event_die
 
---- control memory collection.
+--- Control memory collection.
 -- number of new insertions in waiting[event] before triggering clean_up.
 -- Defaults to 1000
 M.to_clean_up = 1000
+
+--- Currently running task.
+-- the task descriptor from current task.
+M.running_task = nil
 
 --- Data structures.
 -- Main structures used.
