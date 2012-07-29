@@ -117,6 +117,10 @@
 	<td class="summary">Yields the execution of a task, as in cooperative multitasking.</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#set_pause">set_pause&nbsp;(taskd, pause)</a></td>
+	<td class="summary">Pause a task.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#idle">idle&nbsp;(t)</a></td>
 	<td class="summary">Idle function.</td>
 	</tr>
@@ -346,6 +350,30 @@
 
 
 
+
+
+</dd>
+    <dt>
+    <a name = "set_pause"></a>
+    <strong>set_pause&nbsp;(taskd, pause)</strong>
+    </dt>
+    <dd>
+    Pause a task. 
+ A paused task won't be scheduled for execution. If paused while waiting for a signal, 
+ won't respond to signals. Signals on unbuffered waitds will get lost. Task's buffered 
+ waitds will still buffer events.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>taskd</em></code>:  Task to pause</li>
+       <li><code><em>pause</em></code>:  mode, true to pause, false to unpause</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        true on success, nil, errormessage on failure
+    </ol>
 
 
 </dd>

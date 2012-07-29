@@ -28,7 +28,7 @@ local event_die = setmetatable({}, {__tostring=function() return "DIE" end})
 
 --table containing all the registered tasks.
 --tasks[taskd] = true
---taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'dead', co=coroutine}
+--taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'paused'|'dead', co=coroutine}
 local tasks = {}
 
 --table to keep track tasks waiting for signals
@@ -137,25 +137,27 @@ end
 -- resumes a task and handles finalization conditions
 -- @local
 step_task = function(taskd, ...)
-	local check = function(ok, ...)
-		--M.running_task = nil
-		if coroutine.status(taskd.co)=='dead' then
-			taskd.status='dead'
-			tasks[taskd]=nil
-			if ok then 
-				log('SCHED', 'INFO', '%s returning %d parameters', tostring(taskd), select('#',...))
-				return emit_signal(taskd, event_die, true, ...)
-			else
-				log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
-					, tostring(taskd), select('#',...), (...))
-				return emit_signal(taskd, event_die, nil, ...)
+	if taskd.status=='ready' then
+		local check = function(ok, ...)
+			--M.running_task = nil
+			if coroutine.status(taskd.co)=='dead' then
+				taskd.status='dead'
+				tasks[taskd]=nil
+				if ok then 
+					log('SCHED', 'INFO', '%s returning %d parameters', tostring(taskd), select('#',...))
+					return emit_signal(taskd, event_die, true, ...)
+				else
+					log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
+						, tostring(taskd), select('#',...), (...))
+					return emit_signal(taskd, event_die, nil, ...)
+				end
 			end
 		end
+		local previous_task = M.running_task
+		M.running_task = taskd
+		check(coroutine.resume(taskd.co, ...))
+		M.running_task = previous_task
 	end
-	local previous_task = M.running_task
-	M.running_task = taskd
-	check(coroutine.resume(taskd.co, ...))
-	M.running_task = previous_task
 end
 
 
@@ -259,6 +261,7 @@ M.run = function ( f, ... )
 		co=co,
 		--for : calls
 		kill=M.kill,
+		set_pause=M.set_pause
 	}, {
 		__tostring=function() return 'TASK#'..n_task end,
 	})
@@ -370,6 +373,30 @@ end
 --- Yields the execution of a task, as in cooperative multitasking.
 M.yield = function ()
 	return coroutine.yield( M.running_task.co )
+end
+
+--- Pause a task.
+-- A paused task won't be scheduled for execution. If paused while waiting for a signal, 
+-- won't respond to signals. Signals on unbuffered waitds will get lost. Task's buffered 
+-- waitds will still buffer events.
+-- @param taskd Task to pause
+-- @param pause mode, true to pause, false to unpause
+-- @return true on success, nil, errormessage on failure
+M.set_pause = function(taskd, pause)
+	log('SCHED', 'INFO', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
+	if taskd.status=='dead' then 
+		log('SCHED', 'ERROR', '%s toggling pause on dead %s', tostring(M.running_task), tostring(taskd))
+		return nil, 'task is dead'
+	end
+	if pause then
+		taskd.status='paused'
+		if M.running_task==taskd then
+			M.yield()
+		end
+	else
+		taskd.status='ready'
+	end
+	return true
 end
 
 --- Idle function.
