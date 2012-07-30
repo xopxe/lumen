@@ -528,7 +528,7 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
        <li><code><em>timeout</em></code>:  optional, time to wait. nil or negative waits for ever.</li>
        <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing
  signals that arrived while the task is not blocked on the wait descriptor.
- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
+ Whenever there is an attempt to insert in a full buffer, the dropped
  flag is set. nil o 0 disables, negative means no length limit.</li>
        <li><code><em>buff_mode</em></code>:  Specifies how to behave when inserting in a full buffer.
  'drop first' means drop the oldest signals to make space. 'drop last'
@@ -559,7 +559,7 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
        <li><code><em>waketime</em></code>:  The time at which to task will be forced to wake-up (due
  to a timeout on a wait)</li>
        <li><code><em>co</em></code>:  The coroutine of the task</li>
-       <li><code><em>kill</em></code>:  Object oriented synonimous of sched.kill(taskd) (see <a href="../modules/sched.html#kill">kill</a>)</li>
+       <li><code><em>kill</em></code>:  Object oriented synonym of sched.kill(taskd) (see <a href="../modules/sched.html#kill">kill</a>)</li>
        <li><code><em>set_pause</em></code>:  Object oriented synonimous of sched.set_pause(taskd, pause)
  (see <a href="../modules/sched.html#set_pause">set_pause</a>)</li>
     </ul>

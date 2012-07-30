@@ -533,7 +533,7 @@ M.running_task = false
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
--- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
+-- Whenever there is an attempt to insert in a full buffer, the dropped
 -- flag is set. nil o 0 disables, negative means no length limit.
 -- @field buff_mode Specifies how to behave when inserting in a full buffer.
 -- 'drop first' means drop the oldest signals to make space. 'drop last'
@@ -553,7 +553,7 @@ M.running_task = false
 -- @field waketime The time at which to task will be forced to wake-up (due
 -- to a timeout on a wait)
 -- @field co The coroutine of the task
--- @field kill Object oriented synonimous of sched.kill(taskd) (see @{kill})
+-- @field kill Object oriented synonym of sched.kill(taskd) (see @{kill})
 -- @field set_pause Object oriented synonimous of sched.set_pause(taskd, pause)
 -- (see @{set_pause})
 -- @table taskd
