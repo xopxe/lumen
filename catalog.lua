@@ -34,7 +34,6 @@ end
 -- @return true is successful; nil, 'used' if the name is already used by another task.
 M.register = function ( name )
 	local running_task = sched.running_task
-assert(type(running_task)=='table')
 	if tasknames[name] and tasknames[name] ~= running_task then
 		return nil, 'used'
 	end
@@ -52,7 +51,6 @@ end
 -- @return the task if successful; on timeout expiration returns nil, 'timeout'.
 M.waitfor = function ( name, timeout )
 	local taskd = tasknames[name]
-assert(type(taskd)=='table')
 	log('CATALOG', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(taskd))
 	if taskd then
 		return taskd
