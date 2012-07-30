@@ -384,7 +384,7 @@ end
 -- @return true on success, nil, errormessage on failure
 M.set_pause = function(taskd, pause)
 	log('SCHED', 'INFO', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
-	if taskd.status=='dead' then 
+	if taskd.status=='dead' then
 		log('SCHED', 'ERROR', '%s toggling pause on dead %s', tostring(M.running_task), tostring(taskd))
 		return nil, 'task is dead'
 	end
@@ -427,19 +427,21 @@ M.step = function ()
 
 	--find tasks ready to run (active) and ready to wakeup by timeout
 	for taskd, _ in pairs (tasks) do
-		if taskd.waitingfor then
-			local waketime = taskd.waketime
-			if waketime then
-				next_waketime = next_waketime or waketime
-				if waketime <= M.get_time() then
-					cycletimeout[#cycletimeout+1]=taskd
+		if  taskd.status=='ready' then
+			if taskd.waitingfor then
+				local waketime = taskd.waketime
+				if waketime then
+					next_waketime = next_waketime or waketime
+					if waketime <= M.get_time() then
+						cycletimeout[#cycletimeout+1]=taskd
+					end
+					if waketime < next_waketime then
+						next_waketime = waketime
+					end
 				end
-				if waketime < next_waketime then
-					next_waketime = waketime
-				end
+			else
+				cycleready[#cycleready+1]=taskd
 			end
-		elseif taskd.status=='ready' then
-			cycleready[#cycleready+1]=taskd
 		end
 	end
 	local ncycleready,ncycletimeout = #cycleready, #cycletimeout
