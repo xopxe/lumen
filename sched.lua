@@ -187,7 +187,6 @@ end
 local register_signal = function(taskd, waitd)
 	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
 	if events=='*' then events={'*'} end
-	if emitter=='*' then emitter={'*'} end
 	taskd.waitingfor = waitd
 
 	if timeout and timeout>=0 then
@@ -216,12 +215,14 @@ local register_signal = function(taskd, waitd)
 	end
 
 	if events and emitter then
-		if not emitter.co then --type(emitter)=='table' then
+		if emitter=='*' or emitter.co then
+			--single taskd parameter
+			register_emitter(emitter)
+		else
+			--is a array of taskd
 			for _, e in ipairs(emitter) do 
 				register_emitter(e)
 			end
-		else
-			register_emitter(emitter)
 		end
 	end
 end
@@ -245,13 +246,13 @@ end
 
 local n_task = 0
 --- Create and run a task.
--- The task will emit a sched.EVENT_DIE, true, params...
+-- The task will emit a sched.EVENT\_DIE, true, params...
 -- signal upon normal finalization, were params are the returns of f.
--- If there is a error, the task will emit a sched.EVENT_DIE, false, err were
+-- If there is a error, the task will emit a sched.EVENT\_DIE, false, err were
 -- err is the error message.
 -- @param f function for the task
 -- @param ... parameters passed to f upon first run
--- @return task in the scheduler.
+-- @return task in the scheduler (see @{taskd}).
 M.run = function ( f, ... )
 	local co = coroutine.create( f )
 	n_task = n_task + 1
@@ -276,7 +277,7 @@ end
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter.The signal will be provided as 
 -- emitter, event, event_parameters, just as the result of a @{wait}
--- @return task in the scheduler.
+-- @return task in the scheduler (see @{taskd}).
 -- @see wait
 -- @see run
 M.sigrun = function ( waitd, f )
@@ -295,7 +296,7 @@ end
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter. The signal will be provided as 
 -- emitter, event, event_parameters, just as the result of a @{wait}
--- @return task in the scheduler.
+-- @return task in the scheduler (see @{taskd}).
 -- @see wait
 -- @see run
 M.sigrunonce = function ( waitd, f )
@@ -308,8 +309,9 @@ M.sigrunonce = function ( waitd, f )
 end
 
 --- Finishes a task.
--- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
--- @param taskd task to terminate.
+-- The killed task will emit a signal sched.EVENT\_DIE, false, 'killed'. Can be 
+-- invoked as taskd:kill().
+-- @param taskd task to terminate (see @{taskd}).
 M.kill = function ( taskd )
 	log('SCHED', 'INFO', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
 	taskd.status = 'dead'
@@ -378,10 +380,10 @@ end
 --- Pause a task.
 -- A paused task won't be scheduled for execution. If paused while waiting for a signal, 
 -- won't respond to signals. Signals on unbuffered waitds will get lost. Task's buffered 
--- waitds will still buffer events.
--- @param taskd Task to pause
+-- waitds will still buffer events. Can be invoked as taskd:set_pause(pause)
+-- @param taskd Task to pause (see @{taskd}). 
 -- @param pause mode, true to pause, false to unpause
--- @return true on success, nil, errormessage on failure
+-- @return true on success or nil, errormessage on failure
 M.set_pause = function(taskd, pause)
 	log('SCHED', 'INFO', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
 	if taskd.status=='dead' then
@@ -509,7 +511,7 @@ M.to_clean_up = 1000
 
 --- Currently running task.
 -- the task descriptor from current task.
-M.running_task = nil
+M.running_task = false
 
 --- Data structures.
 -- Main structures used.
@@ -527,7 +529,7 @@ M.running_task = nil
 -- on first request basis.
 -- @field emitter optional, task originating the signal we wait for. If nil, will
 -- only return on timeout. If '*', means anyone. I also can be an array of 
--- tasks, in which case any of them is accepted as a source.
+-- tasks, in which case any of them is accepted as a source (see @{taskd}).
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
@@ -541,6 +543,20 @@ M.running_task = nil
 -- @field events optional, array with the events to wait. Can contain a '\*', 
 -- or be '\*' instead of a table, to mark interest in any event
 -- @table waitd
+
+------
+-- Task descriptor.
+-- Handler of a task.
+-- @field status Status of the task, can be 'ready', 'paused' or 'dead'
+-- @field waitingfor If the the task is waiting for a signal, this is the 
+-- Wait Descriptor (see @{waitd})
+-- @field waketime The time at which to task will be forced to wake-up (due
+-- to a timeout on a wait)
+-- @field co The coroutine of the task
+-- @field kill Object oriented synonimous of sched.kill(taskd) (see @{kill})
+-- @field set_pause Object oriented synonimous of sched.set_pause(taskd, pause)
+-- (see @{set_pause})
+-- @table taskd
 
 return M
 
