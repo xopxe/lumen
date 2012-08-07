@@ -85,12 +85,24 @@
 	<td class="summary">Create and run a task.</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#run_attached">run_attached&nbsp;(f, ...)</a></td>
+	<td class="summary">Create and run a task in attached mode.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(waitd, f)</a></td>
 	<td class="summary">Run a task that listens for a signal.</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#sigrun_attached">sigrun_attached&nbsp;(waitd, f)</a></td>
+	<td class="summary">Run a task that listens for a signal, in attached mode.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(waitd, f)</a></td>
 	<td class="summary">Run a task that listens for a signal, once.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#sigrunonce_attached">sigrunonce_attached&nbsp;(waitd, f)</a></td>
+	<td class="summary">Run a task that listens for a signal, once, in attached mode.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#kill">kill&nbsp;(taskd)</a></td>
@@ -197,6 +209,33 @@
 
 </dd>
     <dt>
+    <a name = "run_attached"></a>
+    <strong>run_attached&nbsp;(f, ...)</strong>
+    </dt>
+    <dd>
+    Create and run a task in attached mode. 
+ Just as <a href="../modules/sched.html#run">run</a>, but the new task  will run un attached mode. This means
+ the new task will be killed when the parent task finishes or is killed.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>f</em></code>:  function for the task</li>
+       <li><code><em>...</em></code>:  parameters passed to f upon first run</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
+    </ol>
+
+
+    <h3>see also:</h3>
+    <ul>
+         <a href="../modules/sched.html#run">run</a>
+    </ul>
+</dd>
+    <dt>
     <a name = "sigrun"></a>
     <strong>sigrun&nbsp;(waitd, f)</strong>
     </dt>
@@ -225,6 +264,36 @@
     </ul>
 </dd>
     <dt>
+    <a name = "sigrun_attached"></a>
+    <strong>sigrun_attached&nbsp;(waitd, f)</strong>
+    </dt>
+    <dd>
+    Run a task that listens for a signal, in attached mode. 
+ Just as <a href="../modules/sched.html#sigrun">sigrun</a>, but the new task  will run un attached mode. This means
+ the new task will be killed when the parent task finishes or is killed.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+       <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
+ is passed to f as parameter.The signal will be provided as 
+ emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
+    </ol>
+
+
+    <h3>see also:</h3>
+    <ul>
+         <li><a href="../modules/sched.html#wait">wait</a></li>
+         <li><a href="../modules/sched.html#sigrun">sigrun</a></li>
+    </ul>
+</dd>
+    <dt>
     <a name = "sigrunonce"></a>
     <strong>sigrunonce&nbsp;(waitd, f)</strong>
     </dt>
@@ -250,6 +319,36 @@
     <ul>
          <li><a href="../modules/sched.html#wait">wait</a></li>
          <li><a href="../modules/sched.html#run">run</a></li>
+    </ul>
+</dd>
+    <dt>
+    <a name = "sigrunonce_attached"></a>
+    <strong>sigrunonce_attached&nbsp;(waitd, f)</strong>
+    </dt>
+    <dd>
+    Run a task that listens for a signal, once, in attached mode. 
+ Just as <a href="../modules/sched.html#sigrunonce">sigrunonce</a>, but the new task  will run un attached mode. This means
+ the new task will be killed when the parent task finishes or is killed.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+       <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
+ is passed to f as parameter. The signal will be provided as 
+ emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
+    </ol>
+
+
+    <h3>see also:</h3>
+    <ul>
+         <li><a href="../modules/sched.html#wait">wait</a></li>
+         <li><a href="../modules/sched.html#sigrunonce">sigrunonce</a></li>
     </ul>
 </dd>
     <dt>
@@ -560,7 +659,7 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
  to a timeout on a wait)</li>
        <li><code><em>co</em></code>:  The coroutine of the task</li>
        <li><code><em>kill</em></code>:  Object oriented synonym of sched.kill(taskd) (see <a href="../modules/sched.html#kill">kill</a>)</li>
-       <li><code><em>set_pause</em></code>:  Object oriented synonimous of sched.set_pause(taskd, pause)
+       <li><code><em>set_pause</em></code>:  Object oriented synonym of sched.set_pause(taskd, pause)
  (see <a href="../modules/sched.html#set_pause">set_pause</a>)</li>
     </ul>
 

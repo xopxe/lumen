@@ -119,10 +119,10 @@
     </dt>
     <dd>
     Registers a TCP server socket with socketeer. 
- socketeer will signal fd, 'accepted', client when establishing a connection, 
+ socketeer will signal skt, 'accepted', client when establishing a connection, 
  where skt is the server socket and client is the new client socket, or skt, 'fail', error 
  on error conditions. 
- The client socket is automatically registered into nixiorator.
+ The client socket is automatically registered into socketeer.
 
     <h3>Parameters:</h3>
     <ul>
