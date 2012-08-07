@@ -657,6 +657,8 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
  Wait Descriptor (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>waketime</em></code>:  The time at which to task will be forced to wake-up (due
  to a timeout on a wait)</li>
+       <li><code><em>created_by</em></code>:  The task that started this one.</li>
+       <li><code><em>attached</em></code>:  Table containing tasks it has started in attached mode.</li>
        <li><code><em>co</em></code>:  The coroutine of the task</li>
        <li><code><em>kill</em></code>:  Object oriented synonym of sched.kill(taskd) (see <a href="../modules/sched.html#kill">kill</a>)</li>
        <li><code><em>set_pause</em></code>:  Object oriented synonym of sched.set_pause(taskd, pause)

@@ -151,8 +151,8 @@ step_task = function(taskd, ...)
 						, tostring(taskd), select('#',...), (...))
 					emit_signal(taskd, event_die, nil, ...)
 				end
-				if taskd.children then 
-					for child, _ in pairs(taskd.children) do
+				if taskd.attached then 
+					for child, _ in pairs(taskd.attached) do
 						M.kill(child)
 					end
 				end
@@ -288,8 +288,8 @@ end
 M.run_attached = function (f, ...)
 	local taskd = M.running_task
 	local child = M.run(f, ...)
-	taskd.children = taskd.children or setmetatable({}, weak_key)
-	taskd.children[child] = true
+	taskd.attached = taskd.attached or setmetatable({}, weak_key)
+	taskd.attached[child] = true
 	log('SCHED', 'INFO', '%s is attached to %s', tostring(child), tostring(taskd))
 	return taskd
 end
@@ -385,8 +385,8 @@ M.kill = function ( taskd )
 	taskd.status = 'dead'
 	tasks[taskd] = nil
 	
-	if taskd.children then 
-		for child, _ in pairs(taskd.children) do
+	if taskd.attached then 
+		for child, _ in pairs(taskd.attached) do
 			M.kill(child)
 		end
 	end
@@ -627,6 +627,8 @@ M.running_task = false
 -- Wait Descriptor (see @{waitd})
 -- @field waketime The time at which to task will be forced to wake-up (due
 -- to a timeout on a wait)
+-- @field created_by The task that started this one.
+-- @field attached Table containing tasks it has started in attached mode.
 -- @field co The coroutine of the task
 -- @field kill Object oriented synonym of sched.kill(taskd) (see @{kill})
 -- @field set_pause Object oriented synonym of sched.set_pause(taskd, pause)
