@@ -145,11 +145,16 @@ step_task = function(taskd, ...)
 				tasks[taskd]=nil
 				if ok then 
 					log('SCHED', 'INFO', '%s returning %d parameters', tostring(taskd), select('#',...))
-					return emit_signal(taskd, event_die, true, ...)
+					emit_signal(taskd, event_die, true, ...)
 				else
 					log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
 						, tostring(taskd), select('#',...), (...))
-					return emit_signal(taskd, event_die, nil, ...)
+					emit_signal(taskd, event_die, nil, ...)
+				end
+				if taskd.children then 
+					for child, _ in pairs(taskd.children) do
+						M.kill(child)
+					end
 				end
 			end
 		end
@@ -256,6 +261,7 @@ local n_task = 0
 M.run = function ( f, ... )
 	local co = coroutine.create( f )
 	n_task = n_task + 1
+	local task_name = 'TASK#'..n_task
 	local taskd = setmetatable({
 		status='ready',
 		created_by=M.running_task,
@@ -264,12 +270,40 @@ M.run = function ( f, ... )
 		kill=M.kill,
 		set_pause=M.set_pause
 	}, {
-		__tostring=function() return 'TASK#'..n_task end,
+		__tostring=function() return task_name end,
 	})
 	tasks[taskd] = true
 	log('SCHED', 'INFO', 'created %s from %s, with %d parameters', tostring(taskd), tostring(f), select('#', ...))
 	step_task(taskd, ...)
 	return taskd
+end
+
+--- Create and run a task in attached mode.
+-- Just as @{run}, but the new task  will run un attached mode. This means
+-- the new task will be killed when the parent task finishes or is killed.
+-- @param f function for the task
+-- @param ... parameters passed to f upon first run
+-- @return task in the scheduler (see @{taskd}).
+-- @see run
+M.run_attached = function (f, ...)
+	local taskd = M.running_task
+	local child = M.run(f, ...)
+	taskd.children = taskd.children or setmetatable({}, weak_key)
+	taskd.children[child] = true
+	log('SCHED', 'INFO', '%s is attached to %s', tostring(child), tostring(taskd))
+	return taskd
+end
+
+
+local function get_sigrun_wrapper(waitd, f)
+	local wrapper = function()
+		while true do
+			f(M.wait(waitd))
+		end
+	end
+	log('SCHED', 'INFO', 'sigrun wrapper %s created from %s and waitd %s', 
+		tostring(wrapper), tostring(f), tostring(waitd))
+	return wrapper
 end
 
 --- Run a task that listens for a signal.
@@ -281,15 +315,36 @@ end
 -- @see wait
 -- @see run
 M.sigrun = function ( waitd, f )
+	local taskd=M.run( get_sigrun_wrapper(waitd, f) )
+	return taskd
+end
+
+--- Run a task that listens for a signal, in attached mode.
+-- Just as @{sigrun}, but the new task  will run un attached mode. This means
+-- the new task will be killed when the parent task finishes or is killed.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter.The signal will be provided as 
+-- emitter, event, event_parameters, just as the result of a @{wait}
+-- @return task in the scheduler (see @{taskd}).
+-- @see wait
+-- @see sigrun
+M.sigrun_attached = function ( waitd, f )
+	local wrapper=M.run_attached( get_sigrun_wrapper(waitd, f) )
+	log('SCHED', 'INFO', '%s is attached to %s', tostring(wrapper), tostring(M.running_task))
+	return wrapper
+end
+
+
+local function get_sigrunonce_wrapper(waitd, f)
 	local wrapper = function()
-		while true do
-			f(M.wait(waitd))
-		end
+		f(M.wait(waitd))
 	end
 	log('SCHED', 'INFO', 'sigrun wrapper %s created from %s and waitd %s', 
 		tostring(wrapper), tostring(f), tostring(waitd))
-	return M.run( wrapper )
+	return wrapper
 end
+
 
 --- Run a task that listens for a signal, once.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
@@ -300,13 +355,26 @@ end
 -- @see wait
 -- @see run
 M.sigrunonce = function ( waitd, f )
-	local wrapper = function()
-		f(M.wait(waitd))
-	end
-	log('SCHED', 'INFO', 'sigrunonce wrapper %s created from %s and waitd %s', 
-		tostring(wrapper), tostring(f), tostring(waitd))
-	return M.run( wrapper )
+	local wrapper=M.run( get_sigrunonce_wrapper(waitd, f) )
+	return wrapper
 end
+
+--- Run a task that listens for a signal, once, in attached mode.
+-- Just as @{sigrunonce}, but the new task  will run un attached mode. This means
+-- the new task will be killed when the parent task finishes or is killed.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter. The signal will be provided as 
+-- emitter, event, event_parameters, just as the result of a @{wait}
+-- @return task in the scheduler (see @{taskd}).
+-- @see wait
+-- @see sigrunonce
+M.sigrunonce_attached = function ( waitd, f )
+	local wrapper=M.run( get_sigrunonce_wrapper(waitd, f) )
+	log('SCHED', 'INFO', '%s is attached to %s', tostring(wrapper), tostring(M.running_task))
+	return wrapper
+end
+
 
 --- Finishes a task.
 -- The killed task will emit a signal sched.EVENT\_DIE, false, 'killed'. Can be 
@@ -316,6 +384,13 @@ M.kill = function ( taskd )
 	log('SCHED', 'INFO', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
 	taskd.status = 'dead'
 	tasks[taskd] = nil
+	
+	if taskd.children then 
+		for child, _ in pairs(taskd.children) do
+			M.kill(child)
+		end
+	end
+	
 	emit_signal(taskd, event_die, false, 'killed')
 end
 
@@ -554,7 +629,7 @@ M.running_task = false
 -- to a timeout on a wait)
 -- @field co The coroutine of the task
 -- @field kill Object oriented synonym of sched.kill(taskd) (see @{kill})
--- @field set_pause Object oriented synonimous of sched.set_pause(taskd, pause)
+-- @field set_pause Object oriented synonym of sched.set_pause(taskd, pause)
 -- (see @{set_pause})
 -- @table taskd
 

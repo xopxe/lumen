@@ -22,10 +22,10 @@ local partial = setmetatable({}, weak_key)
 local M = {socket=socket}
 
 --- Registers a TCP server socket with socketeer.
--- socketeer will signal fd, 'accepted', client when establishing a connection, 
+-- socketeer will signal skt, 'accepted', client when establishing a connection, 
 -- where skt is the server socket and client is the new client socket, or skt, 'fail', error 
 -- on error conditions. 
--- The client socket is automatically registered into nixiorator.
+-- The client socket is automatically registered into socketeer.
 -- @param skt a LuaSocket server socket
 -- @param pattern The read pattern to be used for established connections (see @{register_client})
 M.register_server = function (skt, pattern)
