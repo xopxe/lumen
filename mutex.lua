@@ -33,8 +33,9 @@ local waitd_locks = setmetatable({}, {__mode = "kv"})
 local n_mutex=0
 
 local M = function()
-	n_mutex=n_mutex+1
-	local m = setmetatable({}, {__tostring=function() return 'MUTEX#'..n_mutex end})
+	n_mutex = n_mutex+1
+	local mutex_name = 'MUTEX#'..n_mutex
+	local m = setmetatable({}, {__tostring=function() return mutex_name end})
 
 	local event_release = {}
 	local events_release = {event_release, sched.EVENT_DIE}
