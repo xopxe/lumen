@@ -154,10 +154,8 @@ step_task = function(taskd, ...)
 						, tostring(taskd), select('#',...), (...))
 					emit_signal(taskd, event_die, nil, ...)
 				end
-				if taskd.attached then 
-					for child, _ in pairs(taskd.attached) do
-						M.kill(child)
-					end
+				for child, _ in pairs(taskd.attached) do
+					M.kill(child)
 				end
 			end
 		end
@@ -380,10 +378,8 @@ M.kill = function ( taskd )
 	taskd.status = 'dead'
 	tasks[taskd] = nil
 	
-	if taskd.attached then 
-		for child, _ in pairs(taskd.attached) do
-			M.kill(child)
-		end
+	for child, _ in pairs(taskd.attached) do
+		M.kill(child)
 	end
 	
 	emit_signal(taskd, event_die, false, 'killed')
