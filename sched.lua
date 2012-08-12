@@ -2,6 +2,9 @@
 -- Lumen (Lua Multitasking Environment) is a simple environment 
 -- for coroutine based multitasking. Consists of a signal scheduler, 
 -- and that's it.
+-- Functions that receive a task or wait descriptors can be invoked as methods
+-- of the corresponing events. For example, sched.kill(task) can be invoked as 
+-- task:kill()
 -- @module sched
 -- @usage local sched = require 'sched'
 -- @alias M
@@ -250,47 +253,37 @@ local compute_available_time = function()
 end
 
 local n_task = 0
---- Create and run a task.
+
+--- Create a task.
+-- The task is created in paused mode. To run the created task,
+-- use @{run} or @{set_pause}
 -- The task will emit a sched.EVENT\_DIE, true, params...
 -- signal upon normal finalization, were params are the returns of f.
 -- If there is a error, the task will emit a sched.EVENT\_DIE, false, err were
 -- err is the error message.
 -- @param f function for the task
--- @param ... parameters passed to f upon first run
 -- @return task in the scheduler (see @{taskd}).
-M.run = function ( f, ... )
+M.new_task = function ( f )
 	local co = coroutine.create( f )
 	n_task = n_task + 1
 	local task_name = 'TASK#'..n_task
 	local taskd = setmetatable({
-		status='ready',
+		status='paused',
 		created_by=M.running_task,
 		co=co,
+		attached=setmetatable({}, weak_key),
 		--for : calls
 		kill=M.kill,
-		set_pause=M.set_pause
+		set_pause=M.set_pause,
+		run=M.run,
+		attach=M.attach,
+		set_as_attached=M.set_as_attached,
 	}, {
 		__tostring=function() return task_name end,
 	})
 	tasks[taskd] = true
-	log('SCHED', 'INFO', 'created %s from %s, with %d parameters', tostring(taskd), tostring(f), select('#', ...))
-	step_task(taskd, ...)
-	return taskd
-end
-
---- Create and run a task in attached mode.
--- Just as @{run}, but the new task  will run un attached mode. This means
--- the new task will be killed when the parent task finishes or is killed.
--- @param f function for the task
--- @param ... parameters passed to f upon first run
--- @return task in the scheduler (see @{taskd}).
--- @see run
-M.run_attached = function (f, ...)
-	local taskd = M.running_task
-	local child = M.run(f, ...)
-	taskd.attached = taskd.attached or setmetatable({}, weak_key)
-	taskd.attached[child] = true
-	log('SCHED', 'INFO', '%s is attached to %s', tostring(child), tostring(taskd))
+	log('SCHED', 'INFO', 'created %s from %s', tostring(taskd), tostring(f))
+	--step_task(taskd, ...)
 	return taskd
 end
 
@@ -306,7 +299,7 @@ local function get_sigrun_wrapper(waitd, f)
 	return wrapper
 end
 
---- Run a task that listens for a signal.
+--- Create a task that listens for a signal.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter.The signal will be provided as 
@@ -314,27 +307,10 @@ end
 -- @return task in the scheduler (see @{taskd}).
 -- @see wait
 -- @see run
-M.sigrun = function ( waitd, f )
-	local taskd=M.run( get_sigrun_wrapper(waitd, f) )
+M.new_sigrun_task = function ( waitd, f )
+	local taskd=M.new_task( get_sigrun_wrapper(waitd, f) )
 	return taskd
 end
-
---- Run a task that listens for a signal, in attached mode.
--- Just as @{sigrun}, but the new task  will run un attached mode. This means
--- the new task will be killed when the parent task finishes or is killed.
--- @param waitd a Wait Descriptor for the signal (see @{waitd})
--- @param f function to be called when the signal appears. The signal
--- is passed to f as parameter.The signal will be provided as 
--- emitter, event, event_parameters, just as the result of a @{wait}
--- @return task in the scheduler (see @{taskd}).
--- @see wait
--- @see sigrun
-M.sigrun_attached = function ( waitd, f )
-	local wrapper=M.run_attached( get_sigrun_wrapper(waitd, f) )
-	log('SCHED', 'INFO', '%s is attached to %s', tostring(wrapper), tostring(M.running_task))
-	return wrapper
-end
-
 
 local function get_sigrunonce_wrapper(waitd, f)
 	local wrapper = function()
@@ -345,8 +321,7 @@ local function get_sigrunonce_wrapper(waitd, f)
 	return wrapper
 end
 
-
---- Run a task that listens for a signal, once.
+--- Create a task that listens for a signal, once.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter. The signal will be provided as 
@@ -354,27 +329,47 @@ end
 -- @return task in the scheduler (see @{taskd}).
 -- @see wait
 -- @see run
-M.sigrunonce = function ( waitd, f )
-	local wrapper=M.run( get_sigrunonce_wrapper(waitd, f) )
-	return wrapper
+M.new_sigrunonce_task = function ( waitd, f )
+	local taskd=M.new_task( get_sigrunonce_wrapper(waitd, f) )
+	return taskd
 end
 
---- Run a task that listens for a signal, once, in attached mode.
--- Just as @{sigrunonce}, but the new task  will run un attached mode. This means
--- the new task will be killed when the parent task finishes or is killed.
--- @param waitd a Wait Descriptor for the signal (see @{waitd})
--- @param f function to be called when the signal appears. The signal
--- is passed to f as parameter. The signal will be provided as 
--- emitter, event, event_parameters, just as the result of a @{wait}
--- @return task in the scheduler (see @{taskd}).
--- @see wait
--- @see sigrunonce
-M.sigrunonce_attached = function ( waitd, f )
-	local wrapper=M.run( get_sigrunonce_wrapper(waitd, f) )
-	log('SCHED', 'INFO', '%s is attached to %s', tostring(wrapper), tostring(M.running_task))
-	return wrapper
+--- Run a task.
+-- Can be provided either a @{taskd} or a function with optional parameters.
+-- If provided a taskd, will run it. If provided a function, will use @{new_task}
+-- to create a task first.
+-- @param task wither a @{taskd} or function for the task.
+-- @param ... parameters passed to the task upon first run.
+-- @return a task in the scheduler (see @{taskd}).
+M.run = function ( task, ... )
+	local taskd
+	if type(task)=='function' then
+		taskd = M.new_task( task, ...)
+	else
+		taskd = task
+	end
+	M.set_pause(taskd, false)
+	step_task(taskd, ...)
+	return taskd
 end
 
+--- Attach a task to another.
+-- An attached task will be killed by the scheduler whenever
+-- the parent task is finished (returns, errors or is killed)
+-- @param taskd The parent task
+-- @param taskd_child The child (attached) task.
+M.attach = function (taskd, taskd_child)
+	taskd.attached[taskd_child] = true
+	log('SCHED', 'INFO', '%s is attached to %s', tostring(taskd_child), tostring(taskd))
+end
+
+--- Set a task as attached to the creator task.
+-- An attached task will be killed by the scheduler whenever
+-- the parent task (the task that created it) is finished (returns, errors or is killed)
+-- @param taskd_child The child (attached) task.
+M.set_as_attached = function(taskd_child)
+	M.attach(taskd_child.created_by, taskd_child)
+end
 
 --- Finishes a task.
 -- The killed task will emit a signal sched.EVENT\_DIE, false, 'killed'. Can be 
@@ -621,18 +616,16 @@ M.running_task = false
 
 ------
 -- Task descriptor.
--- Handler of a task.
+-- Handler of a task. Besides the following fields, provides methods for
+-- the sched functions that have a taskd as first parameter.
 -- @field status Status of the task, can be 'ready', 'paused' or 'dead'
 -- @field waitingfor If the the task is waiting for a signal, this is the 
 -- Wait Descriptor (see @{waitd})
 -- @field waketime The time at which to task will be forced to wake-up (due
 -- to a timeout on a wait)
 -- @field created_by The task that started this one.
--- @field attached Table containing tasks it has started in attached mode.
+-- @field attached Table containing attached tasks.
 -- @field co The coroutine of the task
--- @field kill Object oriented synonym of sched.kill(taskd) (see @{kill})
--- @field set_pause Object oriented synonym of sched.set_pause(taskd, pause)
--- (see @{set_pause})
 -- @table taskd
 
 return M
