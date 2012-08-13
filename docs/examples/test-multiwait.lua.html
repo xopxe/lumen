@@ -104,12 +104,12 @@
 
 <span class="comment">---[[
 </span><span class="comment">-- we are only interested in events B and C, emitted by tasks 2 and 3
-</span>sched.new_sigrun_task({emitter={emitter2, emitter3}, events={<span class="string">'evB'</span>, <span class="string">'evC'</span>}}, <span class="global">print</span>):run()
+</span>sched.sigrun({emitter={emitter2, emitter3}, events={<span class="string">'evB'</span>, <span class="string">'evC'</span>}}, <span class="global">print</span>)
 <span class="comment">--]]
 </span>
 <span class="comment">--[[
 -- we are interested in all events
-sched.new_sigrun_task({emitter='*', events='*'}, print):run()
+sched.sigrun({emitter='*', events='*'}, print)
 --]]</span>
 
 sched.go()

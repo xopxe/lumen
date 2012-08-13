@@ -346,6 +346,27 @@ M.run = function ( task, ... )
 	return taskd
 end
 
+--- Create a run a task that listens for a signal.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter.The signal will be provided as 
+-- emitter, event, event_parameters, just as the result of a @{wait}
+-- @return task in the scheduler (see @{taskd}).
+M.sigrun = function( waitd, f)
+	return M.run(M.new_sigrun_task( waitd, f ))
+end
+
+--- Create and run a task that listens for a signal, once.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter. The signal will be provided as 
+-- emitter, event, event_parameters, just as the result of a @{wait}
+-- @return task in the scheduler (see @{taskd}).
+M.sigrunonce = function( waitd, f)
+	return M.run(M.new_sigrun_task( waitd, f ))
+end
+
+
 --- Attach a task to another.
 -- An attached task will be killed by the scheduler whenever
 -- the parent task is finished (returns, errors or is killed)

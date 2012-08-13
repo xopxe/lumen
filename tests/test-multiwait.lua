@@ -38,12 +38,12 @@ end)
 
 ---[[
 -- we are only interested in events B and C, emitted by tasks 2 and 3
-sched.new_sigrun_task({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print):run()
+sched.sigrun({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print)
 --]]
 
 --[[
 -- we are interested in all events
-sched.new_sigrun_task({emitter='*', events='*'}, print):run()
+sched.sigrun({emitter='*', events='*'}, print)
 --]]
 
 sched.go()
