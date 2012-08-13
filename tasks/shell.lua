@@ -43,15 +43,15 @@ local function get_command_processor( pipe_in, pipe_out )
 	return function()
 		local lines = {}
 		local prompt, banner ='> ', nil
-		pipe_out.write(prompt, banner)
+		pipe_out:write(prompt, banner)
 		while true do
-			local command, data = pipe_in.read()
+			local command, data = pipe_in:read()
 			if command == 'line' then
 				lines[#lines+1] = data
 				local compiled, waitmore, ret = handle_sheellbuffer(lines)
 				if compiled then lines = {} end
 				if waitmore then prompt = '+ '  else prompt = '> ' end
-				pipe_out.write(prompt, ret)
+				pipe_out:write(prompt, ret)
 			end
 		end
 	end
@@ -72,7 +72,7 @@ M.init = function(ip, port)
 					local pipe_out = pipes.new('pipeout:'..tostring(skt), 100)
 					sched.run_attached(get_command_processor( pipe_in, pipe_out ))
 
-					local prompt, out = pipe_out.read() -- will return first prompt
+					local prompt, out = pipe_out:read() -- will return first prompt
 					if out then 
 						skt:writeall(out..'\r\n'..out)
 					else
@@ -84,15 +84,15 @@ M.init = function(ip, port)
 						local _,  _, data, err = sched.wait(waitd_skt)
 						--print('1', data, err or '')
 						if not data then return nil, err end
-						pipe_in.write('line', data)
+						pipe_in:write('line', data)
 						repeat
-							prompt, out = pipe_out.read()
+							prompt, out = pipe_out:read()
 							if out then 
 								skt:writeall(out..'\r\n'..prompt)
 							else
 								skt:writeall(prompt)
 							end
-						until pipe_out.len() == 0
+						until pipe_out:len() == 0
 					end
 				end)
 			end
