@@ -120,8 +120,8 @@
 	<td class="summary">Wait for a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#wait_feed">wait_feed&nbsp;(waitd)</a></td>
-	<td class="summary">Feeds a wait descriptor to the scheduler.</td>
+	<td class="name" nowrap><a href="#new_waitd">new_waitd&nbsp;(waitd_table)</a></td>
+	<td class="summary">Create a Wait Descriptor.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#sleep">sleep&nbsp;(timeout)</a></td>
@@ -373,6 +373,8 @@
  Pauses the task until (one of) the specified signal(s) is available.
  If there are signals in the buffer, will return the first immediately.
  Otherwise will block the task until signal arrival, or a timeout.
+ If provided a table as parameter, will use <a href="../modules/sched.html#new_waitd">new_waitd</a> to convert it
+ to a wait desciptor.
 
     <h3>Parameters:</h3>
     <ul>
@@ -389,20 +391,24 @@
 
 </dd>
     <dt>
-    <a name = "wait_feed"></a>
-    <strong>wait_feed&nbsp;(waitd)</strong>
+    <a name = "new_waitd"></a>
+    <strong>new_waitd&nbsp;(waitd_table)</strong>
     </dt>
     <dd>
-    Feeds a wait descriptor to the scheduler. 
- Allows a buffering Wait Descriptor to start buffering before the task is ready
- to wait().
+    Create a Wait Descriptor. 
+ Creates <a href="../modules/sched.html#waitd">waitd</a> object in the scheduler. Notice that buffering waitds
+ start buffering as soon they are created.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+       <li><code><em>waitd_table</em></code>:  a table to convert into a wait descriptor.</li>
     </ul>
 
 
+    <h3>Returns:</h3>
+    <ol>
+        a wait descriptor object.
+    </ol>
 
 
 </dd>

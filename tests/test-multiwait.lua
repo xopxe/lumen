@@ -7,7 +7,7 @@ package.path = package.path .. ";;;../?.lua"
 local sched = require "sched"
 
 -- Watch for some task dying.
-sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
+sched.new_sigrun_task({emitter='*', events={sched.EVENT_DIE}}, print):run()
 
 -- 3 tasks, each emitting a combination of 2 events out of 3 possible,
 -- and sending it's own number as data
@@ -38,12 +38,12 @@ end)
 
 ---[[
 -- we are only interested in events B and C, emitted by tasks 2 and 3
-sched.sigrun({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print)
+sched.new_sigrun_task({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print):run()
 --]]
 
 --[[
 -- we are interested in all events
-sched.sigrun({emitter='*', events='*'}, print)
+sched.new_sigrun_task({emitter='*', events='*'}, print):run()
 --]]
 
 sched.go()

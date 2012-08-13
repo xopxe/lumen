@@ -191,16 +191,10 @@ end
 
 --blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(taskd, waitd)
-	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
+	local emitter,  events = waitd.emitter, waitd.events
 	if events=='*' then events={'*'} end
-	taskd.waitingfor = waitd
+	--taskd.waitingfor = waitd
 
-	if timeout and timeout>=0 then
-		local t = timeout + M.get_time()
-		taskd.waketime = t
-		next_waketime = next_waketime or t
-		if t<next_waketime then next_waketime=t end
-	end
 	--print('registersignal', task, emitter, timeout, #events)
 	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(taskd), tostring(waitd))
 
@@ -270,6 +264,7 @@ M.new_task = function ( f )
 		created_by=M.running_task,
 		co=co,
 		attached=setmetatable({}, weak_key),
+		sleep_waitd={}, --see M.sleep()
 		--for : calls
 		kill=M.kill,
 		set_pause=M.set_pause,
@@ -398,10 +393,15 @@ end
 -- Pauses the task until (one of) the specified signal(s) is available.
 -- If there are signals in the buffer, will return the first immediately.
 -- Otherwise will block the task until signal arrival, or a timeout.
+-- If provided a table as parameter, will use @{new_waitd} to convert it
+-- to a wait desciptor.
 -- @return On event returns emitter, event, event_parameters. On timeout
 -- returns nil, 'timeout'
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
+	--in case passed a non created waitd
+	waitd=M.new_waitd(waitd)
+	
 	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(M.running_task), tostring(waitd))
 	
 	--if there are buffered signals, service the first
@@ -412,22 +412,54 @@ M.wait = function ( waitd )
 		return unpack(ret, 1, ret.n)
 	end
 
+	local timeout = waitd.timeout
+	if timeout and timeout>=0 then
+		local t = timeout + M.get_time()
+		M.running_task.waketime = t
+		next_waketime = next_waketime or t
+		if t<next_waketime then next_waketime=t end
+	end
+
 	--block on signal
 	--print('W+')
-	register_signal( M.running_task, waitd )
+	--register_signal( M.running_task, waitd )
+	M.running_task.waitingfor = waitd
 	--print('W-')
 	return coroutine.yield( M.running_task.co )
 end
 
---- Feeds a wait descriptor to the scheduler.
--- Allows a buffering Wait Descriptor to start buffering before the task is ready
--- to wait().
--- @param waitd a Wait Descriptor for the signal (see @{waitd})
-M.wait_feed = function(waitd)
-	local timeout=waitd.timeout
-	waitd.timeout=0
-	M.wait(waitd)
-	waitd.timeout=timeout
+local waitds = setmetatable({}, weak_key)
+local n_waitd=0
+--- Create a Wait Descriptor.
+-- Creates @{waitd} object in the scheduler. Notice that buffering waitds
+-- start buffering as soon they are created.
+-- @param waitd_table a table to convert into a wait descriptor.
+-- @return a wait descriptor object.
+M.new_waitd = function(waitd_table)
+	if not waitds[waitd_table] then 
+		-- first task to use a waitd
+		n_waitd = n_waitd + 1
+		local waitd_name = 'WAITD#'..n_waitd
+		setmetatable(waitd_table, {
+			__tostring=function() return waitd_name end,
+		})
+		--OO
+		waitd_table.new_sigrun_task = M.new_sigrun_task
+		waitd_table.new_sigrunonce_task = M.new_sigrunonce_task
+		waitd_table.wait = M.wait
+		
+		log('SCHED', 'DETAIL', '%s created %s', tostring(M.running_task), tostring(waitd_table))
+		
+		register_signal( M.running_task, waitd_table )
+		waitds[waitd_table] = {[M.running_task]=true}
+	elseif not waitds[waitd_table][M.running_task] then
+		-- additional task using a waitd
+		log('SCHED', 'DETAIL', '%s using existing %s', tostring(M.running_task), tostring(waitd_table))
+		register_signal( M.running_task, waitd_table )
+		waitds[waitd_table][M.running_task] = true
+	end
+	
+	return waitd_table
 end
 
 --- Sleeps the task for t time units.
@@ -435,7 +467,12 @@ end
 -- @param timeout time to sleep
 M.sleep = function (timeout)
 --print('to sleep', timeout)
-	M.wait({timeout=timeout})
+	---[[
+	local sleep_waitd = M.running_task.sleep_waitd
+	sleep_waitd.timeout=timeout
+	M.wait(sleep_waitd)
+	--]]
+	--M.wait({timeout=timeout})
 end
 
 --- Yields the execution of a task, as in cooperative multitasking.

@@ -73,7 +73,7 @@
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
 
 <span class="comment">-- Watch for some task dying.
-</span>sched.sigrun({emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}}, <span class="global">print</span>)
+</span>sched.new_sigrun_task({emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}}, <span class="global">print</span>):run()
 
 <span class="comment">-- 3 tasks, each emitting a combination of 2 events out of 3 possible,
 </span><span class="comment">-- and sending it's own number as data
@@ -104,12 +104,12 @@
 
 <span class="comment">---[[
 </span><span class="comment">-- we are only interested in events B and C, emitted by tasks 2 and 3
-</span>sched.sigrun({emitter={emitter2, emitter3}, events={<span class="string">'evB'</span>, <span class="string">'evC'</span>}}, <span class="global">print</span>)
+</span>sched.new_sigrun_task({emitter={emitter2, emitter3}, events={<span class="string">'evB'</span>, <span class="string">'evC'</span>}}, <span class="global">print</span>):run()
 <span class="comment">--]]
 </span>
 <span class="comment">--[[
 -- we are interested in all events
-sched.sigrun({emitter='*', events='*'}, print)
+sched.new_sigrun_task({emitter='*', events='*'}, print):run()
 --]]</span>
 
 sched.go()

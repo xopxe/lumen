@@ -100,28 +100,28 @@ M.new = function(name, size, timeout)
 	piped.pipe_enable_signal = {} --singleton event for pipe control
 	piped.pipe_data_signal = {} --singleton event for pipe data
 	piped.buff_data = queue:new()
-	piped.waitd_data={
+	piped.waitd_data = sched.new_waitd({
 		emitter='*', 
 		buff_len=size+1, 
 		timeout=timeout, 
 		events = {piped.pipe_data_signal}, 
 		buff = piped.buff_data,
-	}
-	piped.waitd_enable={
+	})
+	piped.waitd_enable = sched.new_waitd({
 		emitter='*', 
 		buff_len=1, 
 		timeout=timeout, 
 		buff_mode='drop_last', 
 		events = {piped.pipe_enable_signal}, 
 		buff = queue:new(),
-	}
+	})
 
 	piped.read = M.read
 	piped.write = M.write
 	piped.len=M.len
 	
 	pipes[name]=piped
-	sched.wait_feed(piped.waitd_data)
+	--sched.wait_feed(piped.waitd_data)
 	sched.signal(get_register_event (name), piped)
 	--emit_signal(PIPES_EV, name, 'created', piped)
 	return piped
