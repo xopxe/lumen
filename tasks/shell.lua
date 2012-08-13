@@ -8,9 +8,15 @@ local M = {}
 
 local function loadbuffer (buffer, name, destroy)
 	local remove = table.remove
-	local function dest_reader() return remove (buffer, 1)..' ' end
+	local function dest_reader() 
+		local ret = remove (buffer, 1)
+		if ret then return ret..' ' end
+	end
 	local i = 0
-	local function keep_reader() i=i+1; return buffer[i]..' ' end
+	local function keep_reader() 
+		i=i+1; 
+		if buffer[i] then return buffer[i]..' '  end
+	end
 	return load (destroy and dest_reader or keep_reader, name)
 end
 
@@ -18,7 +24,7 @@ local function handle_sheellbuffer ( lines )
 	local ok, waitmore, out
 
 	local code, msg = loadbuffer(lines, "@shell")
-	--print('2', code, msg or '')
+print('2', code, msg or '')
 	if not code then 
 		if msg:match "<eof>" then -- incomplete
 			ok, waitmore, out = false, true, nil
@@ -29,7 +35,19 @@ local function handle_sheellbuffer ( lines )
 		--local task = sched.run_attached(code)
 		--local _,_, okrun, ret = sched.wait({emitter=task, events={sched.EVENT_DIE}})
 		setfenv(code, M.shell_env)
-		local okrun, ret = pcall(code)
+		
+		--local okrun, ret = pcall(code)
+		---[[
+		local task_command = sched.new_task(code)
+		task_command:set_as_attached()
+		
+		local waitd_command = sched.new_waitd({emitter=task_command, buff_len=1, events={sched.EVENT_DIE}})
+		task_command:run()
+		local _,_, okrun, ret = sched.wait(waitd_command)
+		--]]
+print('3', okrun, ret)
+
+		
 		if okrun then
 			ok, waitmore, out = true, false, tostring(ret)
 		else
@@ -43,6 +61,7 @@ local function get_command_processor( pipe_in, pipe_out )
 	return function()
 		local lines = {}
 		local prompt, banner ='> ', nil
+print('generating banner')		
 		pipe_out:write(prompt, banner)
 		while true do
 			local command, data = pipe_in:read()
@@ -70,7 +89,11 @@ M.init = function(ip, port)
 				sched.run(function()
 					local pipe_in = pipes.new('pipein:'..tostring(skt), 100)
 					local pipe_out = pipes.new('pipeout:'..tostring(skt), 100)
-					sched.run_attached(get_command_processor( pipe_in, pipe_out ))
+print('creating task_command_processor')
+					local task_command_processor = sched.new_task(get_command_processor( pipe_in, pipe_out ))
+print('created task_command_processor', task_command_processor)
+					task_command_processor:set_as_attached():run()
+print('run task_command_processor', task_command_processor.status)
 
 					local prompt, out = pipe_out:read() -- will return first prompt
 					if out then 
@@ -82,7 +105,7 @@ M.init = function(ip, port)
 					local waitd_skt = {emitter=nixiorator.task, events={skt}}
 					while true do
 						local _,  _, data, err = sched.wait(waitd_skt)
-						--print('1', data, err or '')
+print('1', data, err or '')
 						if not data then return nil, err end
 						pipe_in:write('line', data)
 						repeat
