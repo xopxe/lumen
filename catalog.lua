@@ -37,7 +37,10 @@ M.register = function ( name )
 	if tasknames[name] and tasknames[name] ~= running_task then
 		return nil, 'used'
 	end
-	log('CATALOG', 'INFO', '%s registered in catalog as "%s"', tostring(running_task), tostring(name))
+	local new_name = 'TASK:'..tostring(name)
+	log('CATALOG', 'INFO', '%s registered in catalog as "%s", and renamed to %s', 
+		tostring(running_task), tostring(name), new_name)
+	getmetatable(running_task).__tostring = function() return new_name end
 	tasknames[name] = running_task
 	namestask[running_task] = name
 	sched.signal(get_register_event (name))

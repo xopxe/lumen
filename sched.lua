@@ -26,7 +26,7 @@ local queue = require 'lib/queue'
 local weak_key = { __mode = 'k' }
 
 --local event_die = {} --singleton event for dying tasks
-local event_die = setmetatable({}, {__tostring=function() return "DIE" end})
+local event_die = setmetatable({}, {__tostring=function() return "EVENTDIE" end})
 
 
 --table containing all the registered tasks.
