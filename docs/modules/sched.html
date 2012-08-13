@@ -112,7 +112,7 @@
 	<td class="summary">Attach a task to another.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#set_as_attached">set_as_attached&nbsp;(taskd_child)</a></td>
+	<td class="name" nowrap><a href="#set_as_attached">set_as_attached&nbsp;(taskd)</a></td>
 	<td class="summary">Set a task as attached to the creator task.</td>
 	</tr>
 	<tr>
@@ -362,12 +362,16 @@
     </ul>
 
 
+    <h3>Returns:</h3>
+    <ol>
+        the modified taskd.
+    </ol>
 
 
 </dd>
     <dt>
     <a name = "set_as_attached"></a>
-    <strong>set_as_attached&nbsp;(taskd_child)</strong>
+    <strong>set_as_attached&nbsp;(taskd)</strong>
     </dt>
     <dd>
     Set a task as attached to the creator task. 
@@ -376,10 +380,14 @@
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>taskd_child</em></code>:  The child (attached) task.</li>
+       <li><code><em>taskd</em></code>:  The child (attached) task.</li>
     </ul>
 
 
+    <h3>Returns:</h3>
+    <ol>
+        the modified taskd.
+    </ol>
 
 
 </dd>
@@ -514,7 +522,7 @@
 
     <h3>Returns:</h3>
     <ol>
-        true on success or nil, errormessage on failure
+        the modified taskd on success or nil, errormessage on failure.
     </ol>
 
 

@@ -382,10 +382,11 @@ end
 --- Set a task as attached to the creator task.
 -- An attached task will be killed by the scheduler whenever
 -- the parent task (the task that created it) is finished (returns, errors or is killed)
--- @param taskd_child The child (attached) task.
+-- @param taskd The child (attached) task.
 -- @return the modified taskd.
-M.set_as_attached = function(taskd_child)
-	return M.attach(taskd_child.created_by, taskd_child)
+M.set_as_attached = function(taskd)
+	M.attach(taskd.created_by, taskd)
+	return taskd
 end
 
 --- Finishes a task.
