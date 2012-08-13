@@ -372,17 +372,20 @@ end
 -- the parent task is finished (returns, errors or is killed)
 -- @param taskd The parent task
 -- @param taskd_child The child (attached) task.
+-- @return the modified taskd.
 M.attach = function (taskd, taskd_child)
 	taskd.attached[taskd_child] = true
 	log('SCHED', 'INFO', '%s is attached to %s', tostring(taskd_child), tostring(taskd))
+	return taskd
 end
 
 --- Set a task as attached to the creator task.
 -- An attached task will be killed by the scheduler whenever
 -- the parent task (the task that created it) is finished (returns, errors or is killed)
 -- @param taskd_child The child (attached) task.
+-- @return the modified taskd.
 M.set_as_attached = function(taskd_child)
-	M.attach(taskd_child.created_by, taskd_child)
+	return M.attach(taskd_child.created_by, taskd_child)
 end
 
 --- Finishes a task.
@@ -488,11 +491,9 @@ end
 -- @param timeout time to sleep
 M.sleep = function (timeout)
 --print('to sleep', timeout)
-	---[[
 	local sleep_waitd = M.running_task.sleep_waitd
 	sleep_waitd.timeout=timeout
 	M.wait(sleep_waitd)
-	--]]
 	--M.wait({timeout=timeout})
 end
 
@@ -507,7 +508,7 @@ end
 -- waitds will still buffer events. Can be invoked as taskd:set_pause(pause)
 -- @param taskd Task to pause (see @{taskd}). 
 -- @param pause mode, true to pause, false to unpause
--- @return true on success or nil, errormessage on failure
+-- @return the modified taskd on success or nil, errormessage on failure.
 M.set_pause = function(taskd, pause)
 	log('SCHED', 'INFO', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
 	if taskd.status=='dead' then
@@ -522,7 +523,7 @@ M.set_pause = function(taskd, pause)
 	else
 		taskd.status='ready'
 	end
-	return true
+	return taskd
 end
 
 --- Idle function.
