@@ -8,9 +8,9 @@ local M = {}
 
 local function loadbuffer (buffer, name, destroy)
 	local remove = table.remove
-	local function dest_reader() return remove (buffer, 1) end
+	local function dest_reader() return remove (buffer, 1)..' ' end
 	local i = 0
-	local function keep_reader() i=i+1; return buffer[i] end
+	local function keep_reader() i=i+1; return buffer[i]..' ' end
 	return load (destroy and dest_reader or keep_reader, name)
 end
 
@@ -95,21 +95,6 @@ M.init = function(ip, port)
 						until pipe_out.len() == 0
 					end
 				end)
-				--sched.sigrun({emitter=nixiorator.task, events={skt}}, protocol_parser)
-				--[[
-					function(_, _, data, err)
-						print("!T", data, err or '')
-						if not data then return nil, err end
-						
-						lines[#lines+1] = data
-						local compiled, waitmore, ret = handle_sheellbuffer(lines)
-						
-						if compiled then lines = {} end
-						if waitmore then prompt = '+ '  else prompt = '+ ' end
-						
-						skt:writeall(ret.."\r\n"..prompt)
-					end)
-					--]]
 			end
 		end
 	
