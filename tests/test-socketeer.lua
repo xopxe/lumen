@@ -15,17 +15,16 @@ local socket = socketeer.socket
 ---[[
 local udprecv = assert(socket.udp())
 assert(udprecv:setsockname("127.0.0.1", 8888))
-
-local udpsend = assert(socket.udp())
-assert(udpsend:setsockname("127.0.0.1", 0))
-assert(udpsend:setpeername("127.0.0.1", 8888))
-
 socketeer.register_client(udprecv)
 sched.sigrun(
 	{emitter=socketeer.task, events={udprecv}},
 	function(_, _, data) print("!U", data) end
 )
+
 sched.run(function()
+	local udpsend = assert(socket.udp())
+	assert(udpsend:setsockname("127.0.0.1", 0))
+	assert(udpsend:setpeername("127.0.0.1", 8888))
 	while true do
 		local m="ping! "..os.time()
 		print("udp sending",m)
@@ -54,6 +53,7 @@ sched.run(function()
 		end
 	end
 end)
+
 sched.run(function()
 	catalog.register('TCPSEND')
 	local tcpcli = socket.connect('127.0.0.1', 8888)
