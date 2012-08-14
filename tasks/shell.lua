@@ -20,57 +20,90 @@ local function loadbuffer (buffer, name, destroy)
 	return load (destroy and dest_reader or keep_reader, name)
 end
 
-local function handle_sheellbuffer ( lines )
-	local ok, waitmore, out
+local function handle_sheellbuffer ( self )
+	local background, pretty
 
-	local code, msg = loadbuffer(lines, "@shell")
+	-- Parse first special character --
+	local special_char, special_line = self.lines[1] :match "^%s*([&=:])(.*)"
+	local original1st = self.lines[1]
+	if special_char == '=' then -- print expression value
+		self.lines[1] = "return " .. special_line
+	elseif special_char == '&' then -- Execute in //
+		background = true
+		self.lines[1] = special_line
+	elseif special_char == ':' then -- Use pretty printer to output the results
+		pretty = true
+		self.lines[1] = "return " .. special_line
+	end
+
+	local code, msg = loadbuffer(self.lines, "@shell")
 print('2', code, msg or '')
-	if not code then 
+	if not code then
 		if msg:match "<eof>" then -- incomplete
-			ok, waitmore, out = false, true, nil
+			self.lines[1] = original1st
+			self.pipe_out:write(self.prompt_more, nil)
 		else -- compile error
-			ok, waitmore, out = true, false, "Compilation error: "..msg
+			self.pipe_out:write(self.prompt_ready, "Compilation error: "..msg)
 		end
 	else
-		--local task = sched.run_attached(code)
-		--local _,_, okrun, ret = sched.wait({emitter=task, events={sched.EVENT_DIE}})
-		setfenv(code, M.shell_env)
-		
-		--local okrun, ret = pcall(code)
-		---[[
+		self.lines = {} 
+
+		setfenv(code, self.env)
 		local task_command = sched.new_task(code)
 		task_command:set_as_attached()
-		
 		local waitd_command = sched.new_waitd({emitter=task_command, buff_len=1, events={sched.EVENT_DIE}})
 		task_command:run()
-		local _,_, okrun, ret = sched.wait(waitd_command)
-		--]]
-print('3', okrun, ret)
-
-		
-		if okrun then
-			ok, waitmore, out = true, false, tostring(ret)
+		if background then
+			sched.sigrun(waitd_command, function(_,_,okrun, ret) 
+				sched.running_task:set_as_attached()
+				if okrun then
+					self.pipe_out:write(nil, 'Background finished: '..tostring(task_command))
+					self.pipe_out:write(nil, ret)
+				else
+					self.pipe_out:write(nil, 'Background killed: '..tostring(task_command))
+					self.pipe_out:write(nil, 'Error: '.. tostring(ret))
+				end
+			end)
+			self.pipe_out:write(self.prompt_ready, 'In background: '..tostring(task_command))
 		else
-			ok, waitmore, out = true, false, 'Error: '.. tostring(ret)
+			local _,_, okrun, ret = sched.wait(waitd_command)
+	print('3', okrun, ret)
+			if okrun then
+				self.pipe_out:write(self.prompt_ready, ret)
+			else
+				self.pipe_out:write(self.prompt_ready, 'Error: '.. tostring(ret))
+			end
 		end
 	end
-	return ok, waitmore, out
 end
 
 local function get_command_processor( pipe_in, pipe_out )
 	return function()
-		local lines = {}
-		local prompt, banner ='> ', nil
-print('generating banner')		
-		pipe_out:write(prompt, banner)
+		-- prepare environment
+		local shell = {
+			prompt_ready = '> ',
+			prompt_more = '+ ',
+			banner = 'Welcome to Toribio Shell',
+			env={},
+			lines = {},
+			pipe_out = pipe_out,
+			handle_sheellbuffer = handle_sheellbuffer
+		}
+		for k, v in pairs (M.shell_env) do shell.env[k] = v end
+		shell.env.print = function(...)
+			local args = table.pack(...)
+			local t= {}
+			for k = 1, args.n do table.insert(t, tostring(args[k])) end
+			pipe_out:write(nil, table.concat(t, '\t')..'\r\n')
+		end
+		
+print('generating banner')
+		pipe_out:write(shell.prompt_ready, shell.banner)
 		while true do
 			local command, data = pipe_in:read()
 			if command == 'line' then
-				lines[#lines+1] = data
-				local compiled, waitmore, ret = handle_sheellbuffer(lines)
-				if compiled then lines = {} end
-				if waitmore then prompt = '+ '  else prompt = '> ' end
-				pipe_out:write(prompt, ret)
+				shell.lines[#shell.lines+1] = data
+				shell:handle_sheellbuffer()
 			end
 		end
 	end
@@ -89,15 +122,12 @@ M.init = function(ip, port)
 				sched.run(function()
 					local pipe_in = pipes.new('pipein:'..tostring(skt), 100)
 					local pipe_out = pipes.new('pipeout:'..tostring(skt), 100)
-print('creating task_command_processor')
 					local task_command_processor = sched.new_task(get_command_processor( pipe_in, pipe_out ))
-print('created task_command_processor', task_command_processor)
 					task_command_processor:set_as_attached():run()
-print('run task_command_processor', task_command_processor.status)
 
 					local prompt, out = pipe_out:read() -- will return first prompt
 					if out then 
-						skt:writeall(out..'\r\n'..out)
+						skt:writeall(out..'\r\n'..prompt)
 					else
 						skt:writeall(prompt)
 					end
@@ -111,8 +141,9 @@ print('1', data, err or '')
 						repeat
 							prompt, out = pipe_out:read()
 							if out then 
-								skt:writeall(out..'\r\n'..prompt)
-							else
+								skt:writeall(tostring(out)..'\r\n')
+							end
+							if prompt then
 								skt:writeall(prompt)
 							end
 						until pipe_out:len() == 0
