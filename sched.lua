@@ -7,6 +7,10 @@
 -- task:kill()
 -- @module sched
 -- @usage local sched = require 'sched'
+--sched.sigrun({emitter='*', events={'a signal'}}, print)
+--local task=sched.run(function()
+--   sched.signal('a signal', 'data')
+--end)
 -- @alias M
 
 local log=require 'log'
@@ -280,7 +284,6 @@ M.new_task = function ( f )
 	return taskd
 end
 
-
 local function get_sigrun_wrapper(waitd, f)
 	local wrapper = function()
 		while true do
@@ -414,45 +417,6 @@ M.signal = function ( event, ... )
 	emit_signal( M.running_task, event, ... )
 end
 
---- Wait for a signal.
--- Pauses the task until (one of) the specified signal(s) is available.
--- If there are signals in the buffer, will return the first immediately.
--- Otherwise will block the task until signal arrival, or a timeout.
--- If provided a table as parameter, will use @{new_waitd} to convert it
--- to a wait desciptor.
--- @return On event returns emitter, event, event_parameters. On timeout
--- returns nil, 'timeout'
--- @param waitd a Wait Descriptor for the signal (see @{waitd})
-M.wait = function ( waitd )
-	--in case passed a non created waitd
-	waitd=M.new_waitd(waitd)
-	
-	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(M.running_task), tostring(waitd))
-	
-	--if there are buffered signals, service the first
-	local buff = waitd.buff
-	if buff and buff:len()> 0 then
-		local ret = buff:popleft()
-		--print('W from buff')
-		return unpack(ret, 1, ret.n)
-	end
-
-	local timeout = waitd.timeout
-	if timeout and timeout>=0 then
-		local t = timeout + M.get_time()
-		M.running_task.waketime = t
-		next_waketime = next_waketime or t
-		if t<next_waketime then next_waketime=t end
-	end
-
-	--block on signal
-	--print('W+')
-	--register_signal( M.running_task, waitd )
-	M.running_task.waitingfor = waitd
-	--print('W-')
-	return coroutine.yield( M.running_task.co )
-end
-
 local waitds = setmetatable({}, weak_key)
 local n_waitd=0
 --- Create a Wait Descriptor.
@@ -485,6 +449,41 @@ M.new_waitd = function(waitd_table)
 	end
 	
 	return waitd_table
+end
+
+--- Wait for a signal.
+-- Pauses the task until (one of) the specified signal(s) is available.
+-- If there are signals in the buffer, will return the first immediately.
+-- Otherwise will block the task until signal arrival, or a timeout.
+-- If provided a table as parameter, will use @{new_waitd} to convert it
+-- to a wait desciptor.
+-- @return On event returns emitter, event, event_parameters. On timeout
+-- returns nil, 'timeout'
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
+M.wait = function ( waitd )
+	--in case passed a non created waitd
+	waitd=M.new_waitd(waitd)
+	
+	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(M.running_task), tostring(waitd))
+	
+	--if there are buffered signals, service the first
+	local buff = waitd.buff
+	if buff and buff:len()> 0 then
+		local ret = buff:popleft()
+		--print('W from buff')
+		return unpack(ret, 1, ret.n)
+	end
+
+	local timeout = waitd.timeout
+	if timeout and timeout>=0 then
+		local t = timeout + M.get_time()
+		M.running_task.waketime = t
+		next_waketime = next_waketime or t
+		if t<next_waketime then next_waketime=t end
+	end
+
+	M.running_task.waitingfor = waitd
+	return coroutine.yield( M.running_task.co )
 end
 
 --- Sleeps the task for t time units.
