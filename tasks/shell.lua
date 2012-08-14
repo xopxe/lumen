@@ -43,36 +43,67 @@ print('2', code, msg or '')
 			self.lines[1] = original1st
 			self.pipe_out:write(self.prompt_more, nil)
 		else -- compile error
+			self.lines = {} 
 			self.pipe_out:write(self.prompt_ready, "Compilation error: "..msg)
 		end
 	else
-		self.lines = {} 
+		self.lines = {}
 
+		local prettifier
+		if pretty then  prettifier = function(v)
+				if type(v) ~='table' then 
+					return tostring(v)
+				else
+					local s= 'table: {\r\n'
+					for k, v in pairs(v) do
+						s=s..'\t'..tostring(k)..' = '..tostring(v)..'\r\n'
+					end
+					return s..'}'
+				end
+			end
+		else prettifier = tostring
+		end
+		
+		local function printer(...)
+			if select('#', ...) == 0 then 
+				return nil
+			else
+				local r = '= '..prettifier(select(1, ...))
+				for i=2, select('#', ...) do
+					local s=prettifier(select(i, ...))
+					r=r..'\t'..s
+				end
+				return r
+			end
+		end
+		
 		setfenv(code, self.env)
 		local task_command = sched.new_task(code)
 		task_command:set_as_attached()
 		local waitd_command = sched.new_waitd({emitter=task_command, buff_len=1, events={sched.EVENT_DIE}})
 		task_command:run()
 		if background then
-			sched.sigrun(waitd_command, function(_,_,okrun, ret) 
+			sched.sigrun(waitd_command, function(_,_,okrun, ...) 
 				sched.running_task:set_as_attached()
 				if okrun then
 					self.pipe_out:write(nil, 'Background finished: '..tostring(task_command))
-					self.pipe_out:write(nil, ret)
+					self.pipe_out:write(nil, printer(...))
 				else
 					self.pipe_out:write(nil, 'Background killed: '..tostring(task_command))
-					self.pipe_out:write(nil, 'Error: '.. tostring(ret))
+					self.pipe_out:write(nil, 'Error: '.. tostring(...))
 				end
 			end)
 			self.pipe_out:write(self.prompt_ready, 'In background: '..tostring(task_command))
 		else
-			local _,_, okrun, ret = sched.wait(waitd_command)
-	print('3', okrun, ret)
-			if okrun then
-				self.pipe_out:write(self.prompt_ready, ret)
-			else
-				self.pipe_out:write(self.prompt_ready, 'Error: '.. tostring(ret))
+			local function read_signal(_,_,okrun, ...)
+	print('3', okrun, ...)
+				if okrun then
+					self.pipe_out:write(self.prompt_ready, printer(...))
+				else
+					self.pipe_out:write(self.prompt_ready, 'Error: '.. tostring(...))
+				end
 			end
+			read_signal(sched.wait(waitd_command))
 		end
 	end
 end
