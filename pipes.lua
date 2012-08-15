@@ -95,7 +95,7 @@ M.new = function(name, size, timeout)
 		return nil, 'exists'
 	end
 	log('PIPES', 'INFO', 'pipe with name "%s" created', tostring(name))
-	local piped = setmetatable({}, {__tostring=function() return 'PIPE:'..tostring(name) end})
+	local piped = setmetatable({}, {__tostring=function() return 'pipe: '..tostring(name) end})
 	piped.size=size
 	piped.pipe_enable_signal = {} --singleton event for pipe control
 	piped.pipe_data_signal = {} --singleton event for pipe data

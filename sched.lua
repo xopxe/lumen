@@ -30,7 +30,7 @@ local queue = require 'lib/queue'
 local weak_key = { __mode = 'k' }
 
 --local event_die = {} --singleton event for dying tasks
-local event_die = setmetatable({}, {__tostring=function() return "EVENTDIE" end})
+local event_die = setmetatable({}, {__tostring=function() return "event: DIE" end})
 
 
 --table containing all the registered tasks.
@@ -262,7 +262,7 @@ local n_task = 0
 M.new_task = function ( f )
 	local co = coroutine.create( f )
 	n_task = n_task + 1
-	local task_name = 'TASK#'..n_task
+	local task_name = 'task: #'..n_task
 	local taskd = setmetatable({
 		status='paused',
 		created_by=M.running_task,
@@ -354,9 +354,12 @@ end
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter.The signal will be provided as 
 -- emitter, event, event_parameters, just as the result of a @{wait}
+-- @param attached if true, the new task will run in attached more
 -- @return task in the scheduler (see @{taskd}).
-M.sigrun = function( waitd, f)
-	return M.run(M.new_sigrun_task( waitd, f ))
+M.sigrun = function( waitd, f, attached)
+	local taskd = M.new_sigrun_task( waitd, f )
+	if attached then taskd:set_as_attached() end
+	return M.run(taskd)
 end
 
 --- Create and run a task that listens for a signal, once.
@@ -364,9 +367,12 @@ end
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter. The signal will be provided as 
 -- emitter, event, event_parameters, just as the result of a @{wait}
+-- @param attached if true, the new task will run in attached more
 -- @return task in the scheduler (see @{taskd}).
-M.sigrunonce = function( waitd, f)
-	return M.run(M.new_sigrunonce_task( waitd, f ))
+M.sigrunonce = function( waitd, f, attached)
+	local taskd = M.new_sigrunonce_task( waitd, f )
+	if attached then taskd:set_as_attached() end
+	return M.run(taskd)
 end
 
 
@@ -428,7 +434,7 @@ M.new_waitd = function(waitd_table)
 	if not waitds[waitd_table] then 
 		-- first task to use a waitd
 		n_waitd = n_waitd + 1
-		local waitd_name = 'WAITD#'..n_waitd
+		local waitd_name = 'waitd: #'..n_waitd
 		setmetatable(waitd_table, {
 			__tostring=function() return waitd_name end,
 		})

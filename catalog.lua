@@ -23,7 +23,7 @@ function get_register_event (name)
 	if register_events[name] then return register_events[name]
 	else
 		local register_event = setmetatable({},
-			{__tostring=function() return 'EVENTREGISTER:'..tostring(name) end,})
+			{__tostring=function() return 'signal: register$'..tostring(name) end,})
 		register_events[name] = register_event
 		return register_event
 	end
@@ -37,7 +37,7 @@ M.register = function ( name )
 	if tasknames[name] and tasknames[name] ~= running_task then
 		return nil, 'used'
 	end
-	local new_name = 'TASK:'..tostring(name)
+	local new_name = 'task: '..tostring(name)
 	log('CATALOG', 'INFO', '%s registered in catalog as "%s", and renamed to %s', 
 		tostring(running_task), tostring(name), new_name)
 	getmetatable(running_task).__tostring = function() return new_name end
