@@ -157,7 +157,7 @@ M.init = function(ip, port)
 
 				local function print_pipe_out()
 					repeat
-						prompt, out = pipe_out:read()
+						local prompt, out = pipe_out:read()
 						if out then 
 							skt:writeall(tostring(out)..'\r\n')
 						end
