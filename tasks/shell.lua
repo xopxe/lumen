@@ -145,44 +145,39 @@ M.init = function(ip, port)
 		catalog.register("shell-accepter")
 		local tcprecv = assert(nixio.bind(ip or "*", port or 2012, 'inet', 'stream'))
 		nixiorator.register_server(tcprecv, 'line')
-		local waitd={emitter=nixiorator.task, events={tcprecv}}
-		while true do
-			local _,_, msg, skt  = sched.wait(waitd)
+		local waitd_accept={emitter=nixiorator.task, events={tcprecv}}
+		
+		sched.sigrun(waitd_accept, function (_,_, msg, skt)
 			print ("#", os.time(), msg, skt )
 			if msg=='accepted' then
-				sched.run(function()
-					local pipe_in = pipes.new('pipein:'..tostring(skt), 100)
-					local pipe_out = pipes.new('pipeout:'..tostring(skt), 100)
-					local task_command_processor = sched.new_task(get_command_processor( pipe_in, pipe_out ))
-					task_command_processor:set_as_attached():run()
+				local pipe_in = pipes.new('pipein:'..tostring(skt), 100)
+				local pipe_out = pipes.new('pipeout:'..tostring(skt), 100)
+				local task_command_processor = sched.new_task(get_command_processor( pipe_in, pipe_out ))
+				task_command_processor:set_as_attached():run()
 
-					local prompt, out = pipe_out:read() -- will return first prompt
-					if out then 
-						skt:writeall(out..'\r\n'..prompt)
-					else
-						skt:writeall(prompt)
-					end
+				local function print_pipe_out()
+					repeat
+						prompt, out = pipe_out:read()
+						if out then 
+							skt:writeall(tostring(out)..'\r\n')
+						end
+						if prompt then
+							skt:writeall(prompt)
+						end
+					until pipe_out:len() == 0
+				end
+				
+				print_pipe_out()
 
-					local waitd_skt = {emitter=nixiorator.task, events={skt}}
-					while true do
-						local _,  _, data, err = sched.wait(waitd_skt)
+				local waitd_skt = {emitter=nixiorator.task, events={skt}}
+				sched.sigrun(waitd_skt, function(_,  _, data, err )
 print('1', data, err or '')
-						if not data then return nil, err end
-						pipe_in:write('line', data)
-						repeat
-							prompt, out = pipe_out:read()
-							if out then 
-								skt:writeall(tostring(out)..'\r\n')
-							end
-							if prompt then
-								skt:writeall(prompt)
-							end
-						until pipe_out:len() == 0
-					end
+					if not data then return nil, err end
+					pipe_in:write('line', data)
+					print_pipe_out()
 				end)
 			end
-		end
-	
+		end)
 	end)
 end
 
