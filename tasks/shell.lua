@@ -1,3 +1,19 @@
+--- Task providing an interactive shell.
+-- This is a interactive shell that allows a user to connect
+-- to the Lumen scheduler, and maintain a Lua session.
+-- To connect, use telnet to the service's ip and port.
+-- Besides running lua code, the user have some helper syntax:
+-- If a line starts with a "=", it is equivalent to a "return ..."
+-- If a line starts with a "&", the following code will run in 
+-- a background task.
+-- If a line starts with a ":", it is equivalent to a "return ...",
+-- filtered trough a simple pretifier (usefull for checking tables).
+-- This module depends on nixio and the nixiorator task.
+-- @module shell
+-- @usage local server = require 'shell'
+--server.init('127.0.0.1', 2012)
+-- @alias M
+
 local sched = require 'sched'
 local catalog = require 'catalog'
 local nixiorator = require 'tasks/nixiorator'
@@ -138,6 +154,10 @@ local function new_shell()
 	return shell
 end
 
+
+--- Start the server.
+-- @param ip the ip of the service, defaults to '*'
+-- @param port the port of the service, defaults to 2012
 M.init = function(ip, port)
 	M.task = sched.run( function()
 		catalog.register("shell-accepter")
@@ -177,6 +197,11 @@ M.init = function(ip, port)
 	end)
 end
 
+--- The environment for the shell.
+-- When starting a new shell session, it's environment will be 
+-- initialized from this table. 
+-- By default, it includes everything from _G plus a sched = require 'sched'
+-- entry. If you want something else, change this table.
 M.shell_env = {
 	sched = sched, 
 }

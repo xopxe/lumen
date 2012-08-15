@@ -35,12 +35,12 @@
 <h2>Examples</h2>
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><strong>test-mutex.lua</strong></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
+  <li><strong>test-wait.lua</strong></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 <h2>Modules</h2>
@@ -62,63 +62,58 @@
 
 <div id="content">
 
-<h1>Example <code>test-mutex.lua</code></h1>
+<h1>Example <code>test-wait.lua</code></h1>
 
     <pre>
-<span class="comment">---
-</span><span class="comment">-- A test program that uses a mutex to control concurrent access
-</span><span class="comment">-- to a function.
+<span class="comment">--- A sample program that shows waiting on 
+</span><span class="comment">-- multiple emitters and events
 </span>
 <span class="comment">--look for packages one folder up.
 </span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
 
-<span class="comment">--require "strict"
-</span>
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
-<span class="keyword">local</span> mutex = <span class="global">require</span> <span class="string">"mutex"</span>()
 
-<span class="keyword">local</span> <span class="keyword">function</span> func(n)
-	<span class="global">print</span>(<span class="string">'+'</span>..n)
-	sched.sleep(<span class="number">1</span>)
-	<span class="global">print</span>(<span class="string">''</span>, <span class="string">'-'</span>..n)
-<span class="keyword">end</span>
+<span class="comment">-- Watch for some task dying.
+</span>sched.new_sigrun_task({emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}}, <span class="global">print</span>):run()
 
-<span class="keyword">local</span> critical=mutex.synchronize(func)
+<span class="comment">-- 3 tasks, each emitting a combination of 2 events out of 3 possible,
+</span><span class="comment">-- and sending it's own number as data
+</span><span class="keyword">local</span> emitter1=sched.run(<span class="keyword">function</span>()
+	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+		sched.signal(<span class="string">'evA'</span>, <span class="number">1</span>)
+		sched.sleep(<span class="number">1</span>)
+		sched.signal(<span class="string">'evB'</span>, <span class="number">1</span>)
+		sched.sleep(<span class="number">1</span>)
+	<span class="keyword">end</span>
+<span class="keyword">end</span>)
+<span class="keyword">local</span> emitter2=sched.run(<span class="keyword">function</span>()
+	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+		sched.signal(<span class="string">'evA'</span>, <span class="number">2</span>)
+		sched.sleep(<span class="number">1</span>)
+		sched.signal(<span class="string">'evC'</span>, <span class="number">2</span>)
+		sched.sleep(<span class="number">1</span>)
+	<span class="keyword">end</span>
+<span class="keyword">end</span>)
+<span class="keyword">local</span> emitter3=sched.run(<span class="keyword">function</span>()
+	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+		sched.signal(<span class="string">'evB'</span>, <span class="number">3</span>)
+		sched.sleep(<span class="number">1</span>)
+		sched.signal(<span class="string">'evC'</span>, <span class="number">3</span>)
+		sched.sleep(<span class="number">1</span>)
+	<span class="keyword">end</span>
+<span class="keyword">end</span>)
 
 <span class="comment">---[[
-</span><span class="global">print</span> <span class="string">"non synchronized access"</span>
-sched.run(<span class="keyword">function</span>()
-	<span class="keyword">for</span> i=<span class="number">1</span>,<span class="number">5</span> <span class="keyword">do</span>
-		func(<span class="string">'A'</span>)
-		sched.yield()
-	<span class="keyword">end</span>
-<span class="keyword">end</span>)
-sched.run(<span class="keyword">function</span>()
-	<span class="keyword">for</span> i=<span class="number">1</span>,<span class="number">5</span> <span class="keyword">do</span>
-		func(<span class="string">'B'</span>)
-		sched.yield()
-	<span class="keyword">end</span>
-<span class="keyword">end</span>)
-sched.go()
+</span><span class="comment">-- we are only interested in events B and C, emitted by tasks 2 and 3
+</span>sched.sigrun({emitter={emitter2, emitter3}, events={<span class="string">'evB'</span>, <span class="string">'evC'</span>}}, <span class="global">print</span>)
 <span class="comment">--]]
 </span>
-<span class="comment">---[[
-</span><span class="global">print</span> <span class="string">"\nsynchronized access"</span>
-sched.run(<span class="keyword">function</span>()
-	<span class="keyword">for</span> i=<span class="number">1</span>,<span class="number">5</span> <span class="keyword">do</span>
-		critical(<span class="string">'A'</span>)
-		sched.yield()
-	<span class="keyword">end</span>
-<span class="keyword">end</span>)
-sched.run(<span class="keyword">function</span>()
-	<span class="keyword">for</span> i=<span class="number">1</span>,<span class="number">5</span> <span class="keyword">do</span>
-		critical(<span class="string">'B'</span>)
-		sched.yield()
-	<span class="keyword">end</span>
-<span class="keyword">end</span>)
+<span class="comment">--[[
+-- we are interested in all events
+sched.sigrun({emitter='*', events='*'}, print)
+--]]</span>
+
 sched.go()
-<span class="comment">--]]
-</span>
 
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->

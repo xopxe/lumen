@@ -32,6 +32,7 @@
 
 <h2>Contents</h2>
 <ul>
+<li><a href="#Functions">Functions</a></li>
 <li><a href="#Tables">Tables</a></li>
 </ul>
 
@@ -39,11 +40,11 @@
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><strong>mutex</strong></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
-  <li><a href="../modules/shell.html">shell</a></li>
+  <li><strong>shell</strong></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
 <h2>Topics</h2>
@@ -66,34 +67,37 @@
 
 <div id="content">
 
-<h1>Module <code>mutex</code></h1>
+<h1>Module <code>shell</code></h1>
 
-<p>Mutex operations.</p>
-<p> Mutexes are used to ensure portions of code are accessed by a single
- task at a time. The module is a function that will return a new 
- mutex object (see <a href="../modules/mutex.html#mutexd">mutexd</a>) when invoked.
- Notice that Lumen being a cooperative scheduler, it will never preempt
- control from a task. Thus mutexes only make are needed if the fragment of code 
- being locked contains a call that explicitly relinquish control, such as 
- sched.sleep(), sched.yield(), sched.signal() or sched.wait().</p>
+<p>Task providing an interactive shell.</p>
+<p> This is a interactive shell that allows a user to connect
+ to the Lumen scheduler, and maintain a Lua session.
+ To connect, use telnet to the service's ip and port.
+ Besides running lua code, the user have some helper syntax:
+ If a line starts with a "=", it is equivalent to a "return ..."
+ If a line starts with a "&amp;", the following code will run in 
+ a background task.
+ If a line starts with a ":", it is equivalent to a "return ...",
+ filtered trough a simple pretifier (usefull for checking tables).
+ This module depends on nixio and the nixiorator task.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local mx = require 'mutex'()
-
-local function critical()
-  mx.acquire()
-  ...
-  mx.release()
-end
-
-local critical = mx.synchronize(function() ... end) --other method</pre>
+        <pre class="example">local server = require 'shell'
+server.init('127.0.0.1', 2012)</pre>
     </ul>
 
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#init">init&nbsp;(ip, port)</a></td>
+	<td class="summary">Start the server.</td>
+	</tr>
+</table>
 <h2><a href="#Tables">Tables</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#mutexd">mutexd</a></td>
-	<td class="summary">Mutex object.</td>
+	<td class="name" nowrap><a href="#shell_env">shell_env</a></td>
+	<td class="summary">The environment for the shell.</td>
 	</tr>
 </table>
 
@@ -101,29 +105,41 @@ local critical = mx.synchronize(function() ... end) --other method</pre>
 <br/>
 
 
+    <h2><a name="Functions"></a>Functions</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "init"></a>
+    <strong>init&nbsp;(ip, port)</strong>
+    </dt>
+    <dd>
+    Start the server. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>ip</em></code>:  the ip of the service, defaults to '*'</li>
+       <li><code><em>port</em></code>:  the port of the service, defaults to 2012</li>
+    </ul>
+
+
+
+
+</dd>
+</dl>
     <h2><a name="Tables"></a>Tables</h2>
     
     <dl class="function">
     <dt>
-    <a name = "mutexd"></a>
-    <strong>mutexd</strong>
+    <a name = "shell_env"></a>
+    <strong>shell_env</strong>
     </dt>
     <dd>
-    Mutex object. 
- mutexes are used to ensure portions of code are accessed by a single
- task at a time. Said portions are called "critical sections", and are delimited by
- a lock acquisition at the beginning, and a lock release at the end. Only one task can acquire
- a lock at a time, so there is only one task inside the critical section at a time.
+    The environment for the shell. 
+ When starting a new shell session, it's environment will be 
+ initialized from this table. 
+ By default, it includes everything from _G plus a sched = require 'sched'
+ entry. If you want something else, change this table.
 
-    <h3>Fields:</h3>
-    <ul>
-       <li><code><em>acquire</em></code>:  acquires a lock. If the lock is already acquired, will block until the task that 
- holds it releases the lock or finshes</li>
-       <li><code><em>release</em></code>:  releases the lock. A task can only release a lock it acquired before, otherwise a
- error is triggered. If a task finishes or is killed, all locks it held will be released automatically.</li>
-       <li><code><em>synchronize</em></code>:   a helper that takes a function, and returns a wrapper that is locked with 
- the mutex.</li>
-    </ul>
 
 
 

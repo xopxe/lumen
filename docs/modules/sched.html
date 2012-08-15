@@ -45,6 +45,7 @@
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><strong>sched</strong></li>
+  <li><a href="../modules/shell.html">shell</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
 <h2>Topics</h2>
@@ -54,12 +55,12 @@
 <h2>Examples</h2>
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -78,7 +79,11 @@
  task:kill()</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local sched = require 'sched'</pre>
+        <pre class="example">local sched = require 'sched'
+sched.sigrun({emitter='*', events={'a signal'}}, print)
+local task=sched.run(function()
+   sched.signal('a signal', 'data')
+end)</pre>
     </ul>
 
 <h2><a href="#Functions">Functions</a></h2>
@@ -100,11 +105,11 @@
 	<td class="summary">Run a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(waitd, f)</a></td>
+	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(waitd, f, attached)</a></td>
 	<td class="summary">Create a run a task that listens for a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(waitd, f)</a></td>
+	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(waitd, f, attached)</a></td>
 	<td class="summary">Create and run a task that listens for a signal, once.</td>
 	</tr>
 	<tr>
@@ -124,12 +129,12 @@
 	<td class="summary">Emit a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#wait">wait&nbsp;(waitd)</a></td>
-	<td class="summary">Wait for a signal.</td>
-	</tr>
-	<tr>
 	<td class="name" nowrap><a href="#new_waitd">new_waitd&nbsp;(waitd_table)</a></td>
 	<td class="summary">Create a Wait Descriptor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#wait">wait&nbsp;(waitd)</a></td>
+	<td class="summary">Wait for a signal.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#sleep">sleep&nbsp;(timeout)</a></td>
@@ -302,7 +307,7 @@
 </dd>
     <dt>
     <a name = "sigrun"></a>
-    <strong>sigrun&nbsp;(waitd, f)</strong>
+    <strong>sigrun&nbsp;(waitd, f, attached)</strong>
     </dt>
     <dd>
     Create a run a task that listens for a signal. 
@@ -313,6 +318,7 @@
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter.The signal will be provided as 
  emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+       <li><code><em>attached</em></code>:  if true, the new task will run in attached more</li>
     </ul>
 
 
@@ -325,7 +331,7 @@
 </dd>
     <dt>
     <a name = "sigrunonce"></a>
-    <strong>sigrunonce&nbsp;(waitd, f)</strong>
+    <strong>sigrunonce&nbsp;(waitd, f, attached)</strong>
     </dt>
     <dd>
     Create and run a task that listens for a signal, once. 
@@ -336,6 +342,7 @@
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter. The signal will be provided as 
  emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+       <li><code><em>attached</em></code>:  if true, the new task will run in attached more</li>
     </ul>
 
 
@@ -427,6 +434,28 @@
 
 </dd>
     <dt>
+    <a name = "new_waitd"></a>
+    <strong>new_waitd&nbsp;(waitd_table)</strong>
+    </dt>
+    <dd>
+    Create a Wait Descriptor. 
+ Creates <a href="../modules/sched.html#waitd">waitd</a> object in the scheduler. Notice that buffering waitds
+ start buffering as soon they are created.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>waitd_table</em></code>:  a table to convert into a wait descriptor.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a wait descriptor object.
+    </ol>
+
+
+</dd>
+    <dt>
     <a name = "wait"></a>
     <strong>wait&nbsp;(waitd)</strong>
     </dt>
@@ -448,28 +477,6 @@
     <ol>
         On event returns emitter, event, event_parameters. On timeout
  returns nil, 'timeout'
-    </ol>
-
-
-</dd>
-    <dt>
-    <a name = "new_waitd"></a>
-    <strong>new_waitd&nbsp;(waitd_table)</strong>
-    </dt>
-    <dd>
-    Create a Wait Descriptor. 
- Creates <a href="../modules/sched.html#waitd">waitd</a> object in the scheduler. Notice that buffering waitds
- start buffering as soon they are created.
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>waitd_table</em></code>:  a table to convert into a wait descriptor.</li>
-    </ul>
-
-
-    <h3>Returns:</h3>
-    <ol>
-        a wait descriptor object.
     </ol>
 
 
