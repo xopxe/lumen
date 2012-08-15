@@ -366,7 +366,7 @@ end
 -- emitter, event, event_parameters, just as the result of a @{wait}
 -- @return task in the scheduler (see @{taskd}).
 M.sigrunonce = function( waitd, f)
-	return M.run(M.new_sigrun_task( waitd, f ))
+	return M.run(M.new_sigrunonce_task( waitd, f ))
 end
 
 
