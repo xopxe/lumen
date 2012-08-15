@@ -81,7 +81,7 @@ few tasks exchanging messages, showing off basic functionality:
 You can wait on multiple events, from multiple sources. Check some
 possibilities here:
 
-    lua test-multiwait.lua
+    lua test-wait.lua
 
 If you want to see LuaSocket integration working, try:
 
