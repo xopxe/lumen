@@ -83,6 +83,7 @@
 sched.sigrun({emitter='*', events={'a signal'}}, print)
 local task=sched.run(function()
    sched.signal('a signal', 'data')
+   sched.sleep(1)
 end)</pre>
     </ul>
 
@@ -106,7 +107,7 @@ end)</pre>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(waitd, f, attached)</a></td>
-	<td class="summary">Create a run a task that listens for a signal.</td>
+	<td class="summary">Create and run a task that listens for a signal.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(waitd, f, attached)</a></td>
@@ -131,6 +132,10 @@ end)</pre>
 	<tr>
 	<td class="name" nowrap><a href="#new_waitd">new_waitd&nbsp;(waitd_table)</a></td>
 	<td class="summary">Create a Wait Descriptor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new_multiwaitd">new_multiwaitd&nbsp;(...)</a></td>
+	<td class="summary">Create a Multiwait Descriptor.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#wait">wait&nbsp;(waitd)</a></td>
@@ -206,10 +211,10 @@ end)</pre>
     <dd>
     Create a task. 
  The task is created in paused mode. To run the created task,
- use <a href="../modules/sched.html#run">run</a> or <a href="../modules/sched.html#set_pause">set_pause</a>
- The task will emit a sched.EVENT_DIE, true, params...
+ use <a href="../modules/sched.html#run">run</a> or <a href="../modules/sched.html#set_pause">set_pause</a>.
+ The task will emit a <em>sched.EVENT_DIE, true, params...</em>
  signal upon normal finalization, were params are the returns of f.
- If there is a error, the task will emit a sched.EVENT_DIE, false, err were
+ If there is a error, the task will emit a <em>sched.EVENT_DIE, false, err</em> were
  err is the error message.
 
     <h3>Parameters:</h3>
@@ -237,7 +242,7 @@ end)</pre>
        <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter.The signal will be provided as 
- emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+ <em>emitter, event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
     </ul>
 
 
@@ -247,11 +252,6 @@ end)</pre>
     </ol>
 
 
-    <h3>see also:</h3>
-    <ul>
-         <li><a href="../modules/sched.html#wait">wait</a></li>
-         <li><a href="../modules/sched.html#run">run</a></li>
-    </ul>
 </dd>
     <dt>
     <a name = "new_sigrunonce_task"></a>
@@ -265,7 +265,7 @@ end)</pre>
        <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter. The signal will be provided as 
- emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+ <em>emitter, event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
     </ul>
 
 
@@ -275,11 +275,6 @@ end)</pre>
     </ol>
 
 
-    <h3>see also:</h3>
-    <ul>
-         <li><a href="../modules/sched.html#wait">wait</a></li>
-         <li><a href="../modules/sched.html#run">run</a></li>
-    </ul>
 </dd>
     <dt>
     <a name = "run"></a>
@@ -310,14 +305,14 @@ end)</pre>
     <strong>sigrun&nbsp;(waitd, f, attached)</strong>
     </dt>
     <dd>
-    Create a run a task that listens for a signal. 
+    Create and run a task that listens for a signal. 
 
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter.The signal will be provided as 
- emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+ <em>emitter, event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
        <li><code><em>attached</em></code>:  if true, the new task will run in attached more</li>
     </ul>
 
@@ -341,7 +336,7 @@ end)</pre>
        <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter. The signal will be provided as 
- emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+ <em>emitter, event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
        <li><code><em>attached</em></code>:  if true, the new task will run in attached more</li>
     </ul>
 
@@ -360,7 +355,8 @@ end)</pre>
     <dd>
     Attach a task to another. 
  An attached task will be killed by the scheduler whenever
- the parent task is finished (returns, errors or is killed)
+ the parent task is finished (returns, errors or is killed). Can be 
+ invoked as taskd:attach(taskd_child).
 
     <h3>Parameters:</h3>
     <ul>
@@ -383,7 +379,8 @@ end)</pre>
     <dd>
     Set a task as attached to the creator task. 
  An attached task will be killed by the scheduler whenever
- the parent task (the task that created it) is finished (returns, errors or is killed)
+ the parent task (the task that created it) is finished (returns, errors or is killed). 
+ Can be invoked as taskd:set<em>as</em>attached().
 
     <h3>Parameters:</h3>
     <ul>
@@ -404,7 +401,7 @@ end)</pre>
     </dt>
     <dd>
     Finishes a task. 
- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'. Can be 
+ The killed task will emit a signal <em>sched.EVENT_DIE, false, 'killed'</em>. Can be 
  invoked as taskd:kill().
 
     <h3>Parameters:</h3>
@@ -456,6 +453,36 @@ end)</pre>
 
 </dd>
     <dt>
+    <a name = "new_multiwaitd"></a>
+    <strong>new_multiwaitd&nbsp;(...)</strong>
+    </dt>
+    <dd>
+    Create a Multiwait Descriptor. 
+ A Multiwait Descriptor is a <a href="../modules/sched.html#waitd">waitd</a> set up for for waiting on several other waitds 
+ at the same time.
+ The multiwaitd will provide all signals caught by any of the input waitds. The original 
+ signal is available in the parameters.
+ Notice that a multiwaitd is less efficient than normal waitd.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>...</em></code>:  waitds to listen on.</li>
+    </ul>
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">local multiwaitd = sched.new_multiwaitd( waitd1, waitd2, waitd3 )
+_,_,emitter, ev, par1, par2 = sched.wait(multiwaitd)</pre>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        a multiwaitd.
+    </ol>
+
+
+</dd>
+    <dt>
     <a name = "wait"></a>
     <strong>wait&nbsp;(waitd)</strong>
     </dt>
@@ -466,6 +493,7 @@ end)</pre>
  Otherwise will block the task until signal arrival, or a timeout.
  If provided a table as parameter, will use <a href="../modules/sched.html#new_waitd">new_waitd</a> to convert it
  to a wait desciptor.
+ Can be invoked as waitd:wait().
 
     <h3>Parameters:</h3>
     <ul>
@@ -475,8 +503,8 @@ end)</pre>
 
     <h3>Returns:</h3>
     <ol>
-        On event returns emitter, event, event_parameters. On timeout
- returns nil, 'timeout'
+        On event returns <em>emitter, event, parameters</em>. On timeout
+ returns <em>nil, 'timeout'</em>
     </ol>
 
 
@@ -529,7 +557,7 @@ end)</pre>
 
     <h3>Returns:</h3>
     <ol>
-        the modified taskd on success or nil, errormessage on failure.
+        the modified taskd on success or <em>nil, errormessage</em> on failure.
     </ol>
 
 

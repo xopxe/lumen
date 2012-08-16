@@ -46,4 +46,14 @@ sched.sigrun({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print)
 sched.sigrun({emitter='*', events='*'}, print)
 --]]
 
+--[[
+-- we will wait on several waitds at the same time
+local multiwaitd=sched.new_multiwaitd(
+	{emitter={emitter1}, events={'evA'}},
+	{emitter={emitter2}, events={'evC'}},
+	{emitter={emitter3}, events={'evB'}}
+)
+sched.sigrun(multiwaitd, print)
+--]]
+
 sched.go()

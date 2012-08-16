@@ -10,6 +10,7 @@
 --sched.sigrun({emitter='*', events={'a signal'}}, print)
 --local task=sched.run(function()
 --   sched.signal('a signal', 'data')
+--   sched.sleep(1)
 --end)
 -- @alias M
 
@@ -36,7 +37,7 @@ local event_die = setmetatable({}, {__tostring=function() return "event: DIE" en
 --table containing all the registered tasks.
 --tasks[taskd] = true
 --taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'paused'|'dead', co=coroutine}
-local tasks = {}
+local sched_tasks = {}
 
 --table to keep track tasks waiting for signals
 --waiting[event][emitter][task]=waitd
@@ -149,7 +150,7 @@ step_task = function(taskd, ...)
 			--M.running_task = nil
 			if coroutine.status(taskd.co)=='dead' then
 				taskd.status='dead'
-				tasks[taskd]=nil
+				sched_tasks[taskd]=nil
 				if ok then 
 					log('SCHED', 'INFO', '%s returning %d parameters', tostring(taskd), select('#',...))
 					emit_signal(taskd, event_die, true, ...)
@@ -252,10 +253,10 @@ local n_task = 0
 
 --- Create a task.
 -- The task is created in paused mode. To run the created task,
--- use @{run} or @{set_pause}
--- The task will emit a sched.EVENT\_DIE, true, params...
+-- use @{run} or @{set_pause}.
+-- The task will emit a _sched.EVENT\_DIE, true, params..._
 -- signal upon normal finalization, were params are the returns of f.
--- If there is a error, the task will emit a sched.EVENT\_DIE, false, err were
+-- If there is a error, the task will emit a _sched.EVENT\_DIE, false, err_ were
 -- err is the error message.
 -- @param f function for the task
 -- @return task in the scheduler (see @{taskd}).
@@ -278,7 +279,7 @@ M.new_task = function ( f )
 	}, {
 		__tostring=function() return task_name end,
 	})
-	tasks[taskd] = true
+	sched_tasks[taskd] = true
 	log('SCHED', 'INFO', 'created %s from %s', tostring(taskd), tostring(f))
 	--step_task(taskd, ...)
 	return taskd
@@ -299,10 +300,8 @@ end
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter.The signal will be provided as 
--- emitter, event, event_parameters, just as the result of a @{wait}
+-- _emitter, event, parameters_, just as the result of a @{wait}
 -- @return task in the scheduler (see @{taskd}).
--- @see wait
--- @see run
 M.new_sigrun_task = function ( waitd, f )
 	local taskd=M.new_task( get_sigrun_wrapper(waitd, f) )
 	return taskd
@@ -321,10 +320,8 @@ end
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter. The signal will be provided as 
--- emitter, event, event_parameters, just as the result of a @{wait}
+-- _emitter, event, parameters_, just as the result of a @{wait}
 -- @return task in the scheduler (see @{taskd}).
--- @see wait
--- @see run
 M.new_sigrunonce_task = function ( waitd, f )
 	local taskd=M.new_task( get_sigrunonce_wrapper(waitd, f) )
 	return taskd
@@ -349,11 +346,11 @@ M.run = function ( task, ... )
 	return taskd
 end
 
---- Create a run a task that listens for a signal.
+--- Create and run a task that listens for a signal.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter.The signal will be provided as 
--- emitter, event, event_parameters, just as the result of a @{wait}
+-- _emitter, event, parameters_, just as the result of a @{wait}
 -- @param attached if true, the new task will run in attached more
 -- @return task in the scheduler (see @{taskd}).
 M.sigrun = function( waitd, f, attached)
@@ -366,7 +363,7 @@ end
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 -- @param f function to be called when the signal appears. The signal
 -- is passed to f as parameter. The signal will be provided as 
--- emitter, event, event_parameters, just as the result of a @{wait}
+-- _emitter, event, parameters_, just as the result of a @{wait}
 -- @param attached if true, the new task will run in attached more
 -- @return task in the scheduler (see @{taskd}).
 M.sigrunonce = function( waitd, f, attached)
@@ -378,7 +375,8 @@ end
 
 --- Attach a task to another.
 -- An attached task will be killed by the scheduler whenever
--- the parent task is finished (returns, errors or is killed)
+-- the parent task is finished (returns, errors or is killed). Can be 
+-- invoked as taskd:attach(taskd_child).
 -- @param taskd The parent task
 -- @param taskd_child The child (attached) task.
 -- @return the modified taskd.
@@ -390,22 +388,23 @@ end
 
 --- Set a task as attached to the creator task.
 -- An attached task will be killed by the scheduler whenever
--- the parent task (the task that created it) is finished (returns, errors or is killed)
+-- the parent task (the task that created it) is finished (returns, errors or is killed). 
+-- Can be invoked as taskd:set_as_attached().
 -- @param taskd The child (attached) task.
 -- @return the modified taskd.
 M.set_as_attached = function(taskd)
-	M.attach(taskd.created_by, taskd)
+	if taskd.created_by then M.attach(taskd.created_by, taskd) end
 	return taskd
 end
 
 --- Finishes a task.
--- The killed task will emit a signal sched.EVENT\_DIE, false, 'killed'. Can be 
+-- The killed task will emit a signal _sched.EVENT\_DIE, false, 'killed'_. Can be 
 -- invoked as taskd:kill().
 -- @param taskd task to terminate (see @{taskd}).
 M.kill = function ( taskd )
 	log('SCHED', 'INFO', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
 	taskd.status = 'dead'
-	tasks[taskd] = nil
+	sched_tasks[taskd] = nil
 	
 	for child, _ in pairs(taskd.attached) do
 		M.kill(child)
@@ -423,7 +422,7 @@ M.signal = function ( event, ... )
 	emit_signal( M.running_task, event, ... )
 end
 
-local waitds = setmetatable({}, weak_key)
+local sched_waitds = setmetatable({}, weak_key)
 local n_waitd=0
 --- Create a Wait Descriptor.
 -- Creates @{waitd} object in the scheduler. Notice that buffering waitds
@@ -431,7 +430,7 @@ local n_waitd=0
 -- @param waitd_table a table to convert into a wait descriptor.
 -- @return a wait descriptor object.
 M.new_waitd = function(waitd_table)
-	if not waitds[waitd_table] then 
+	if not sched_waitds[waitd_table] then 
 		-- first task to use a waitd
 		n_waitd = n_waitd + 1
 		local waitd_name = 'waitd: #'..n_waitd
@@ -446,15 +445,42 @@ M.new_waitd = function(waitd_table)
 		log('SCHED', 'DETAIL', '%s created %s', tostring(M.running_task), tostring(waitd_table))
 		
 		register_signal( M.running_task, waitd_table )
-		waitds[waitd_table] = {[M.running_task]=true}
-	elseif not waitds[waitd_table][M.running_task] then
+		sched_waitds[waitd_table] = {[M.running_task]=true}
+	elseif not sched_waitds[waitd_table][M.running_task] then
 		-- additional task using a waitd
 		log('SCHED', 'DETAIL', '%s using existing %s', tostring(M.running_task), tostring(waitd_table))
 		register_signal( M.running_task, waitd_table )
-		waitds[waitd_table][M.running_task] = true
+		sched_waitds[waitd_table][M.running_task] = true
 	end
 	
 	return waitd_table
+end
+
+--- Create a Multiwait Descriptor.
+-- A Multiwait Descriptor is a @{waitd} set up for for waiting on several other waitds 
+-- at the same time.
+-- The multiwaitd will provide all signals caught by any of the input waitds. The original 
+-- signal is available in the parameters.
+-- Notice that a multiwaitd is less efficient than normal waitd.
+-- @usage local multiwaitd = sched.new_multiwaitd( waitd1, waitd2, waitd3 )
+--_,_,emitter, ev, par1, par2 = sched.wait(multiwaitd) 
+-- @param ... waitds to listen on.
+-- @return a multiwaitd.
+M.new_multiwaitd = function ( ... )
+	local emitters = {}
+	local multi_signal = {}
+	for i = 1, select('#',  ...) do
+		local w = select(i,  ...)
+		local t = M.sigrun(w, function(...)
+			M.signal(multi_signal, ...)
+		end, true)
+		emitters[#emitters+1] = t
+	end
+	local waitd = M.new_waitd({
+		emitter=emitters,
+		events={multi_signal}
+	})
+	return waitd
 end
 
 --- Wait for a signal.
@@ -463,8 +489,9 @@ end
 -- Otherwise will block the task until signal arrival, or a timeout.
 -- If provided a table as parameter, will use @{new_waitd} to convert it
 -- to a wait desciptor.
--- @return On event returns emitter, event, event_parameters. On timeout
--- returns nil, 'timeout'
+-- Can be invoked as waitd:wait().
+-- @return On event returns _emitter, event, parameters_. On timeout
+-- returns _nil, 'timeout'_
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
 	--in case passed a non created waitd
@@ -514,7 +541,7 @@ end
 -- waitds will still buffer events. Can be invoked as taskd:set_pause(pause)
 -- @param taskd Task to pause (see @{taskd}). 
 -- @param pause mode, true to pause, false to unpause
--- @return the modified taskd on success or nil, errormessage on failure.
+-- @return the modified taskd on success or _nil, errormessage_ on failure.
 M.set_pause = function(taskd, pause)
 	log('SCHED', 'INFO', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
 	if taskd.status=='dead' then
@@ -559,7 +586,7 @@ M.step = function ()
 	next_waketime = nil
 
 	--find tasks ready to run (active) and ready to wakeup by timeout
-	for taskd, _ in pairs (tasks) do
+	for taskd, _ in pairs (sched_tasks) do
 		if  taskd.status=='ready' then
 			if taskd.waitingfor then
 				local waketime = taskd.waketime
