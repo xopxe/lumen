@@ -35,12 +35,12 @@
 <h2>Examples</h2>
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><strong>test-nixiorator.lua</strong></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 <h2>Modules</h2>
@@ -50,6 +50,7 @@
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
 <h2>Topics</h2>
@@ -79,25 +80,24 @@
 <span class="keyword">local</span> nixiorator = <span class="global">require</span> <span class="string">"tasks/nixiorator"</span>
 <span class="keyword">local</span> nixio = nixiorator.nixio
 
-
-<span class="keyword">local</span> udprecv = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="string">'inet'</span>, <span class="string">'dgram'</span>))
-<span class="keyword">local</span> fdrecv = <span class="global">assert</span>(nixio.open(<span class="string">'/dev/input/mice'</span>, 
-			nixio.open_flags(<span class="string">'rdonly'</span>, <span class="string">'sync'</span>)), <span class="string">'run as root!'</span>)
-
-nixiorator.register_client(udprecv, <span class="number">1500</span>)
+<span class="comment">-- Print out data arriving on a fd
+</span><span class="keyword">local</span> fdrecv = <span class="global">assert</span>(nixio.open(<span class="string">'/dev/input/mice'</span>, nixio.open_flags(<span class="string">'rdonly'</span>, <span class="string">'sync'</span>)), <span class="string">'run as root!'</span>)
 nixiorator.register_client(fdrecv, <span class="number">10</span>)
-
 sched.sigrun(
 	{emitter=nixiorator.task, events={fdrecv}}, 
 	<span class="keyword">function</span>(_, _, data) <span class="global">print</span>(<span class="string">"!F"</span>, data:byte(<span class="number">1</span>, #data)) <span class="keyword">end</span>
 )
 
+<span class="comment">-- Print out data arriving on a udp socket
+</span><span class="keyword">local</span> udprecv = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="string">'inet'</span>, <span class="string">'dgram'</span>))
+nixiorator.register_client(udprecv, <span class="number">1500</span>)
 sched.sigrun(
 	{emitter=nixiorator.task, events={udprecv}}, 
 	<span class="keyword">function</span>(_, _, ...) <span class="global">print</span>(<span class="string">"!U"</span>, ...) <span class="keyword">end</span>
 )
 
-sched.run(<span class="keyword">function</span>()
+<span class="comment">-- Accept tcp connections and print out arriving data
+</span>sched.run(<span class="keyword">function</span>()
 	<span class="keyword">local</span> tcprecv = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="string">'inet'</span>, <span class="string">'stream'</span>))
 	nixiorator.register_server(tcprecv, <span class="string">'line'</span>)
 	catalog.register(<span class="string">"accepter"</span>)
@@ -117,7 +117,8 @@ sched.run(<span class="keyword">function</span>()
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
 
-sched.run(<span class="keyword">function</span>()
+<span class="comment">-- Send data over a tcp socket
+</span>sched.run(<span class="keyword">function</span>()
 	catalog.waitfor(<span class="string">'accepter'</span>)
 	<span class="keyword">local</span> tcpsend = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">0</span>, <span class="string">'inet'</span>, <span class="string">'stream'</span>))
 	tcpsend:connect(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
@@ -129,7 +130,8 @@ sched.run(<span class="keyword">function</span>()
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
 
-sched.run(<span class="keyword">function</span>()
+<span class="comment">-- Send data over an udp socket
+</span>sched.run(<span class="keyword">function</span>()
 	<span class="keyword">local</span> udpsend = <span class="global">assert</span>(nixio.bind(<span class="string">"127.0.0.1"</span>, <span class="number">0</span>, <span class="string">'inet'</span>, <span class="string">'dgram'</span>))
 	udpsend:connect(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
