@@ -156,9 +156,13 @@ end
 
 
 --- Start the server.
--- @param ip the ip of the service, defaults to '*'
--- @param port the port of the service, defaults to 2012
-M.init = function(ip, port)
+-- @param conf a table containing the configuration. Fields of
+-- interest are _ip_ of the service, defaults to '*',and _port_
+-- of the service, defaults to 2012
+M.init = function(conf)
+	conf = conf or {}
+	local ip = conf.ip or "*"
+	local port = conf.port or "*"
 	M.task = sched.run( function()
 		catalog.register("shell-accepter")
 		local tcprecv = assert(nixio.bind(ip or "*", port or 2012, 'inet', 'stream'))
