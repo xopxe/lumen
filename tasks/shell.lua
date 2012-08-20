@@ -170,13 +170,13 @@ end
 --- Start the server.
 -- @param con the configuration table. The fields of interest are
 -- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 2012)
-M.init = function(conf)
+M.start = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
 	local port = conf.port or 2012
 	M.task = sched.run( function()
 		catalog.register("shell-accepter")
-		local tcprecv = assert(nixio.bind(ip or "*", port or 2012, 'inet', 'stream'))
+		local tcprecv = assert(nixio.bind(ip, port, 'inet', 'stream'))
 		nixiorator.register_server(tcprecv, 'line')
 		local waitd_accept={emitter=nixiorator.task, events={tcprecv}}
 		
@@ -196,6 +196,10 @@ M.init = function(conf)
 			end
 		end, true)
 	end)
+end
+
+M.stop = function ()
+	sched.kill(M.task)
 end
 
 --- The environment for the shell.
