@@ -174,13 +174,13 @@ M.start = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
 	local port = conf.port or 2012
-	M.task = sched.run( function()
+	sched.run( function()
 		catalog.register("shell-accepter")
 		local tcprecv = assert(nixio.bind(ip, port, 'inet', 'stream'))
 		nixiorator.register_server(tcprecv, 'line')
 		local waitd_accept={emitter=nixiorator.task, events={tcprecv}}
 		
-		sched.sigrun(waitd_accept, function (_,_, msg, skt)
+		M.task = sched.sigrun(waitd_accept, function (_,_, msg, skt)
 			print ("#", os.time(), msg, skt )
 			if msg=='accepted' then
 				local shell = new_shell() 
@@ -194,7 +194,7 @@ M.start = function(conf)
 					print_from_pipe(shell.pipe_out, skt)
 				end, true)
 			end
-		end, true)
+		end)
 	end)
 end
 
