@@ -69,6 +69,7 @@ local function handle_sheellbuffer ( shell )
 				if type(v) ~='table' then 
 					return tostring(v)
 				else
+					if next(v) == nil then return 'table: {}' end
 					local s= 'table: {\r\n'
 					for k, v in pairs(v) do
 						s=s..'\t'..tostring(k)..' = '..tostring(v)..'\r\n'
@@ -154,11 +155,25 @@ local function new_shell()
 	return shell
 end
 
+local function print_from_pipe(pipe_out, skt)
+	repeat
+		local prompt, out = pipe_out:read()
+		if out then 
+			skt:writeall(tostring(out)..'\r\n')
+		end
+		if prompt then
+			skt:writeall(prompt)
+		end
+	until pipe_out:len() == 0
+end
 
 --- Start the server.
--- @param ip the ip of the service, defaults to '*'
--- @param port the port of the service, defaults to 2012
-M.init = function(ip, port)
+-- @param con the configuration table. The fields of interest are
+-- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 2012)
+M.init = function(conf)
+	conf = conf or  {}
+	local ip = conf.ip or '*'
+	local port = conf.port or 2012
 	M.task = sched.run( function()
 		catalog.register("shell-accepter")
 		local tcprecv = assert(nixio.bind(ip or "*", port or 2012, 'inet', 'stream'))
@@ -169,31 +184,17 @@ M.init = function(ip, port)
 			print ("#", os.time(), msg, skt )
 			if msg=='accepted' then
 				local shell = new_shell() 
-
-				local function print_pipe_out()
-					repeat
-						local prompt, out = shell.pipe_out:read()
-						if out then 
-							skt:writeall(tostring(out)..'\r\n')
-						end
-						if prompt then
-							skt:writeall(prompt)
-						end
-					until shell.pipe_out:len() == 0
-				end
-				
-				print_pipe_out()
-
+				print_from_pipe(shell.pipe_out, skt)
 				local waitd_skt = {emitter=nixiorator.task, events={skt}}
 				sched.sigrun(waitd_skt, function(_,  _, data, err )
 					if not data then 
 						return nil, err 
 					end
 					shell.pipe_in:write('line', data)
-					print_pipe_out()
-				end)
+					print_from_pipe(shell.pipe_out, skt)
+				end, true)
 			end
-		end)
+		end, true)
 	end)
 end
 
