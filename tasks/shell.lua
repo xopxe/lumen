@@ -14,6 +14,8 @@
 --server.init('127.0.0.1', 2012)
 -- @alias M
 
+local log=require 'log'
+
 local sched = require 'sched'
 local catalog = require 'catalog'
 local nixiorator = require 'tasks/nixiorator'
@@ -175,19 +177,20 @@ M.start = function(conf)
 	local ip = conf.ip or '*'
 	local port = conf.port or 2012
 	sched.run( function()
-		catalog.register("shell-accepter")
 		local tcprecv = assert(nixio.bind(ip, port, 'inet', 'stream'))
 		nixiorator.register_server(tcprecv, 'line')
 		local waitd_accept={emitter=nixiorator.task, events={tcprecv}}
 		
 		M.task = sched.sigrun(waitd_accept, function (_,_, msg, skt)
-			print ("#", os.time(), msg, skt )
+			--print ("#", os.time(), msg, skt )
 			if msg=='accepted' then
+				log('SHELL', 'INFO', 'connection accepted from %s %s', skt:getpeername())
 				local shell = new_shell() 
 				print_from_pipe(shell.pipe_out, skt)
 				local waitd_skt = {emitter=nixiorator.task, events={skt}}
 				sched.sigrun(waitd_skt, function(_,  _, data, err )
 					if not data then 
+						log('SHELL', 'INFO', 'connection closed from %s %s', skt:getpeername())
 						return nil, err 
 					end
 					shell.pipe_in:write('line', data)
@@ -208,7 +211,15 @@ end
 -- By default, it includes everything from _G plus a sched = require 'sched'
 -- entry. If you want something else, change this table.
 M.shell_env = {
-	sched = sched, 
+	sched = sched,
+	ps = function()
+		for taskd, _ in pairs (sched.tasks) do 
+			local line = tostring(taskd).. " | "
+			line = line .. taskd.status .. " | "
+			line = line .. taskd.created_by .. " | "
+			print(line) 
+		end 
+	end,
 }
 for k, v in pairs(_G) do M.shell_env [k] = v end
 
