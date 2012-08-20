@@ -144,6 +144,24 @@ local function new_shell()
 		for k = 1, args.n do table.insert(t, tostring(args[k])) end
 		shell.pipe_out:write(nil, table.concat(t, '\t')..'\r\n')
 	end
+	
+	shell.env.ps = function()
+		local out = {}
+		for taskd, _ in pairs (sched.tasks) do 
+			local line = tostring(taskd)
+			line = line .. ' ('..taskd.status .. ")"
+			if taskd.waitingfor then 
+				line = line .. ' waiting for '..tostring(taskd.waitingfor)
+			end
+			if taskd.waketime then 
+				line = line .. ' waking at '..tostring(taskd.waketime)
+			end
+			line = line .. ' Created by '.. tostring(taskd.created_by)
+			out[#out+1]=line
+		end 
+		shell.env.print(table.concat(out, '\r\n')) 
+	end
+	
 	shell.task=sched.new_task(function()
 		shell.pipe_out:write(shell.prompt_ready, shell.banner)
 		while true do
@@ -212,14 +230,6 @@ end
 -- entry. If you want something else, change this table.
 M.shell_env = {
 	sched = sched,
-	ps = function()
-		for taskd, _ in pairs (sched.tasks) do 
-			local line = tostring(taskd).. " | "
-			line = line .. taskd.status .. " | "
-			line = line .. taskd.created_by .. " | "
-			print(line) 
-		end 
-	end,
 }
 for k, v in pairs(_G) do M.shell_env [k] = v end
 
