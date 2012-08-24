@@ -22,8 +22,8 @@ local partial = setmetatable({}, weak_key)
 local M = {socket=socket}
 
 --- Registers a TCP server socket with socketeer.
--- socketeer will signal skt, 'accepted', client when establishing a connection, 
--- where skt is the server socket and client is the new client socket, or skt, 'fail', error 
+-- socketeer will signal _skt, 'accepted'_, client when establishing a connection, 
+-- where skt is the server socket and client is the new client socket, or _skt, 'fail', error_ 
 -- on error conditions. 
 -- The client socket is automatically registered into socketeer.
 -- @param skt a LuaSocket server socket
@@ -36,7 +36,7 @@ M.register_server = function (skt, pattern)
 end
 
 --- Registers a client socket (TCP or UDP) with socketeer.
--- socketeer will signal skt, data, error on data read. data is the string read. 
+-- socketeer will signal _skt, data, error_ on data read. data is the string read. 
 -- Data can be nil if error is 'closed'. A 'closed' error also means the skt got unregistered. 
 -- When reading from TCP with pattern>0, the last signal can provide a partial read after 
 -- the err return.
@@ -47,7 +47,6 @@ end
 -- - '*l' (TCP only) will read line by line, as specified in LuaSocket.
 -- - number>0 If TCP will read in chunks of number bytes. If UDP, means the first number bytes from each UDP packet.
 -- - number<=0 Will provide chunks as they arrive, with no further processing.
---
 M.register_client = function (skt, pattern)
 	skt:settimeout(0)
 	sktmode[skt] = pattern

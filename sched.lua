@@ -37,7 +37,24 @@ local event_die = setmetatable({}, {__tostring=function() return "event: DIE" en
 --table containing all the registered tasks.
 --tasks[taskd] = true
 --taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'paused'|'dead', co=coroutine}
-local sched_tasks = {}
+
+--- Tasks in scheduler.
+-- Table holding @{taskd} objects of the tasks in the scheduler. 
+-- @usage for taskd, _ in pairs (M.tasks) do print(taskd) end
+M.tasks = {}
+local sched_tasks = M.tasks
+
+--- Wait descriptors in scheduler.
+-- Table holding @{waitd} objects used in the scheduler. Associates to each waitd
+-- a table with the @{taskd}s of tasks that use it.
+-- @usage for waitd, tasks in pairs (M.waitds) do
+--    print(waitd)
+--    for taskd, _ in pairs (tasks) do print(taskd) end 
+--end
+M.waitds = {}
+setmetatable(M.waitds, weak_key)
+local sched_waitds = M.waitds
+
 
 --table to keep track tasks waiting for signals
 --waiting[event][emitter][task]=waitd
@@ -422,7 +439,7 @@ M.signal = function ( event, ... )
 	emit_signal( M.running_task, event, ... )
 end
 
-local sched_waitds = setmetatable({}, weak_key)
+
 local n_waitd=0
 --- Create a Wait Descriptor.
 -- Creates @{waitd} object in the scheduler. Notice that buffering waitds
@@ -473,7 +490,7 @@ M.new_multiwaitd = function ( ... )
 		local w = select(i,  ...)
 		local t = M.sigrun(w, function(...)
 			M.signal(multi_signal, ...)
-		end, true)
+		end)
 		emitters[#emitters+1] = t
 	end
 	local waitd = M.new_waitd({

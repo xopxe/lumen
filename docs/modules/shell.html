@@ -89,7 +89,7 @@ server.init('127.0.0.1', 2012)</pre>
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#init">init&nbsp;(ip, port)</a></td>
+	<td class="name" nowrap><a href="#start">start&nbsp;(con)</a></td>
 	<td class="summary">Start the server.</td>
 	</tr>
 </table>
@@ -109,16 +109,16 @@ server.init('127.0.0.1', 2012)</pre>
     
     <dl class="function">
     <dt>
-    <a name = "init"></a>
-    <strong>init&nbsp;(ip, port)</strong>
+    <a name = "start"></a>
+    <strong>start&nbsp;(con)</strong>
     </dt>
     <dd>
     Start the server. 
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>ip</em></code>:  the ip of the service, defaults to '*'</li>
-       <li><code><em>port</em></code>:  the port of the service, defaults to 2012</li>
+       <li><code><em>con</em></code>:  the configuration table. The fields of interest are
+ <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 2012)</li>
     </ul>
 
 
