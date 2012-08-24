@@ -11,7 +11,7 @@
 -- This module depends on nixio and the nixiorator task.
 -- @module shell
 -- @usage local server = require 'shell'
---server.init('127.0.0.1', 2012)
+--server.start('127.0.0.1', 2012)
 -- @alias M
 
 local log=require 'log'
