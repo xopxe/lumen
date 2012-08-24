@@ -477,26 +477,32 @@ end
 -- A Multiwait Descriptor is a @{waitd} set up for for waiting on several other waitds 
 -- at the same time.
 -- The multiwaitd will provide all signals caught by any of the input waitds. The original 
--- signal is available in the parameters.
+-- signal is available in the parameters. A multiwaitd has an additional attribute 
+-- compared to a plain waitd: a release() function. This function must be called when
+-- the multiwaitd is of no further use (for example, just before going out of scope).
 -- Notice that a multiwaitd is less efficient than normal waitd.
 -- @usage local multiwaitd = sched.new_multiwaitd( waitd1, waitd2, waitd3 )
 --_,_,emitter, ev, par1, par2 = sched.wait(multiwaitd) 
 -- @param ... waitds to listen on.
 -- @return a multiwaitd.
 M.new_multiwaitd = function ( ... )
-	local emitters = {}
 	local multi_signal = {}
+	local waitd = M.new_waitd({
+		emitter={},
+		events={multi_signal},
+	})
 	for i = 1, select('#',  ...) do
 		local w = select(i,  ...)
 		local t = M.sigrun(w, function(...)
 			M.signal(multi_signal, ...)
 		end)
-		emitters[#emitters+1] = t
+		waitd.emitter[#waitd.emitter+1] = t
 	end
-	local waitd = M.new_waitd({
-		emitter=emitters,
-		events={multi_signal}
-	})
+	waitd.release = function()
+		for _, t in ipairs(waitd.emitter) do
+			M.kill(t)
+		end
+	end
 	return waitd
 end
 
