@@ -120,8 +120,8 @@
     </dt>
     <dd>
     Registers a TCP server socket with socketeer. 
- socketeer will signal skt, 'accepted', client when establishing a connection, 
- where skt is the server socket and client is the new client socket, or skt, 'fail', error 
+ socketeer will signal <em>skt, 'accepted'</em>, client when establishing a connection, 
+ where skt is the server socket and client is the new client socket, or <em>skt, 'fail', error</em> 
  on error conditions. 
  The client socket is automatically registered into socketeer.
 
@@ -141,7 +141,7 @@
     </dt>
     <dd>
     Registers a client socket (TCP or UDP) with socketeer. 
- socketeer will signal skt, data, error on data read. data is the string read. 
+ socketeer will signal <em>skt, data, error</em> on data read. data is the string read. 
  Data can be nil if error is 'closed'. A 'closed' error also means the skt got unregistered. 
  When reading from TCP with pattern>0, the last signal can provide a partial read after 
  the err return.

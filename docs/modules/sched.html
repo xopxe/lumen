@@ -473,7 +473,9 @@ end)</pre>
  A Multiwait Descriptor is a <a href="../modules/sched.html#waitd">waitd</a> set up for for waiting on several other waitds 
  at the same time.
  The multiwaitd will provide all signals caught by any of the input waitds. The original 
- signal is available in the parameters.
+ signal is available in the parameters. A multiwaitd has an additional attribute 
+ compared to a plain waitd: a release() function. This function must be called when
+ the multiwaitd is of no further use (for example, just before going out of scope).
  Notice that a multiwaitd is less efficient than normal waitd.
 
     <h3>Parameters:</h3>
