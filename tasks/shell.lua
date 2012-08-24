@@ -188,7 +188,7 @@ local function print_from_pipe(pipe_out, skt)
 end
 
 --- Start the server.
--- @param con the configuration table. The fields of interest are
+-- @param conf the configuration table. The fields of interest are
 -- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 2012)
 M.start = function(conf)
 	conf = conf or  {}
@@ -226,8 +226,10 @@ end
 --- The environment for the shell.
 -- When starting a new shell session, it's environment will be 
 -- initialized from this table. 
--- By default, it includes everything from _G plus a sched = require 'sched'
--- entry. If you want something else, change this table.
+-- By default, it includes everything from _G plus the fields listed below.
+-- If you want something else, change this table.
+-- @field sched A reference to the Lumen scheduler library
+-- @field ps A function that prints a human readable tasks list
 M.shell_env = {
 	sched = sched,
 }
