@@ -44,6 +44,7 @@
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
   <li><strong>socketeer</strong></li>
 </ul>
 <h2>Topics</h2>
@@ -53,12 +54,12 @@
 <h2>Examples</h2>
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -119,10 +120,10 @@
     </dt>
     <dd>
     Registers a TCP server socket with socketeer. 
- socketeer will signal fd, 'accepted', client when establishing a connection, 
- where skt is the server socket and client is the new client socket, or skt, 'fail', error 
+ socketeer will signal <em>skt, 'accepted'</em>, client when establishing a connection, 
+ where skt is the server socket and client is the new client socket, or <em>skt, 'fail', error</em> 
  on error conditions. 
- The client socket is automatically registered into nixiorator.
+ The client socket is automatically registered into socketeer.
 
     <h3>Parameters:</h3>
     <ul>
@@ -140,7 +141,7 @@
     </dt>
     <dd>
     Registers a client socket (TCP or UDP) with socketeer. 
- socketeer will signal skt, data, error on data read. data is the string read. 
+ socketeer will signal <em>skt, data, error</em> on data read. data is the string read. 
  Data can be nil if error is 'closed'. A 'closed' error also means the skt got unregistered. 
  When reading from TCP with pattern>0, the last signal can provide a partial read after 
  the err return.
@@ -231,7 +232,7 @@
     <ul>
         <pre class="example">local sched = require "sched"
 local socketeer = require 'socketeer'
-sched.sigrun(print, {emitter=socketeer.task, events='*'})</pre>
+sched.sigrun({emitter=socketeer.task, events='*'}, print)</pre>
     </ul>
 
 

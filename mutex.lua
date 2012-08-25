@@ -7,15 +7,15 @@
 -- being locked contains a call that explicitly relinquish control, such as 
 -- sched.sleep(), sched.yield(), sched.signal() or sched.wait().
 -- @module mutex
--- @usage local mutex = require 'mutex'()
+-- @usage local mx = require 'mutex'()
 --
 --local function critical()
---  mutex.acquire()
+--  mx.acquire()
 --  ...
---  mutex.release()
+--  mx.release()
 --end
 --
---local critical = mutex.synchronize(function() ... end) --other method
+--local critical = mx.synchronize(function() ... end) --other method
 -- @alias M
 
 local sched=require 'sched'
@@ -26,15 +26,16 @@ table.pack=table.pack or function (...)
 end
 
 --get locals for some useful things
-local coroutine, setmetatable = coroutine, setmetatable
+local setmetatable = setmetatable
 
 local waitd_locks = setmetatable({}, {__mode = "kv"}) 
 
 local n_mutex=0
 
 local M = function()
-	n_mutex=n_mutex+1
-	local m = setmetatable({}, {__tostring=function() return 'MUTEX#'..n_mutex end})
+	n_mutex = n_mutex+1
+	local mutex_name = 'MUTEX#'..n_mutex
+	local m = setmetatable({}, {__tostring=function() return mutex_name end})
 
 	local event_release = {}
 	local events_release = {event_release, sched.EVENT_DIE}
@@ -48,16 +49,15 @@ local M = function()
 	end
 	
 	m.acquire = function()
-		while m.locker and coroutine.status(m.locker)~='dead' do
+		while m.locker and m.locker.status~='dead' do
 			sched.wait(get_waitd_lock (m.locker))
 		end
-		local co = coroutine.running()
-		m.locker = co
-		log('MUTEX', 'DETAIL', '%s locked %s', tostring(co), tostring(m))
+		m.locker = sched.running_task
+		log('MUTEX', 'DETAIL', '%s locked %s', tostring(m.locker), tostring(m))
 	end
 	
 	m.release = function()
-		if coroutine.running()~=m.locker then
+		if sched.running_task~=m.locker then
 			error('Attempt to release a non-acquired lock')
 		end
 		log('MUTEX', 'DETAIL', '%s released %s', tostring(m.locker), tostring(m))
@@ -80,8 +80,7 @@ local M = function()
 	return m
 end
 
-------
--- Mutex object.
+--- Mutex object.
 -- mutexes are used to ensure portions of code are accessed by a single
 -- task at a time. Said portions are called "critical sections", and are delimited by
 -- a lock acquisition at the beginning, and a lock release at the end. Only one task can acquire

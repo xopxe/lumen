@@ -33,7 +33,6 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
-<li><a href="#Tables">Tables</a></li>
 </ul>
 
 
@@ -44,6 +43,7 @@
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
   <li><strong>pipes</strong></li>
   <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
 <h2>Topics</h2>
@@ -53,12 +53,12 @@
 <h2>Examples</h2>
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -79,6 +79,18 @@
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
+	<td class="name" nowrap><a href="#read">read&nbsp;(piped)</a></td>
+	<td class="summary">Read from a pipe.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#write">write&nbsp;(piped, ...)</a></td>
+	<td class="summary">Write to a pipe.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#len">len&nbsp;(piped)</a></td>
+	<td class="summary">Number of entries in a pipe.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#new">new&nbsp;(name, size, timeout)</a></td>
 	<td class="summary">Create a new pipe.</td>
 	</tr>
@@ -91,13 +103,6 @@
 	<td class="summary">Iterator for all pipes.</td>
 	</tr>
 </table>
-<h2><a href="#Tables">Tables</a></h2>
-<table class="function_list">
-	<tr>
-	<td class="name" nowrap><a href="#piped">piped</a></td>
-	<td class="summary">Pipe descriptor.</td>
-	</tr>
-</table>
 
 <br/>
 <br/>
@@ -106,6 +111,70 @@
     <h2><a name="Functions"></a>Functions</h2>
     
     <dl class="function">
+    <dt>
+    <a name = "read"></a>
+    <strong>read&nbsp;(piped)</strong>
+    </dt>
+    <dd>
+    Read from a pipe. 
+ Will block on a empty pipe. Also accessible as piped:read()
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>piped</em></code>:  the the pipe descriptor to read from.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        data if available, nil, 'timeout' on timeout
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "write"></a>
+    <strong>write&nbsp;(piped, ...)</strong>
+    </dt>
+    <dd>
+    Write to a pipe. 
+ Will block when writing to a full pipe. Also accessible as piped:write()
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>piped</em></code>:  the the pipe descriptor to write to.</li>
+       <li><code><em>...</em></code>:  elements to write to pipe. All params are stored as a single entry.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        true on success, nil, 'timeout' on timeout
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "len"></a>
+    <strong>len&nbsp;(piped)</strong>
+    </dt>
+    <dd>
+    Number of entries in a pipe. 
+ Also accessible as piped:len()
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>piped</em></code>:  the the pipe descriptor.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        number of entries
+    </ol>
+
+
+</dd>
     <dt>
     <a name = "new"></a>
     <strong>new&nbsp;(name, size, timeout)</strong>
@@ -124,7 +193,7 @@
 
     <h3>Returns:</h3>
     <ol>
-        the pipe descriptor (see <a href="../modules/pipes.html#piped">piped</a>) on success, or nil,'exists' if a pipe
+        a pipe descriptor on success, or nil,'exists' if a pipe
  with the given name already exists
     </ol>
 
@@ -145,6 +214,10 @@
     </ul>
 
 
+    <h3>Returns:</h3>
+    <ol>
+        a pipe descriptor with the given name, or nil, 'timeout' on timeout
+    </ol>
 
 
 </dd>
@@ -167,30 +240,6 @@ end</pre>
     <ol>
         iterator
     </ol>
-
-
-</dd>
-</dl>
-    <h2><a name="Tables"></a>Tables</h2>
-    
-    <dl class="function">
-    <dt>
-    <a name = "piped"></a>
-    <strong>piped</strong>
-    </dt>
-    <dd>
-    Pipe descriptor. 
- A named pipe.
-
-    <h3>Fields:</h3>
-    <ul>
-       <li><code><em>write</em></code>:  writes to the pipe. Will block when writing to a full pipe.
- Return true on success, nil, 'timeout' on timeout</li>
-       <li><code><em>read</em></code>:  reads from the pipe. Will block on a empty pipe.
- Return data if available, nil, 'timeout' on timeout</li>
-    </ul>
-
-
 
 
 </dd>

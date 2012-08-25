@@ -33,17 +33,18 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
 </ul>
 
 
 <h2>Modules</h2>
 <ul>
-  <li><strong>catalog</strong></li>
+  <li><a href="../modules/catalog.html">catalog</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
-  <li><a href="../modules/shell.html">shell</a></li>
+  <li><strong>shell</strong></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
 <h2>Topics</h2>
@@ -66,32 +67,37 @@
 
 <div id="content">
 
-<h1>Module <code>catalog</code></h1>
+<h1>Module <code>shell</code></h1>
 
-<p>Task catalog operations.</p>
-<p> The catalog is used to give tasks names, and then query them.</p>
+<p>Task providing an interactive shell.</p>
+<p> This is a interactive shell that allows a user to connect
+ to the Lumen scheduler, and maintain a Lua session.
+ To connect, use telnet to the service's ip and port.
+ Besides running lua code, the user have some helper syntax:
+ If a line starts with a "=", it is equivalent to a "return ..."
+ If a line starts with a "&amp;", the following code will run in 
+ a background task.
+ If a line starts with a ":", it is equivalent to a "return ...",
+ filtered trough a simple pretifier (usefull for checking tables).
+ This module depends on nixio and the nixiorator task.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local catalog = require 'catalog'</pre>
+        <pre class="example">local server = require 'shell'
+server.start('127.0.0.1', 2012)</pre>
     </ul>
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#register">register&nbsp;(name)</a></td>
-	<td class="summary">Register a name for the current task</td>
+	<td class="name" nowrap><a href="#start">start&nbsp;(conf)</a></td>
+	<td class="summary">Start the server.</td>
 	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#waitfor">waitfor&nbsp;(name, timeout)</a></td>
-	<td class="summary">Find task with a given name.</td>
-	</tr>
-	<tr>
-	<td class="name" nowrap><a href="#namefor">namefor&nbsp;(taskd)</a></td>
-	<td class="summary">Find the name of a given task.</td>
-	</tr>
-	<tr>
-	<td class="name" nowrap><a href="#iterator">iterator&nbsp;()</a></td>
-	<td class="summary">Iterator for registered tasks.</td>
+	<td class="name" nowrap><a href="#shell_env">shell_env</a></td>
+	<td class="summary">The environment for the shell.</td>
 	</tr>
 </table>
 
@@ -103,86 +109,44 @@
     
     <dl class="function">
     <dt>
-    <a name = "register"></a>
-    <strong>register&nbsp;(name)</strong>
+    <a name = "start"></a>
+    <strong>start&nbsp;(conf)</strong>
     </dt>
     <dd>
-    Register a name for the current task 
+    Start the server. 
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>name</em></code>:  a name for the task</li>
+       <li><code><em>conf</em></code>:  the configuration table. The fields of interest are
+ <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 2012)</li>
     </ul>
 
 
-    <h3>Returns:</h3>
-    <ol>
-        true is successful; nil, 'used' if the name is already used by another task.
-    </ol>
 
 
 </dd>
+</dl>
+    <h2><a name="Tables"></a>Tables</h2>
+    
+    <dl class="function">
     <dt>
-    <a name = "waitfor"></a>
-    <strong>waitfor&nbsp;(name, timeout)</strong>
+    <a name = "shell_env"></a>
+    <strong>shell_env</strong>
     </dt>
     <dd>
-    Find task with a given name. 
- Can wait up to timeout until it appears.
+    The environment for the shell. 
+ When starting a new shell session, it's environment will be 
+ initialized from this table. 
+ By default, it includes everything from _G plus the fields listed below.
+ If you want something else, change this table.
 
-    <h3>Parameters:</h3>
+    <h3>Fields:</h3>
     <ul>
-       <li><code><em>name</em></code>:  name of the task</li>
-       <li><code><em>timeout</em></code>:  time to wait. nil or negative waits for ever.</li>
+       <li><code><em>sched</em></code>:  A reference to the Lumen scheduler library</li>
+       <li><code><em>ps</em></code>:  A function that prints a human readable tasks list</li>
     </ul>
 
 
-    <h3>Returns:</h3>
-    <ol>
-        the task if successful; on timeout expiration returns nil, 'timeout'.
-    </ol>
-
-
-</dd>
-    <dt>
-    <a name = "namefor"></a>
-    <strong>namefor&nbsp;(taskd)</strong>
-    </dt>
-    <dd>
-    Find the name of a given task. 
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>taskd</em></code>:  task to lookup.</li>
-    </ul>
-
-
-    <h3>Returns:</h3>
-    <ol>
-        the name if successful; If the task has not been given a name, returns nil.
-    </ol>
-
-
-</dd>
-    <dt>
-    <a name = "iterator"></a>
-    <strong>iterator&nbsp;()</strong>
-    </dt>
-    <dd>
-    Iterator for registered tasks. 
-
-
-    <h3>Usage:</h3>
-    <ul>
-        <pre class="example">for name, task in catalog.iterator() do
-	print(name, task)
-end</pre>
-    </ul>
-
-    <h3>Returns:</h3>
-    <ol>
-        iterator
-    </ol>
 
 
 </dd>

@@ -32,9 +32,9 @@
 
 <h2>Contents</h2>
 <ul>
-<li><a href="#Catalog_operations">Catalog operations</a></li>
-<li><a href="#Named_pipes">Named pipes</a></li>
-<li><a href="#Scheduler_operations">Scheduler operations</a></li>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+<li><a href="#Fields">Fields</a></li>
 <li><a href="#Data_structures">Data structures</a></li>
 </ul>
 
@@ -46,6 +46,7 @@
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><strong>sched</strong></li>
+  <li><a href="../modules/shell.html">shell</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
 <h2>Topics</h2>
@@ -55,12 +56,12 @@
 <h2>Examples</h2>
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -73,62 +74,56 @@
 <p>Lumen cooperative scheduler.</p>
 <p> Lumen (Lua Multitasking Environment) is a simple environment 
  for coroutine based multitasking. Consists of a signal scheduler, 
- and that's it.</p>
+ and that's it.
+ Functions that receive a task or wait descriptors can be invoked as methods
+ of the corresponing events. For example, sched.kill(task) can be invoked as 
+ task:kill()</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local sched = require 'sched'</pre>
+        <pre class="example">local sched = require 'sched'
+sched.sigrun({emitter='*', events={'a signal'}}, print)
+local task=sched.run(function()
+   sched.signal('a signal', 'data')
+   sched.sleep(1)
+end)</pre>
     </ul>
 
-<h2><a href="#Catalog_operations">Catalog operations</a></h2>
+<h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#M.catalog.register">M.catalog.register&nbsp;(name)</a></td>
-	<td class="summary">Register a name for the current task</td>
+	<td class="name" nowrap><a href="#new_task">new_task&nbsp;(f)</a></td>
+	<td class="summary">Create a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#M.catalog.waitfor">M.catalog.waitfor&nbsp;(name, timeout)</a></td>
-	<td class="summary">Find task with a given name.</td>
+	<td class="name" nowrap><a href="#new_sigrun_task">new_sigrun_task&nbsp;(waitd, f)</a></td>
+	<td class="summary">Create a task that listens for a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#M.catalog.iterator">M.catalog.iterator&nbsp;()</a></td>
-	<td class="summary">Iterator for registered tasks.</td>
-	</tr>
-</table>
-<h2><a href="#Named_pipes">Named pipes</a></h2>
-<table class="function_list">
-	<tr>
-	<td class="name" nowrap><a href="#piped">piped</a></td>
-	<td class="summary">Pipe descriptor.</td>
+	<td class="name" nowrap><a href="#new_sigrunonce_task">new_sigrunonce_task&nbsp;(waitd, f)</a></td>
+	<td class="summary">Create a task that listens for a signal, once.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#M.pipes.new">M.pipes.new&nbsp;(name, size, timeout)</a></td>
-	<td class="summary">Create a new pipe.</td>
+	<td class="name" nowrap><a href="#run">run&nbsp;(task, ...)</a></td>
+	<td class="summary">Run a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#M.pipes.waitfor">M.pipes.waitfor&nbsp;(name, timeout)</a></td>
-	<td class="summary">Look for a pipe with the given name.</td>
+	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(waitd, f, attached)</a></td>
+	<td class="summary">Create and run a task that listens for a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#M.pipes.iterator">M.pipes.iterator&nbsp;()</a></td>
-	<td class="summary">Iterator for all pipes</td>
-	</tr>
-</table>
-<h2><a href="#Scheduler_operations">Scheduler operations</a></h2>
-<table class="function_list">
-	<tr>
-	<td class="name" nowrap><a href="#run">run&nbsp;(f, ...)</a></td>
-	<td class="summary">Create and run a task.</td>
+	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(waitd, f, attached)</a></td>
+	<td class="summary">Create and run a task that listens for a signal, once.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(f, waitd)</a></td>
-	<td class="summary">Run a task that listens for a signal.</td>
+	<td class="name" nowrap><a href="#attach">attach&nbsp;(taskd, taskd_child)</a></td>
+	<td class="summary">Attach a task to another.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(f, waitd)</a></td>
-	<td class="summary">Run a task that listens for a signal, once.</td>
+	<td class="name" nowrap><a href="#set_as_attached">set_as_attached&nbsp;(taskd)</a></td>
+	<td class="summary">Set a task as attached to the creator task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#kill">kill&nbsp;(t)</a></td>
+	<td class="name" nowrap><a href="#kill">kill&nbsp;(taskd)</a></td>
 	<td class="summary">Finishes a task.</td>
 	</tr>
 	<tr>
@@ -136,16 +131,16 @@
 	<td class="summary">Emit a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#create_waitd">create_waitd&nbsp;(emitter, timeout, buff_len, buff_mode, ...)</a></td>
-	<td class="summary">Auxiliar function for instantiating waitd tables.</td>
+	<td class="name" nowrap><a href="#new_waitd">new_waitd&nbsp;(waitd_table)</a></td>
+	<td class="summary">Create a Wait Descriptor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new_multiwaitd">new_multiwaitd&nbsp;(...)</a></td>
+	<td class="summary">Create a Multiwait Descriptor.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#wait">wait&nbsp;(waitd)</a></td>
 	<td class="summary">Wait for a signal.</td>
-	</tr>
-	<tr>
-	<td class="name" nowrap><a href="#wait_feed">wait_feed&nbsp;(waitd)</a></td>
-	<td class="summary">Feeds a wait descriptor to the scheduler.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#sleep">sleep&nbsp;(timeout)</a></td>
@@ -154,6 +149,10 @@
 	<tr>
 	<td class="name" nowrap><a href="#yield">yield&nbsp;()</a></td>
 	<td class="summary">Yields the execution of a task, as in cooperative multitasking.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#set_pause">set_pause&nbsp;(taskd, pause)</a></td>
+	<td class="summary">Pause a task.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#idle">idle&nbsp;(t)</a></td>
@@ -171,13 +170,31 @@
 	<td class="name" nowrap><a href="#go">go&nbsp;()</a></td>
 	<td class="summary">Starts the scheduler.</td>
 	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#tasks">tasks</a></td>
+	<td class="summary">Tasks in scheduler.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#waitds">waitds</a></td>
+	<td class="summary">Wait descriptors in scheduler.</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
 	<tr>
 	<td class="name" nowrap><a href="#EVENT_DIE">EVENT_DIE</a></td>
-	<td class="summary">task dying event.</td>
+	<td class="summary">Task dying event.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#to_clean_up">to_clean_up</a></td>
-	<td class="summary">control memory collection.</td>
+	<td class="summary">Control memory collection.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#running_task">running_task</a></td>
+	<td class="summary">Currently running task.</td>
 	</tr>
 </table>
 <h2><a href="#Data_structures">Data structures</a></h2>
@@ -186,264 +203,222 @@
 	<td class="name" nowrap><a href="#waitd">waitd</a></td>
 	<td class="summary">Wait descriptor.</td>
 	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#taskd">taskd</a></td>
+	<td class="summary">Task descriptor.</td>
+	</tr>
 </table>
 
 <br/>
 <br/>
 
 
-    <h2><a name="Catalog_operations"></a>Catalog operations</h2>
-     The catalog is used to give tasks names, and then query them
+    <h2><a name="Functions"></a>Functions</h2>
+    
     <dl class="function">
     <dt>
-    <a name = "M.catalog.register"></a>
-    <strong>M.catalog.register&nbsp;(name)</strong>
+    <a name = "new_task"></a>
+    <strong>new_task&nbsp;(f)</strong>
     </dt>
     <dd>
-    Register a name for the current task 
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>name</em></code>:  a name for the task</li>
-    </ul>
-
-
-    <h3>Returns:</h3>
-    <ol>
-        true is successful; nil, 'used' if the name is already used by another task.
-    </ol>
-
-
-</dd>
-    <dt>
-    <a name = "M.catalog.waitfor"></a>
-    <strong>M.catalog.waitfor&nbsp;(name, timeout)</strong>
-    </dt>
-    <dd>
-    Find task with a given name. 
- Can wait up to timeout until it appears.
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>name</em></code>:  name of the task</li>
-       <li><code><em>timeout</em></code>:  time to wait. nil or negative waits for ever.</li>
-    </ul>
-
-
-    <h3>Returns:</h3>
-    <ol>
-        the task if successful; on timeout expiration returns nil, 'timeout'.
-    </ol>
-
-
-</dd>
-    <dt>
-    <a name = "M.catalog.iterator"></a>
-    <strong>M.catalog.iterator&nbsp;()</strong>
-    </dt>
-    <dd>
-    Iterator for registered tasks. 
-
-
-    <h3>Usage:</h3>
-    <ul>
-        <pre class="example">for name, task in sched.catalog.iterator() do
-	print(name, task)
-end</pre>
-    </ul>
-
-    <h3>Returns:</h3>
-    <ol>
-        iterator
-    </ol>
-
-
-</dd>
-</dl>
-    <h2><a name="Named_pipes"></a>Named pipes</h2>
-     Pipes allow can be used to communicate tasks. Unlike plain signals,
- no message can get lost: writers get blocked when the pipe is full
-    <dl class="function">
-    <dt>
-    <a name = "piped"></a>
-    <strong>piped</strong>
-    </dt>
-    <dd>
-    Pipe descriptor. 
- A named pipe.
-
-    <h3>Fields:</h3>
-    <ul>
-       <li><code><em>write</em></code>:  writes to the pipe. Will block when writing to a full pipe.
- Return true on success, nil, 'timeout' on timeout</li>
-       <li><code><em>read</em></code>:  reads from the pipe. Will block on a empty pipe.
- Return data if available, nil, 'timeout' on timeout</li>
-    </ul>
-
-
-
-
-</dd>
-    <dt>
-    <a name = "M.pipes.new"></a>
-    <strong>M.pipes.new&nbsp;(name, size, timeout)</strong>
-    </dt>
-    <dd>
-    Create a new pipe. 
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>name</em></code>:  a name for the pipe</li>
-       <li><code><em>size</em></code>:  maximum number of signals in the pipe</li>
-       <li><code><em>timeout</em></code>:  timeout for blocking on pipe operations. -1 or nil disable
- timeout</li>
-    </ul>
-
-
-    <h3>Returns:</h3>
-    <ol>
-        the pipe descriptor (see <a href="../modules/sched.html#piped">piped</a>) on success, or nil,'exists' if a pipe
- with the given name already exists
-    </ol>
-
-
-</dd>
-    <dt>
-    <a name = "M.pipes.waitfor"></a>
-    <strong>M.pipes.waitfor&nbsp;(name, timeout)</strong>
-    </dt>
-    <dd>
-    Look for a pipe with the given name. 
- Can wait up to timeout until it appears.
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>name</em></code>:  of the pipe to get</li>
-       <li><code><em>timeout</em></code>:  max. time time to wait. -1 or nil disables timeout.</li>
-    </ul>
-
-
-
-
-</dd>
-    <dt>
-    <a name = "M.pipes.iterator"></a>
-    <strong>M.pipes.iterator&nbsp;()</strong>
-    </dt>
-    <dd>
-    Iterator for all pipes 
-
-
-    <h3>Usage:</h3>
-    <ul>
-        <pre class="example">for name, pipe in sched.pipes.tasks() do
-	print(name, pipe)
-end</pre>
-    </ul>
-
-    <h3>Returns:</h3>
-    <ol>
-        iterator
-    </ol>
-
-
-</dd>
-</dl>
-    <h2><a name="Scheduler_operations"></a>Scheduler operations</h2>
-     Main API of the scheduler.
-    <dl class="function">
-    <dt>
-    <a name = "run"></a>
-    <strong>run&nbsp;(f, ...)</strong>
-    </dt>
-    <dd>
-    Create and run a task. 
- The task will emit a sched.EVENT<em>DIE, true, params...
+    Create a task. 
+ The task is created in paused mode. To run the created task,
+ use <a href="../modules/sched.html#run">run</a> or <a href="../modules/sched.html#set_pause">set_pause</a>.
+ The task will emit a <em>sched.EVENT_DIE, true, params...</em>
  signal upon normal finalization, were params are the returns of f.
- If there is a error, the task will emit a sched.EVENT</em>DIE, false, err were
+ If there is a error, the task will emit a <em>sched.EVENT_DIE, false, err</em> were
  err is the error message.
 
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>f</em></code>:  function for the task</li>
-       <li><code><em>...</em></code>:  parameters passed to f upon first run</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        task in the scheduler.
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "new_sigrun_task"></a>
+    <strong>new_sigrun_task&nbsp;(waitd, f)</strong>
+    </dt>
+    <dd>
+    Create a task that listens for a signal. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+       <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
+ is passed to f as parameter.The signal will be provided as 
+ <em>emitter, event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "new_sigrunonce_task"></a>
+    <strong>new_sigrunonce_task&nbsp;(waitd, f)</strong>
+    </dt>
+    <dd>
+    Create a task that listens for a signal, once. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+       <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
+ is passed to f as parameter. The signal will be provided as 
+ <em>emitter, event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "run"></a>
+    <strong>run&nbsp;(task, ...)</strong>
+    </dt>
+    <dd>
+    Run a task. 
+ Can be provided either a <a href="../modules/sched.html#taskd">taskd</a> or a function with optional parameters.
+ If provided a taskd, will run it. If provided a function, will use <a href="../modules/sched.html#new_task">new_task</a>
+ to create a task first.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>task</em></code>:  wither a <a href="../modules/sched.html#taskd">taskd</a> or function for the task.</li>
+       <li><code><em>...</em></code>:  parameters passed to the task upon first run.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
     </ol>
 
 
 </dd>
     <dt>
     <a name = "sigrun"></a>
-    <strong>sigrun&nbsp;(f, waitd)</strong>
+    <strong>sigrun&nbsp;(waitd, f, attached)</strong>
     </dt>
     <dd>
-    Run a task that listens for a signal. 
+    Create and run a task that listens for a signal. 
 
     <h3>Parameters:</h3>
     <ul>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter.The signal will be provided as 
- emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+ <em>emitter, event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+       <li><code><em>attached</em></code>:  if true, the new task will run in attached more</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        task in the scheduler.
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
     </ol>
 
 
-    <h3>see also:</h3>
-    <ul>
-         <li><a href="../modules/sched.html#wait">wait</a></li>
-         <li><a href="../modules/sched.html#run">run</a></li>
-    </ul>
 </dd>
     <dt>
     <a name = "sigrunonce"></a>
-    <strong>sigrunonce&nbsp;(f, waitd)</strong>
+    <strong>sigrunonce&nbsp;(waitd, f, attached)</strong>
     </dt>
     <dd>
-    Run a task that listens for a signal, once. 
+    Create and run a task that listens for a signal, once. 
 
     <h3>Parameters:</h3>
     <ul>
+       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
        <li><code><em>f</em></code>:  function to be called when the signal appears. The signal
  is passed to f as parameter. The signal will be provided as 
- emitter, event, event_parameters, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+ <em>emitter, event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+       <li><code><em>attached</em></code>:  if true, the new task will run in attached more</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        task in the scheduler.
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
     </ol>
 
 
-    <h3>see also:</h3>
-    <ul>
-         <li><a href="../modules/sched.html#wait">wait</a></li>
-         <li><a href="../modules/sched.html#run">run</a></li>
-    </ul>
 </dd>
     <dt>
-    <a name = "kill"></a>
-    <strong>kill&nbsp;(t)</strong>
+    <a name = "attach"></a>
+    <strong>attach&nbsp;(taskd, taskd_child)</strong>
     </dt>
     <dd>
-    Finishes a task. 
- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
+    Attach a task to another. 
+ An attached task will be killed by the scheduler whenever
+ the parent task is finished (returns, errors or is killed). Can be 
+ invoked as taskd:attach(taskd_child).
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>t</em></code>:  task to terminate. If nil, terminates the current task.</li>
+       <li><code><em>taskd</em></code>:  The parent task</li>
+       <li><code><em>taskd_child</em></code>:  The child (attached) task.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        the modified taskd.
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "set_as_attached"></a>
+    <strong>set_as_attached&nbsp;(taskd)</strong>
+    </dt>
+    <dd>
+    Set a task as attached to the creator task. 
+ An attached task will be killed by the scheduler whenever
+ the parent task (the task that created it) is finished (returns, errors or is killed). 
+ Can be invoked as taskd:set<em>as</em>attached().
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>taskd</em></code>:  The child (attached) task.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        the modified taskd.
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "kill"></a>
+    <strong>kill&nbsp;(taskd)</strong>
+    </dt>
+    <dd>
+    Finishes a task. 
+ The killed task will emit a signal <em>sched.EVENT_DIE, false, 'killed'</em>. Can be 
+ invoked as taskd:kill().
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>taskd</em></code>:  task to terminate (see <a href="../modules/sched.html#taskd">taskd</a>).</li>
     </ul>
 
 
@@ -468,32 +443,55 @@ end</pre>
 
 </dd>
     <dt>
-    <a name = "create_waitd"></a>
-    <strong>create_waitd&nbsp;(emitter, timeout, buff_len, buff_mode, ...)</strong>
+    <a name = "new_waitd"></a>
+    <strong>new_waitd&nbsp;(waitd_table)</strong>
     </dt>
     <dd>
-    Auxiliar function for instantiating waitd tables. 
+    Create a Wait Descriptor. 
+ Creates <a href="../modules/sched.html#waitd">waitd</a> object in the scheduler. Notice that buffering waitds
+ start buffering as soon they are created.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>emitter</em></code>:  task originating the signal we wait for. If nil, will
- only return on timeout. If '*', means anyone. Can also be an array of
- tasks</li>
-       <li><code><em>timeout</em></code>:  Time to wait. nil or negative waits for ever.</li>
-       <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing
- signals that arrived while the task is not blocked on the wait descriptor.
- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
- flag is set. nil o 0 disables, negative means no length limit.</li>
-       <li><code><em>buff_mode</em></code>:  Specifies how to behave when inserting in a full buffer.
- 'drop first' means drop the oldest signals to make space. 'drop last'
- or nil will skip the insertion in a full buffer.</li>
-       <li><code><em>...</em></code>:  Events to wait.</li>
+       <li><code><em>waitd_table</em></code>:  a table to convert into a wait descriptor.</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        a new waitd descriptor
+        a wait descriptor object.
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "new_multiwaitd"></a>
+    <strong>new_multiwaitd&nbsp;(...)</strong>
+    </dt>
+    <dd>
+    Create a Multiwait Descriptor. 
+ A Multiwait Descriptor is a <a href="../modules/sched.html#waitd">waitd</a> set up for for waiting on several other waitds 
+ at the same time.
+ The multiwaitd will provide all signals caught by any of the input waitds. The original 
+ signal is available in the parameters. A multiwaitd has an additional attribute 
+ compared to a plain waitd: a release() function. This function must be called when
+ the multiwaitd is of no further use (for example, just before going out of scope).
+ Notice that a multiwaitd is less efficient than normal waitd.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>...</em></code>:  waitds to listen on.</li>
+    </ul>
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">local multiwaitd = sched.new_multiwaitd( waitd1, waitd2, waitd3 )
+_,_,emitter, ev, par1, par2 = sched.wait(multiwaitd)</pre>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        a multiwaitd.
     </ol>
 
 
@@ -507,6 +505,9 @@ end</pre>
  Pauses the task until (one of) the specified signal(s) is available.
  If there are signals in the buffer, will return the first immediately.
  Otherwise will block the task until signal arrival, or a timeout.
+ If provided a table as parameter, will use <a href="../modules/sched.html#new_waitd">new_waitd</a> to convert it
+ to a wait desciptor.
+ Can be invoked as waitd:wait().
 
     <h3>Parameters:</h3>
     <ul>
@@ -516,27 +517,9 @@ end</pre>
 
     <h3>Returns:</h3>
     <ol>
-        On event returns emitter, event, event_parameters. On timeout
- returns nil, 'timeout'
+        On event returns <em>emitter, event, parameters</em>. On timeout
+ returns <em>nil, 'timeout'</em>
     </ol>
-
-
-</dd>
-    <dt>
-    <a name = "wait_feed"></a>
-    <strong>wait_feed&nbsp;(waitd)</strong>
-    </dt>
-    <dd>
-    Feeds a wait descriptor to the scheduler. 
- Allows a buffering Wait Descriptor to start buffering before the task is ready
- to wait().
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>waitd</em></code>:  a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
-    </ul>
-
-
 
 
 </dd>
@@ -566,6 +549,30 @@ end</pre>
 
 
 
+
+
+</dd>
+    <dt>
+    <a name = "set_pause"></a>
+    <strong>set_pause&nbsp;(taskd, pause)</strong>
+    </dt>
+    <dd>
+    Pause a task. 
+ A paused task won't be scheduled for execution. If paused while waiting for a signal, 
+ won't respond to signals. Signals on unbuffered waitds will get lost. Task's buffered 
+ waitds will still buffer events. Can be invoked as taskd:set_pause(pause)
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>taskd</em></code>:  Task to pause (see <a href="../modules/sched.html#taskd">taskd</a>).</li>
+       <li><code><em>pause</em></code>:  mode, true to pause, false to unpause</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        the modified taskd on success or <em>nil, errormessage</em> on failure.
+    </ol>
 
 
 </dd>
@@ -636,12 +643,58 @@ end</pre>
 
 
 </dd>
+</dl>
+    <h2><a name="Tables"></a>Tables</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "tasks"></a>
+    <strong>tasks</strong>
+    </dt>
+    <dd>
+    Tasks in scheduler. 
+ Table holding <a href="../modules/sched.html#taskd">taskd</a> objects of the tasks in the scheduler. 
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">for taskd, _ in pairs (M.tasks) do print(taskd) end</pre>
+    </ul>
+
+
+
+</dd>
+    <dt>
+    <a name = "waitds"></a>
+    <strong>waitds</strong>
+    </dt>
+    <dd>
+    Wait descriptors in scheduler. 
+ Table holding <a href="../modules/sched.html#waitd">waitd</a> objects used in the scheduler. Associates to each waitd
+ a table with the <a href="../modules/sched.html#taskd">taskd</a>s of tasks that use it.
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">for waitd, tasks in pairs (M.waitds) do
+    print(waitd)
+    for taskd, _ in pairs (tasks) do print(taskd) end 
+end</pre>
+    </ul>
+
+
+
+</dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+    
+    <dl class="function">
     <dt>
     <a name = "EVENT_DIE"></a>
     <strong>EVENT_DIE</strong>
     </dt>
     <dd>
-    task dying event. 
+    Task dying event. 
  This event will be emitted when a task dies. When the task dies a natural 
  death (finishes), the first parameter is true, followed by 
  the task returns. Otherwise, the first parameter is nil and the second 
@@ -651,7 +704,7 @@ end</pre>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">--prints each time a task dies
-sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
+sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
     </ul>
 
 
@@ -662,9 +715,22 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
     <strong>to_clean_up</strong>
     </dt>
     <dd>
-    control memory collection. 
+    Control memory collection. 
  number of new insertions in waiting[event] before triggering clean_up.
  Defaults to 1000
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "running_task"></a>
+    <strong>running_task</strong>
+    </dt>
+    <dd>
+    Currently running task. 
+ the task descriptor from current task.
 
 
 
@@ -689,17 +755,16 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
  when sharing a wait descriptor between several tasks, the buffer is
  associated to the wait descriptor, and tasks will service buffered signals
  on first request basis.
- Can use @{create_waitd} to create this table.
 
     <h3>Fields:</h3>
     <ul>
        <li><code><em>emitter</em></code>:  optional, task originating the signal we wait for. If nil, will
  only return on timeout. If '*', means anyone. I also can be an array of 
- tasks, in which case any of them is accepted as a source.</li>
+ tasks, in which case any of them is accepted as a source (see <a href="../modules/sched.html#taskd">taskd</a>).</li>
        <li><code><em>timeout</em></code>:  optional, time to wait. nil or negative waits for ever.</li>
        <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing
  signals that arrived while the task is not blocked on the wait descriptor.
- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
+ Whenever there is an attempt to insert in a full buffer, the dropped
  flag is set. nil o 0 disables, negative means no length limit.</li>
        <li><code><em>buff_mode</em></code>:  Specifies how to behave when inserting in a full buffer.
  'drop first' means drop the oldest signals to make space. 'drop last'
@@ -708,6 +773,31 @@ sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})</pre>
  from the buffer. Can be reset by the user.</li>
        <li><code><em>events</em></code>:  optional, array with the events to wait. Can contain a '*', 
  or be '*' instead of a table, to mark interest in any event</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "taskd"></a>
+    <strong>taskd</strong>
+    </dt>
+    <dd>
+    Task descriptor. 
+ Handler of a task. Besides the following fields, provides methods for
+ the sched functions that have a taskd as first parameter.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>status</em></code>:  Status of the task, can be 'ready', 'paused' or 'dead'</li>
+       <li><code><em>waitingfor</em></code>:  If the the task is waiting for a signal, this is the 
+ Wait Descriptor (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+       <li><code><em>waketime</em></code>:  The time at which to task will be forced to wake-up (due
+ to a timeout on a wait)</li>
+       <li><code><em>created_by</em></code>:  The task that started this one.</li>
+       <li><code><em>attached</em></code>:  Table containing attached tasks.</li>
+       <li><code><em>co</em></code>:  The coroutine of the task</li>
     </ul>
 
 

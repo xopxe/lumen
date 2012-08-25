@@ -15,21 +15,16 @@ local socket = socketeer.socket
 ---[[
 local udprecv = assert(socket.udp())
 assert(udprecv:setsockname("127.0.0.1", 8888))
-
-local udpsend = assert(socket.udp())
-assert(udpsend:setsockname("127.0.0.1", 0))
-assert(udpsend:setpeername("127.0.0.1", 8888))
---]]
-
-local s = sched.run(socketeer.task)
-print('SOCKETEER',s)
-
---udp
----[[
 socketeer.register_client(udprecv)
-sched.sigrun(function(_, _, data) print("!U", data) end, 
-		{emitter=socketeer.task, events={udprecv}})
+sched.sigrun(
+	{emitter=socketeer.task, events={udprecv}},
+	function(_, _, data) print("!U", data) end
+)
+
 sched.run(function()
+	local udpsend = assert(socket.udp())
+	assert(udpsend:setsockname("127.0.0.1", 0))
+	assert(udpsend:setpeername("127.0.0.1", 8888))
 	while true do
 		local m="ping! "..os.time()
 		print("udp sending",m)
@@ -49,12 +44,16 @@ sched.run(function()
 		local _, _, msg, inskt = sched.wait({emitter=socketeer.task, events={server}})
 		-- a connection was accepted, create a listener task
 		if msg=='accepted' then
-			sched.sigrun(function(_,_, data, err)
-				print("!T", data, err or '')
-			end, {emitter=socketeer.task, events={inskt}})
+			sched.sigrun(
+				{emitter=socketeer.task, events={inskt}},
+				function(_,_, data, err)
+					print("!T", data, err or '')
+				end
+			)
 		end
 	end
 end)
+
 sched.run(function()
 	catalog.register('TCPSEND')
 	local tcpcli = socket.connect('127.0.0.1', 8888)

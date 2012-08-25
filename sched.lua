@@ -2,8 +2,16 @@
 -- Lumen (Lua Multitasking Environment) is a simple environment 
 -- for coroutine based multitasking. Consists of a signal scheduler, 
 -- and that's it.
+-- Functions that receive a task or wait descriptors can be invoked as methods
+-- of the corresponing events. For example, sched.kill(task) can be invoked as 
+-- task:kill()
 -- @module sched
 -- @usage local sched = require 'sched'
+--sched.sigrun({emitter='*', events={'a signal'}}, print)
+--local task=sched.run(function()
+--   sched.signal('a signal', 'data')
+--   sched.sleep(1)
+--end)
 -- @alias M
 
 local log=require 'log'
@@ -23,13 +31,30 @@ local queue = require 'lib/queue'
 local weak_key = { __mode = 'k' }
 
 --local event_die = {} --singleton event for dying tasks
-local event_die = setmetatable({}, {__tostring=function() return "DIE" end})
+local event_die = setmetatable({}, {__tostring=function() return "event: DIE" end})
 
 
 --table containing all the registered tasks.
---tasks[task]=taskd
---taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'killed'}
-local tasks = {}
+--tasks[taskd] = true
+--taskd is {waketime=[number], waitingfor=[waitd], status='ready'|'paused'|'dead', co=coroutine}
+
+--- Tasks in scheduler.
+-- Table holding @{taskd} objects of the tasks in the scheduler. 
+-- @usage for taskd, _ in pairs (M.tasks) do print(taskd) end
+M.tasks = {}
+local sched_tasks = M.tasks
+
+--- Wait descriptors in scheduler.
+-- Table holding @{waitd} objects used in the scheduler. Associates to each waitd
+-- a table with the @{taskd}s of tasks that use it.
+-- @usage for waitd, tasks in pairs (M.waitds) do
+--    print(waitd)
+--    for taskd, _ in pairs (tasks) do print(taskd) end 
+--end
+M.waitds = {}
+setmetatable(M.waitds, weak_key)
+local sched_waitds = M.waitds
+
 
 --table to keep track tasks waiting for signals
 --waiting[event][emitter][task]=waitd
@@ -43,8 +68,7 @@ local next_waketime
 local step_task
 
 --changes the status of a task from waiting to active (if everything is right)
-local wake_up = function (task, waitd)
-	local taskd = tasks[task]
+local wake_up = function (taskd, waitd)
 	if not taskd or taskd.status~='ready'
 	or (waitd and waitd~=taskd.waitingfor) then
 		return false
@@ -92,7 +116,7 @@ end
 local walktasks = function (waitingtasks, emitter, event, ...)
 	local waked_up, bufferable = {}, {}
 	--local my_task = coroutine.running()
-	for task, waitd in pairs(waitingtasks) do
+	for taskd, waitd in pairs(waitingtasks) do
 		--print('',':',task, waitd, waiting[task])
 		--[[
 		if task==emitter then 
@@ -100,20 +124,20 @@ local walktasks = function (waitingtasks, emitter, event, ...)
 				, tostring(task), tostring(waitd))
 		end
 		--]]
-		if wake_up( task, waitd ) then
-			waked_up[task]=waitd
+		if wake_up( taskd, waitd ) then
+			waked_up[taskd] = waitd
 		else
 			bufferable[waitd] = true
 		end
 	end
 	for _, waitd in pairs(waked_up) do
-		bufferable[waitd]=nil
+		bufferable[waitd] = nil
 	end
 	for waitd, _ in pairs(bufferable) do
 		to_buffer(waitd, emitter, event, ...)
 	end
-	for task, _ in pairs(waked_up) do
-		step_task(task, emitter, event, ...)
+	for taskd, _ in pairs(waked_up) do
+		step_task(taskd, emitter, event, ...)
 	end
 end
 
@@ -137,19 +161,30 @@ end
 ---
 -- resumes a task and handles finalization conditions
 -- @local
-step_task = function(t, ...)
-	local ret = table.pack(coroutine.resume(t, ...))
-	if tasks[t] and coroutine.status(t)=='dead' then
-		tasks[t]=nil
-		local ok=ret[1]
-		local skip1ret = function(_, ...) return ... end
-		if ok then 
-			log('SCHED', 'INFO', '%s returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, true, skip1ret(unpack(ret,1,ret.n)))
-		else
-			log('SCHED', 'WARNING', '%s die on error, returning %d parameters', tostring(t), #ret-1)
-			return emit_signal(t, event_die, nil, skip1ret(unpack(ret,1,ret.n)))
+step_task = function(taskd, ...)
+	if taskd.status=='ready' then
+		local check = function(ok, ...)
+			--M.running_task = nil
+			if coroutine.status(taskd.co)=='dead' then
+				taskd.status='dead'
+				sched_tasks[taskd]=nil
+				if ok then 
+					log('SCHED', 'INFO', '%s returning %d parameters', tostring(taskd), select('#',...))
+					emit_signal(taskd, event_die, true, ...)
+				else
+					log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
+						, tostring(taskd), select('#',...), (...))
+					emit_signal(taskd, event_die, nil, ...)
+				end
+				for child, _ in pairs(taskd.attached) do
+					M.kill(child)
+				end
+			end
 		end
+		local previous_task = M.running_task
+		M.running_task = taskd
+		check(coroutine.resume(taskd.co, ...))
+		M.running_task = previous_task
 	end
 end
 
@@ -177,23 +212,15 @@ end
 
 
 --blocks a task waiting for a signal. registers the task in waiting table.
-local register_signal = function(task, waitd)
-	local emitter, timeout, events = waitd.emitter, waitd.timeout, waitd.events
+local register_signal = function(taskd, waitd)
+	local emitter,  events = waitd.emitter, waitd.events
 	if events=='*' then events={'*'} end
-	local taskd = tasks[task]
-	taskd.waitingfor = waitd
+	--taskd.waitingfor = waitd
 
-	if timeout and timeout>=0 then
-		local t = timeout + M.get_time()
-		taskd.waketime = t
-		next_waketime = next_waketime or t
-		if t<next_waketime then next_waketime=t end
-	end
 	--print('registersignal', task, emitter, timeout, #events)
-	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(task), tostring(waitd))
+	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(taskd), tostring(waitd))
 
 	local function register_emitter(etask)
-		assert ( type(etask)=='thread' or etask=='*' )
 		for _, event in ipairs(events) do
 			--print('',':', event)
 			waiting[event]=waiting[event] or setmetatable({}, weak_key)
@@ -201,7 +228,7 @@ local register_signal = function(task, waitd)
 				waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
 				waiting_emitter_counter = waiting_emitter_counter +1
 			end
-			waiting[event][etask][task]=waitd
+			waiting[event][etask][taskd]=waitd
 		end
 		if waiting_emitter_counter>M.to_clean_up then
 			waiting_emitter_counter = 0
@@ -210,20 +237,22 @@ local register_signal = function(task, waitd)
 	end
 
 	if events and emitter then
-		if type(emitter)=='table' then
+		if emitter=='*' or emitter.co then
+			--single taskd parameter
+			register_emitter(emitter)
+		else
+			--is a array of taskd
 			for _, e in ipairs(emitter) do 
 				register_emitter(e)
 			end
-		else
-			register_emitter(emitter)
 		end
 	end
 end
 
-local emit_timeout = function (task)
+local emit_timeout = function (taskd)
 	--print('emittimeout',task)
-	if wake_up( task ) then
-		step_task(task, nil, 'timeout')
+	if wake_up( taskd ) then
+		step_task(taskd, nil, 'timeout')
 	end
 end
 
@@ -237,202 +266,43 @@ local compute_available_time = function()
 	return available_time
 end
 
+local n_task = 0
 
---- Catalog operations.
--- The catalog is used to give tasks names, and then query them
--- @section catalog
-
-M.catalog = {}
-
-local CATALOG_EV = {} --singleton origin for catalog events
---register of names for tasks
---tasknames[co]=name
-local tasknames = setmetatable({CATALOG_EV = CATALOG_EV}, { __mode = 'v' })
-
---- Register a name for the current task
--- @param name a name for the task
--- @return true is successful; nil, 'used' if the name is already used by another task.
-M.catalog.register = function ( name )
-	local co = coroutine.running()
-	if tasknames[name] and tasknames[name] ~= co then
-		return nil, 'used'
-	end
-	log('SCHED', 'INFO', '%s registered in catalog as "%s"', tostring(co), tostring(name))
-	tasknames[name] = co
-	emit_signal(CATALOG_EV, name, 'registered', co)
-	return true
-end
-
---- Find task with a given name.
--- Can wait up to timeout until it appears.
--- @param name name of the task
--- @param timeout time to wait. nil or negative waits for ever.
--- @return the task if successful; on timeout expiration returns nil, 'timeout'.
-M.catalog.waitfor = function ( name, timeout )
-	local co = tasknames[name]
-	log('SCHED', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(co))
-	if co then
-		return co
-	else
-		local _, action, received_co = M.wait({emitter=CATALOG_EV, timeout=timeout, events={name}})
-		if action == 'registered' then
-			return received_co
-		else
-			return nil, 'timeout'
-		end
-	end
-end
-
---- Iterator for registered tasks.
--- @return iterator
--- @usage for name, task in sched.catalog.iterator() do
---	print(name, task)
---end
-M.catalog.iterator = function ()
-	return function (_, v) return next(tasknames, v) end
-end
-
-
---- Named pipes.
--- Pipes allow can be used to communicate tasks. Unlike plain signals,
--- no message can get lost: writers get blocked when the pipe is full
--- @section pipes
-
-M.pipes={}
-
-------
--- Pipe descriptor.
--- A named pipe.
--- @field write writes to the pipe. Will block when writing to a full pipe.
--- Return true on success, nil, 'timeout' on timeout
--- @field read reads from the pipe. Will block on a empty pipe.
--- Return data if available, nil, 'timeout' on timeout
--- @table piped
-
-local PIPES_EV={} --singleton origin for pipes events
-tasknames[PIPES_EV]=PIPES_EV
---register of pipes
-local pipes =  setmetatable({}, { __mode = 'kv' })
-
---- Create a new pipe.
--- @param name a name for the pipe
--- @param size maximum number of signals in the pipe
--- @param timeout timeout for blocking on pipe operations. -1 or nil disable
--- timeout
--- @return the pipe descriptor (see @{piped}) on success, or nil,'exists' if a pipe
--- with the given name already exists
-
-M.pipes.new = function(name, size, timeout)
-	if pipes[name] then
-		return nil, 'exists'
-	end
-	log('SCHED', 'INFO', 'pipe with name "%s" created', tostring(name))
-	local piped = {}
-	local pipe_enable = {} --singleton event for pipe control
-	local pipe_data = {} --singleton event for pipe data
-	local buff_data = queue:new()
-	local waitd_data={emitter='*', buff_len=size+1, timeout=timeout, events = {pipe_data}, buff = buff_data}
-	M.wait_feed(waitd_data)
-	local waitd_enable={emitter='*', buff_len=1, timeout=timeout, buff_mode='drop_last', events = {pipe_enable}, buff = queue:new()}
-	local piped_read = function ()
-		local function format_signal(ev, ...)
-			if not ev then return nil, 'timeout' end
-			return ...
-		end
-		if buff_data:len() == size-1 then
-			M.signal(pipe_enable)
-		end
-		return format_signal(M.wait(waitd_data))
-	end
-	local piped_write = function (...)
-		if buff_data:len() >= size then
-			local ret, _ = M.wait(waitd_enable)
-			if not ret then return nil, 'timeout' end
-		end
-		M.signal(pipe_data, ...) --table.pack(...))
-		return true
-	end
-	--first run is a initialization, replaces functions with proper code
-	piped.read = function ()
-		piped.read = piped_read
-		piped.write = piped_write
-		M.signal(pipe_enable)
-		return piped_read()
-	end
-	--blocks on no-readers, replaced in piped.read
-	piped.write = function (...)
-		local ret, _ = M.wait(waitd_enable)
-		if not ret then return nil, 'timeout' end
-		M.signal(pipe_data, ...)
-		return true
-	end
-	piped.len=function ()
-		return buff_data:len()
-	end
-	
-	pipes[name]=piped
-	emit_signal(PIPES_EV, name, 'created', piped)
-	return piped
-end
-
---- Look for a pipe with the given name.
--- Can wait up to timeout until it appears.
--- @param name of the pipe to get
--- @param timeout max. time time to wait. -1 or nil disables timeout.
-M.pipes.waitfor = function(name, timeout)
-	local piped = pipes[name]
-	log('SCHED', 'INFO', 'a pipe with name "%s" requested, found %s', tostring(name), tostring(piped))
-	if piped then
-		return piped
-	else
-		local _, action, received_piped= M.wait({emitter=PIPES_EV, timeout=timeout, events={name}})
-		if action == 'created' then
-			return received_piped
-		else
-			return nil, 'timeout'
-		end
-	end
-end
-
---- Iterator for all pipes
--- @return iterator
--- @usage for name, pipe in sched.pipes.tasks() do
---	print(name, pipe)
---end
-M.pipes.iterator = function ()
-	return function (_, v) return next(pipes, v) end
-end
-
-
---- Scheduler operations.
--- Main API of the scheduler.
--- @section scheduler
-
---- Create and run a task.
--- The task will emit a sched.EVENT_DIE, true, params...
+--- Create a task.
+-- The task is created in paused mode. To run the created task,
+-- use @{run} or @{set_pause}.
+-- The task will emit a _sched.EVENT\_DIE, true, params..._
 -- signal upon normal finalization, were params are the returns of f.
--- If there is a error, the task will emit a sched.EVENT_DIE, false, err were
+-- If there is a error, the task will emit a _sched.EVENT\_DIE, false, err_ were
 -- err is the error message.
 -- @param f function for the task
--- @param ... parameters passed to f upon first run
--- @return task in the scheduler.
-M.run = function ( f, ... )
+-- @return task in the scheduler (see @{taskd}).
+M.new_task = function ( f )
 	local co = coroutine.create( f )
-	log('SCHED', 'INFO', 'created %s from %s, with %d parameters', tostring(co), tostring(f), select('#', ...))
-	tasks[co] = {status='ready'}
-	step_task(co, ...)
-	return co
+	n_task = n_task + 1
+	local task_name = 'task: #'..n_task
+	local taskd = setmetatable({
+		status='paused',
+		created_by=M.running_task,
+		co=co,
+		attached=setmetatable({}, weak_key),
+		sleep_waitd={}, --see M.sleep()
+		--for : calls
+		kill=M.kill,
+		set_pause=M.set_pause,
+		run=M.run,
+		attach=M.attach,
+		set_as_attached=M.set_as_attached,
+	}, {
+		__tostring=function() return task_name end,
+	})
+	sched_tasks[taskd] = true
+	log('SCHED', 'INFO', 'created %s from %s', tostring(taskd), tostring(f))
+	--step_task(taskd, ...)
+	return taskd
 end
 
---- Run a task that listens for a signal.
--- @param f function to be called when the signal appears. The signal
--- is passed to f as parameter.The signal will be provided as 
--- emitter, event, event_parameters, just as the result of a @{wait}
--- @param waitd a Wait Descriptor for the signal (see @{waitd})
--- @return task in the scheduler.
--- @see wait
--- @see run
-M.sigrun = function ( f, waitd )
+local function get_sigrun_wrapper(waitd, f)
 	local wrapper = function()
 		while true do
 			f(M.wait(waitd))
@@ -440,81 +310,217 @@ M.sigrun = function ( f, waitd )
 	end
 	log('SCHED', 'INFO', 'sigrun wrapper %s created from %s and waitd %s', 
 		tostring(wrapper), tostring(f), tostring(waitd))
-	return M.run( wrapper )
+	return wrapper
 end
 
---- Run a task that listens for a signal, once.
--- @param f function to be called when the signal appears. The signal
--- is passed to f as parameter. The signal will be provided as 
--- emitter, event, event_parameters, just as the result of a @{wait}
+--- Create a task that listens for a signal.
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
--- @return task in the scheduler.
--- @see wait
--- @see run
-M.sigrunonce = function ( f, waitd )
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter.The signal will be provided as 
+-- _emitter, event, parameters_, just as the result of a @{wait}
+-- @return task in the scheduler (see @{taskd}).
+M.new_sigrun_task = function ( waitd, f )
+	local taskd=M.new_task( get_sigrun_wrapper(waitd, f) )
+	return taskd
+end
+
+local function get_sigrunonce_wrapper(waitd, f)
 	local wrapper = function()
 		f(M.wait(waitd))
 	end
-	log('SCHED', 'INFO', 'sigrunonce wrapper %s created from %s and waitd %s', 
+	log('SCHED', 'INFO', 'sigrun wrapper %s created from %s and waitd %s', 
 		tostring(wrapper), tostring(f), tostring(waitd))
-	return M.run( wrapper )
+	return wrapper
+end
+
+--- Create a task that listens for a signal, once.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter. The signal will be provided as 
+-- _emitter, event, parameters_, just as the result of a @{wait}
+-- @return task in the scheduler (see @{taskd}).
+M.new_sigrunonce_task = function ( waitd, f )
+	local taskd=M.new_task( get_sigrunonce_wrapper(waitd, f) )
+	return taskd
+end
+
+--- Run a task.
+-- Can be provided either a @{taskd} or a function with optional parameters.
+-- If provided a taskd, will run it. If provided a function, will use @{new_task}
+-- to create a task first.
+-- @param task wither a @{taskd} or function for the task.
+-- @param ... parameters passed to the task upon first run.
+-- @return a task in the scheduler (see @{taskd}).
+M.run = function ( task, ... )
+	local taskd
+	if type(task)=='function' then
+		taskd = M.new_task( task, ...)
+	else
+		taskd = task
+	end
+	M.set_pause(taskd, false)
+	step_task(taskd, ...)
+	return taskd
+end
+
+--- Create and run a task that listens for a signal.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter.The signal will be provided as 
+-- _emitter, event, parameters_, just as the result of a @{wait}
+-- @param attached if true, the new task will run in attached more
+-- @return task in the scheduler (see @{taskd}).
+M.sigrun = function( waitd, f, attached)
+	local taskd = M.new_sigrun_task( waitd, f )
+	if attached then taskd:set_as_attached() end
+	return M.run(taskd)
+end
+
+--- Create and run a task that listens for a signal, once.
+-- @param waitd a Wait Descriptor for the signal (see @{waitd})
+-- @param f function to be called when the signal appears. The signal
+-- is passed to f as parameter. The signal will be provided as 
+-- _emitter, event, parameters_, just as the result of a @{wait}
+-- @param attached if true, the new task will run in attached more
+-- @return task in the scheduler (see @{taskd}).
+M.sigrunonce = function( waitd, f, attached)
+	local taskd = M.new_sigrunonce_task( waitd, f )
+	if attached then taskd:set_as_attached() end
+	return M.run(taskd)
+end
+
+
+--- Attach a task to another.
+-- An attached task will be killed by the scheduler whenever
+-- the parent task is finished (returns, errors or is killed). Can be 
+-- invoked as taskd:attach(taskd_child).
+-- @param taskd The parent task
+-- @param taskd_child The child (attached) task.
+-- @return the modified taskd.
+M.attach = function (taskd, taskd_child)
+	taskd.attached[taskd_child] = true
+	log('SCHED', 'INFO', '%s is attached to %s', tostring(taskd_child), tostring(taskd))
+	return taskd
+end
+
+--- Set a task as attached to the creator task.
+-- An attached task will be killed by the scheduler whenever
+-- the parent task (the task that created it) is finished (returns, errors or is killed). 
+-- Can be invoked as taskd:set_as_attached().
+-- @param taskd The child (attached) task.
+-- @return the modified taskd.
+M.set_as_attached = function(taskd)
+	if taskd.created_by then M.attach(taskd.created_by, taskd) end
+	return taskd
 end
 
 --- Finishes a task.
--- The killed task will emit a signal sched.EVENT_DIE, false, 'killed'
--- @param t task to terminate. If nil, terminates the current task.
-M.kill = function ( t )
-	local my_task = coroutine.running()
-	t=t or my_task
-	log('SCHED', 'INFO', 'killing %s from %s', tostring(t), tostring(my_task))
-	tasks[t].status = 'killed'
-	tasks[t] = nil
-	emit_signal(t, event_die, false, 'killed')
+-- The killed task will emit a signal _sched.EVENT\_DIE, false, 'killed'_. Can be 
+-- invoked as taskd:kill().
+-- @param taskd task to terminate (see @{taskd}).
+M.kill = function ( taskd )
+	log('SCHED', 'INFO', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
+	taskd.status = 'dead'
+	sched_tasks[taskd] = nil
+	
+	for child, _ in pairs(taskd.attached) do
+		M.kill(child)
+	end
+	
+	emit_signal(taskd, event_die, false, 'killed')
 end
 
 --- Emit a signal.
 -- @param event event of the signal. Can be of any type.
 -- @param ... further parameters to be sent with the signal.
 M.signal = function ( event, ... )
-	local emitter=coroutine.running()
-	log('SCHED', 'DETAIL', 'task %s emitting event %s with %d parameters', 
-		tostring(emitter), tostring(event), select('#', ...))
-	emit_signal( emitter, event, ... )
+	log('SCHED', 'DETAIL', '%s emitting event %s with %d parameters', 
+		tostring(M.running_task), tostring(event), select('#', ...))
+	emit_signal( M.running_task, event, ... )
 end
 
---- Auxiliar function for instantiating waitd tables.
--- @param emitter task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone. Can also be an array of
--- tasks
--- @param timeout Time to wait. nil or negative waits for ever.
--- @param buff_len Maximum length of the buffer. A buffer allows for storing
--- signals that arrived while the task is not blocked on the wait descriptor.
--- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
--- flag is set. nil o 0 disables, negative means no length limit.
--- @param buff_mode Specifies how to behave when inserting in a full buffer.
--- 'drop first' means drop the oldest signals to make space. 'drop last'
--- or nil will skip the insertion in a full buffer.
--- @param ... Events to wait.
--- @return a new waitd descriptor
-M.create_waitd = function ( emitter, timeout, buff_len, buff_mode, ... )
-	return {emitter = emitter,
-		timeout = timeout,
-		buff_len = buff_len,
-		buff_mode = buff_mode,
-		events = {...}
-	}
+
+local n_waitd=0
+--- Create a Wait Descriptor.
+-- Creates @{waitd} object in the scheduler. Notice that buffering waitds
+-- start buffering as soon they are created.
+-- @param waitd_table a table to convert into a wait descriptor.
+-- @return a wait descriptor object.
+M.new_waitd = function(waitd_table)
+	if not sched_waitds[waitd_table] then 
+		-- first task to use a waitd
+		n_waitd = n_waitd + 1
+		local waitd_name = 'waitd: #'..n_waitd
+		setmetatable(waitd_table, {
+			__tostring=function() return waitd_name end,
+		})
+		--OO
+		waitd_table.new_sigrun_task = M.new_sigrun_task
+		waitd_table.new_sigrunonce_task = M.new_sigrunonce_task
+		waitd_table.wait = M.wait
+		
+		log('SCHED', 'DETAIL', '%s created %s', tostring(M.running_task), tostring(waitd_table))
+		
+		register_signal( M.running_task, waitd_table )
+		sched_waitds[waitd_table] = {[M.running_task]=true}
+	elseif not sched_waitds[waitd_table][M.running_task] then
+		-- additional task using a waitd
+		log('SCHED', 'DETAIL', '%s using existing %s', tostring(M.running_task), tostring(waitd_table))
+		register_signal( M.running_task, waitd_table )
+		sched_waitds[waitd_table][M.running_task] = true
+	end
+	
+	return waitd_table
+end
+
+--- Create a Multiwait Descriptor.
+-- A Multiwait Descriptor is a @{waitd} set up for for waiting on several other waitds 
+-- at the same time.
+-- The multiwaitd will provide all signals caught by any of the input waitds. The original 
+-- signal is available in the parameters. A multiwaitd has an additional attribute 
+-- compared to a plain waitd: a release() function. This function must be called when
+-- the multiwaitd is of no further use (for example, just before going out of scope).
+-- Notice that a multiwaitd is less efficient than normal waitd.
+-- @usage local multiwaitd = sched.new_multiwaitd( waitd1, waitd2, waitd3 )
+--_,_,emitter, ev, par1, par2 = sched.wait(multiwaitd) 
+-- @param ... waitds to listen on.
+-- @return a multiwaitd.
+M.new_multiwaitd = function ( ... )
+	local multi_signal = {}
+	local waitd = M.new_waitd({
+		emitter={},
+		events={multi_signal},
+	})
+	for i = 1, select('#',  ...) do
+		local w = select(i,  ...)
+		local t = M.sigrun(w, function(...)
+			M.signal(multi_signal, ...)
+		end)
+		waitd.emitter[#waitd.emitter+1] = t
+	end
+	waitd.release = function()
+		for _, t in ipairs(waitd.emitter) do
+			M.kill(t)
+		end
+	end
+	return waitd
 end
 
 --- Wait for a signal.
 -- Pauses the task until (one of) the specified signal(s) is available.
 -- If there are signals in the buffer, will return the first immediately.
 -- Otherwise will block the task until signal arrival, or a timeout.
--- @return On event returns emitter, event, event_parameters. On timeout
--- returns nil, 'timeout'
+-- If provided a table as parameter, will use @{new_waitd} to convert it
+-- to a wait desciptor.
+-- Can be invoked as waitd:wait().
+-- @return On event returns _emitter, event, parameters_. On timeout
+-- returns _nil, 'timeout'_
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
-	local my_task = coroutine.running()
-	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(my_task), tostring(waitd))
+	--in case passed a non created waitd
+	waitd=M.new_waitd(waitd)
+	
+	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(M.running_task), tostring(waitd))
 	
 	--if there are buffered signals, service the first
 	local buff = waitd.buff
@@ -524,22 +530,16 @@ M.wait = function ( waitd )
 		return unpack(ret, 1, ret.n)
 	end
 
-	--block on signal
-	--print('W+')
-	register_signal( my_task, waitd )
-	--print('W-')
-	return coroutine.yield( my_task )
-end
+	local timeout = waitd.timeout
+	if timeout and timeout>=0 then
+		local t = timeout + M.get_time()
+		M.running_task.waketime = t
+		next_waketime = next_waketime or t
+		if t<next_waketime then next_waketime=t end
+	end
 
---- Feeds a wait descriptor to the scheduler.
--- Allows a buffering Wait Descriptor to start buffering before the task is ready
--- to wait().
--- @param waitd a Wait Descriptor for the signal (see @{waitd})
-M.wait_feed = function(waitd)
-	local timeout=waitd.timeout
-	waitd.timeout=0
-	M.wait(waitd)
-	waitd.timeout=timeout
+	M.running_task.waitingfor = waitd
+	return coroutine.yield( M.running_task.co )
 end
 
 --- Sleeps the task for t time units.
@@ -547,13 +547,39 @@ end
 -- @param timeout time to sleep
 M.sleep = function (timeout)
 --print('to sleep', timeout)
-	M.wait({timeout=timeout})
+	local sleep_waitd = M.running_task.sleep_waitd
+	sleep_waitd.timeout=timeout
+	M.wait(sleep_waitd)
+	--M.wait({timeout=timeout})
 end
 
 --- Yields the execution of a task, as in cooperative multitasking.
 M.yield = function ()
-	local my_task = coroutine.running()
-	return coroutine.yield( my_task )
+	return coroutine.yield( M.running_task.co )
+end
+
+--- Pause a task.
+-- A paused task won't be scheduled for execution. If paused while waiting for a signal, 
+-- won't respond to signals. Signals on unbuffered waitds will get lost. Task's buffered 
+-- waitds will still buffer events. Can be invoked as taskd:set_pause(pause)
+-- @param taskd Task to pause (see @{taskd}). 
+-- @param pause mode, true to pause, false to unpause
+-- @return the modified taskd on success or _nil, errormessage_ on failure.
+M.set_pause = function(taskd, pause)
+	log('SCHED', 'INFO', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
+	if taskd.status=='dead' then
+		log('SCHED', 'ERROR', '%s toggling pause on dead %s', tostring(M.running_task), tostring(taskd))
+		return nil, 'task is dead'
+	end
+	if pause then
+		taskd.status='paused'
+		if M.running_task==taskd then
+			M.yield()
+		end
+	else
+		taskd.status='ready'
+	end
+	return taskd
 end
 
 --- Idle function.
@@ -583,28 +609,30 @@ M.step = function ()
 	next_waketime = nil
 
 	--find tasks ready to run (active) and ready to wakeup by timeout
-	for task, taskd in pairs (tasks) do
-		if taskd.waitingfor then
-			local waketime = taskd.waketime
-			if waketime then
-				next_waketime = next_waketime or waketime
-				if waketime <= M.get_time() then
-					cycletimeout[#cycletimeout+1]=task
+	for taskd, _ in pairs (sched_tasks) do
+		if  taskd.status=='ready' then
+			if taskd.waitingfor then
+				local waketime = taskd.waketime
+				if waketime then
+					next_waketime = next_waketime or waketime
+					if waketime <= M.get_time() then
+						cycletimeout[#cycletimeout+1]=taskd
+					end
+					if waketime < next_waketime then
+						next_waketime = waketime
+					end
 				end
-				if waketime < next_waketime then
-					next_waketime = waketime
-				end
+			else
+				cycleready[#cycleready+1]=taskd
 			end
-		elseif taskd.status=='ready' then
-			cycleready[#cycleready+1]=task
 		end
 	end
 	local ncycleready,ncycletimeout = #cycleready, #cycletimeout
 
 	--wake timeouted tasks
-	for i, task in ipairs(cycletimeout) do
+	for i, taskd in ipairs(cycletimeout) do
 		cycletimeout[i]=nil
-		emit_timeout( task )
+		emit_timeout( taskd )
 	end
 
 	--step active tasks (keeping track of impending timeouts)
@@ -615,9 +643,9 @@ M.step = function ()
 		step_task( cycleready[1], available_time, available_time )
 		cycleready[1]=nil
 	else
-		for i, task in ipairs(cycleready) do
+		for i, taskd in ipairs(cycleready) do
 			local available_time = compute_available_time()
-			step_task( task, 0, available_time )
+			step_task( taskd, 0, available_time )
 			cycleready[i]=nil
 		end
 	end
@@ -648,19 +676,23 @@ M.go = function ()
 	until not idle_time
 end
 
---- task dying event.
+--- Task dying event.
 -- This event will be emitted when a task dies. When the task dies a natural 
 -- death (finishes), the first parameter is true, followed by 
 -- the task returns. Otherwise, the first parameter is nil and the second 
 -- is 'killed' if the task was killed, or the error message if the task errore'd.
 -- @usage --prints each time a task dies
---sched.sigrun( print, {emitter='*', events={sched.EVENT_DIE}})
+--sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
 M.EVENT_DIE = event_die
 
---- control memory collection.
+--- Control memory collection.
 -- number of new insertions in waiting[event] before triggering clean_up.
 -- Defaults to 1000
 M.to_clean_up = 1000
+
+--- Currently running task.
+-- the task descriptor from current task.
+M.running_task = false
 
 --- Data structures.
 -- Main structures used.
@@ -676,14 +708,13 @@ M.to_clean_up = 1000
 -- when sharing a wait descriptor between several tasks, the buffer is
 -- associated to the wait descriptor, and tasks will service buffered signals
 -- on first request basis.
--- Can use @\{create_waitd} to create this table.
 -- @field emitter optional, task originating the signal we wait for. If nil, will
 -- only return on timeout. If '*', means anyone. I also can be an array of 
--- tasks, in which case any of them is accepted as a source.
+-- tasks, in which case any of them is accepted as a source (see @{taskd}).
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
--- Whenever there is an attempt to insert in a full buffer, the buffer.dropped
+-- Whenever there is an attempt to insert in a full buffer, the dropped
 -- flag is set. nil o 0 disables, negative means no length limit.
 -- @field buff_mode Specifies how to behave when inserting in a full buffer.
 -- 'drop first' means drop the oldest signals to make space. 'drop last'
@@ -693,6 +724,20 @@ M.to_clean_up = 1000
 -- @field events optional, array with the events to wait. Can contain a '\*', 
 -- or be '\*' instead of a table, to mark interest in any event
 -- @table waitd
+
+------
+-- Task descriptor.
+-- Handler of a task. Besides the following fields, provides methods for
+-- the sched functions that have a taskd as first parameter.
+-- @field status Status of the task, can be 'ready', 'paused' or 'dead'
+-- @field waitingfor If the the task is waiting for a signal, this is the 
+-- Wait Descriptor (see @{waitd})
+-- @field waketime The time at which to task will be forced to wake-up (due
+-- to a timeout on a wait)
+-- @field created_by The task that started this one.
+-- @field attached Table containing attached tasks.
+-- @field co The coroutine of the task
+-- @table taskd
 
 return M
 

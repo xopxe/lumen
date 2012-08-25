@@ -35,12 +35,12 @@
 <h2>Examples</h2>
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-multiwait.lua.html">test-multiwait.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><strong>test-socketeer.lua</strong></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 <h2>Modules</h2>
@@ -50,6 +50,7 @@
   <li><a href="../modules/nixiorator.html">nixiorator</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
   <li><a href="../modules/socketeer.html">socketeer</a></li>
 </ul>
 <h2>Topics</h2>
@@ -81,15 +82,16 @@
 </span><span class="comment">---[[
 </span><span class="keyword">local</span> udprecv = <span class="global">assert</span>(socket.udp())
 <span class="global">assert</span>(udprecv:setsockname(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>))
-
-<span class="keyword">local</span> udpsend = <span class="global">assert</span>(socket.udp())
-<span class="global">assert</span>(udpsend:setsockname(<span class="string">"127.0.0.1"</span>, <span class="number">0</span>))
-<span class="global">assert</span>(udpsend:setpeername(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>))
-
 socketeer.register_client(udprecv)
-sched.sigrun(<span class="keyword">function</span>(_, _, data) <span class="global">print</span>(<span class="string">"!U"</span>, data) <span class="keyword">end</span>, 
-		{emitter=socketeer.task, events={udprecv}})
+sched.sigrun(
+	{emitter=socketeer.task, events={udprecv}},
+	<span class="keyword">function</span>(_, _, data) <span class="global">print</span>(<span class="string">"!U"</span>, data) <span class="keyword">end</span>
+)
+
 sched.run(<span class="keyword">function</span>()
+	<span class="keyword">local</span> udpsend = <span class="global">assert</span>(socket.udp())
+	<span class="global">assert</span>(udpsend:setsockname(<span class="string">"127.0.0.1"</span>, <span class="number">0</span>))
+	<span class="global">assert</span>(udpsend:setpeername(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>))
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
 		<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
 		<span class="global">print</span>(<span class="string">"udp sending"</span>,m)
@@ -109,12 +111,16 @@ sched.run(<span class="keyword">function</span>()
 		<span class="keyword">local</span> _, _, msg, inskt = sched.wait({emitter=socketeer.task, events={server}})
 		<span class="comment">-- a connection was accepted, create a listener task
 </span>		<span class="keyword">if</span> msg==<span class="string">'accepted'</span> <span class="keyword">then</span>
-			sched.sigrun(<span class="keyword">function</span>(_,_, data, err)
-				<span class="global">print</span>(<span class="string">"!T"</span>, data, err <span class="keyword">or</span> <span class="string">''</span>)
-			<span class="keyword">end</span>, {emitter=socketeer.task, events={inskt}})
+			sched.sigrun(
+				{emitter=socketeer.task, events={inskt}},
+				<span class="keyword">function</span>(_,_, data, err)
+					<span class="global">print</span>(<span class="string">"!T"</span>, data, err <span class="keyword">or</span> <span class="string">''</span>)
+				<span class="keyword">end</span>
+			)
 		<span class="keyword">end</span>
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
+
 sched.run(<span class="keyword">function</span>()
 	catalog.register(<span class="string">'TCPSEND'</span>)
 	<span class="keyword">local</span> tcpcli = socket.connect(<span class="string">'127.0.0.1'</span>, <span class="number">8888</span>)

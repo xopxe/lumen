@@ -119,7 +119,7 @@ end
 -- This task is registered in the catalog with the name 'nixiorator'.
 -- @usage local sched = require "sched"
 --local nixiorator = require "nixiorator"
---sched.sigrun(print, {emitter=nixiorator.task, events='*'})
+--sched.sigrun({emitter=nixiorator.task, events='*'}, print)
 M.task = sched.run( function ()
 	catalog.register('nixiorator')
 	while true do
