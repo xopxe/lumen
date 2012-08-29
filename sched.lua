@@ -213,30 +213,29 @@ end
 
 --blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(taskd, waitd)
-	local emitter,  events = waitd.emitter, waitd.events
+	local emitter,  events = waitd.emitter or '*', waitd.events
 	if events=='*' then events={'*'} end
-	--taskd.waitingfor = waitd
 
 	--print('registersignal', task, emitter, timeout, #events)
 	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(taskd), tostring(waitd))
 
-	local function register_emitter(etask)
-		for _, event in ipairs(events) do
-			--print('',':', event)
-			waiting[event]=waiting[event] or setmetatable({}, weak_key)
-			if not waiting[event][etask] then
-				waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
-				waiting_emitter_counter = waiting_emitter_counter +1
+	if events then
+		local function register_emitter(etask)
+			for _, event in ipairs(events) do
+				--print('',':', event)
+				waiting[event]=waiting[event] or setmetatable({}, weak_key)
+				if not waiting[event][etask] then
+					waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
+					waiting_emitter_counter = waiting_emitter_counter +1
+				end
+				waiting[event][etask][taskd]=waitd
 			end
-			waiting[event][etask][taskd]=waitd
+			if waiting_emitter_counter>M.to_clean_up then
+				waiting_emitter_counter = 0
+				clean_up()
+			end
 		end
-		if waiting_emitter_counter>M.to_clean_up then
-			waiting_emitter_counter = 0
-			clean_up()
-		end
-	end
 
-	if events and emitter then
 		if emitter=='*' or emitter.co then
 			--single taskd parameter
 			register_emitter(emitter)
