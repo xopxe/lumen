@@ -707,9 +707,9 @@ M.running_task = false
 -- when sharing a wait descriptor between several tasks, the buffer is
 -- associated to the wait descriptor, and tasks will service buffered signals
 -- on first request basis.
--- @field emitter optional, task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone. I also can be an array of 
--- tasks, in which case any of them is accepted as a source (see @{taskd}).
+-- @field emitter optional, task originating the signal we wait for. If '*' or nil,
+-- means anyone. It also can be an array of  tasks, in which case any of 
+-- them is accepted as a source (see @{taskd}).
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
@@ -721,7 +721,8 @@ M.running_task = false
 -- @field dropped the scheduler will set this to true when dropping events
 -- from the buffer. Can be reset by the user.
 -- @field events optional, array with the events to wait. Can contain a '\*', 
--- or be '\*' instead of a table, to mark interest in any event
+-- or be '\*' instead of a table, to mark interest in any event. If nil, will
+-- only return on timeout. 
 -- @table waitd
 
 ------
