@@ -45,15 +45,16 @@ end
 -- The client socket is automatically registered into nixiorator.
 -- @param skt a nixio server socket
 -- @param block a nixio block mode to use with accepted client sockets
+-- @param backlog The backlog to use on the connection (defaults to 32)
 -- @return the polle structure from nixio
-M.register_server = function (skt, block)
+M.register_server = function (skt, block, backlog)
 	local polle={
 		fd=skt,
 		events=nixio.poll_flags("in"),
 		block=block or 8192,
 		handler=accept
 	}
-	skt:listen(1024)
+	skt:listen(backlog or 32)
 	pollt[#pollt+1]=polle
 	return polle
 end
