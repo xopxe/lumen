@@ -516,6 +516,8 @@ end
 -- returns _nil, 'timeout'_
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
+	assert(M.running_task, 'attempt to wait outside a task')
+
 	--in case passed a non created waitd
 	waitd=M.new_waitd(waitd)
 	
@@ -546,6 +548,7 @@ end
 -- @param timeout time to sleep
 M.sleep = function (timeout)
 --print('to sleep', timeout)
+	assert(M.running_task, 'attempt to sleep outside a task')
 	local sleep_waitd = M.running_task.sleep_waitd
 	sleep_waitd.timeout=timeout
 	M.wait(sleep_waitd)
@@ -554,6 +557,7 @@ end
 
 --- Yields the execution of a task, as in cooperative multitasking.
 M.yield = function ()
+	assert(M.running_task, 'attempt to yield outside a task')
 	return coroutine.yield( M.running_task.co )
 end
 
