@@ -13,13 +13,64 @@ local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type
 
 local weak_key = { __mode = 'k' }
 
-local recvt={}
+local CHUNK_SIZE = 65536
+
+--size paramter for pipe for asynchrous sending
+local ASYNC_SEND_BUFFER=10
+
+local recvt, sendt={}, {}
 
 local sktmode = setmetatable({}, weak_key)
 local isserver = setmetatable({}, weak_key)
 local partial = setmetatable({}, weak_key)
 
 local M = {socket=socket}
+
+
+-- pipe for async writing
+local write_pipes = setmetatable({}, weak_key)
+local outstanding_data = setmetatable({}, weak_key)
+
+local function send_from_pipe (skt)
+	local out_data = outstanding_data[skt]
+	if out_data then 
+		local data, next = out_data.data, out_data.last+1
+		local last, err, lasterr = skt:send(data, next, next+CHUNK_SIZE )
+		if last == #data then
+			-- all the oustanding data sent
+			outstanding_data[skt] = nil
+			return
+		elseif err == 'closed' then 
+			M.unregister(skt)
+			return
+		end
+		outstanding_data[skt].last = last or lasterr
+	else
+		--local pipe = assert(write_pipes[skt] , "socket not registered?")
+		local pipe = write_pipes[skt] ; if not pipe then return end
+		local data = pipe.read()
+		if  data then 
+			local last , err, lasterr = skt:send(data, 1, CHUNK_SIZE)
+			if err == 'closed' then
+				M.unregister(skt)
+				return
+			end
+			last = last or lasterr
+			if last < #data then
+				outstanding_data[skt] = {data=data,last=last}
+			end
+		else	
+			--emptied the outgoing pipe, stop selecting to write
+			for i=1, #sendt do
+				if sendt[i] == skt then
+					table.remove(sendt, i)
+					sendt[skt] = nil
+					break
+				end
+			end
+		end
+	end
+end
 
 --- Registers a TCP server socket with socketeer.
 -- socketeer will signal _skt, 'accepted'_, client when establishing a connection, 
@@ -56,12 +107,24 @@ end
 --- Unregisters a socket from socketeer
 -- @param skt the socket to unregister.
 M.unregister = function (skt)
-	for k, v in ipairs(recvt) do 
-		if skt==v then 
-			table.remove(recvt,k) 
-			return
+	for i=1, #recvt do
+		if recvt[i] == skt then
+			table.remove(recvt, i)
+			break
 		end
 	end
+	if sendt[skt] then
+		for i=1, #sendt do
+			if sendt[i] == skt then
+				table.remove(sendt, i)
+				sendt[skt] = nil
+				break
+			end
+		end
+		write_pipes[skt] = nil
+		outstanding_data[skt] = nil
+	end
+	partial[skt] = nil
 end
 
 --- Performs a single step for socketeer. 
@@ -73,9 +136,12 @@ end
 -- @param timeout Max allowed blocking time.
 M.step = function (timeout)
 	--print('+', timeout)
-	local recvt_ready, _, err = socket.select(recvt, nil, timeout)
+	local recvt_ready, send_ready, err = socket.select(recvt, nil, timeout)
 	--print('-', #recvt_ready, err)
 	if err~='timeout' then
+		for _, skt in ipairs(send_ready) do
+			send_from_pipe(skt)
+		end
 		for _, skt in ipairs(recvt_ready) do
 			local mode = sktmode[skt]
 			if isserver[skt] then 
@@ -117,8 +183,56 @@ M.step = function (timeout)
 	end
 end
 
---- A reference to the LuaSocket library.
-M.socket = socket
+--- A synchronous send for TCP sockets.
+-- This method will block until all data is sent. 
+-- @param skt the socket to send on.
+-- @param data data to send.
+-- @return _true_ on success, or _false_ followed by an error message
+-- and the count of the last succesfully sent byte.
+M.send_sync = function(skt, data)
+	local start, err,done=0,nil
+	repeat
+		start, err=skt:send(data,start+1)
+		done = start==#data 
+	until done or err
+	return done, err, start
+end
+
+--- An asynchronous send for TCP sockets.
+-- When using this method, the control is returned 
+-- immediatelly, while the sending continues in the background.
+-- This is useful when sending big chunks of data (say, hundreds 
+-- of kb or megabytes). 
+-- @param skt the socket to send on.
+-- @param data data to send.
+M.send_async = function (skt, data)
+	--make sure were selecting to write
+	if not sendt[skt] then 
+		sendt[#sendt+1] = skt
+		sendt[skt]=true
+	end
+
+	local pipe = write_pipes[skt] 
+	
+	-- initialize the pipe on first send
+	if not pipe then
+		pipe = sched.pipes.new(skt, ASYNC_SEND_BUFFER, 0)
+		write_pipes[skt]  = pipe
+	end
+
+	pipe.write(data)
+
+	sched.yield()
+end
+
+--- Send data on a TCP socket.
+-- This is an alias for @{send_sync}
+-- @function send
+-- @param skt the socket to send on.
+-- @param data data to send.
+-- @return _true_ on success, or _false_ followed by an error message
+-- and the count of the last succesfully sent byte.
+M.send = M.send_sync
 
 --- The socketeer task.
 -- This task will emit the signals from registered sockets (see @{register_server} and @{register_client}). 
@@ -133,6 +247,13 @@ M.task = sched.run( function ()
 		M.step( t )
 	end
 end)
+
+--- A reference to the LuaSocket library.
+M.socket = socket
+
+-- replace sched's default get_time and idle with luasocket's
+sched.get_time = socket.gettime 
+sched.idle = socket.sleep
 
 return M
 

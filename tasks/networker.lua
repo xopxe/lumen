@@ -145,17 +145,11 @@ M.init = function(conf)
 			sktd.skt:close()
 		end
 		M.send_sync = function(sktd, data)
-			local start, err,done=0,nil
-			repeat
-				start, err=sktd.skt:send(data,start+1)
-				done = start==#data 
-			until done or err
-			return done, err, start
+			socketeer.send_sync(sktd.skt, data)
 		end
 		M.send = M.send_sync
 		M.send_async = function(sktd, data)
-			--TODO
-			sktd.skt:send(data)
+			socketeer.send_async(sktd.skt, data)
 		end
 	else
 		print('networker: unsuported service',conf.service)

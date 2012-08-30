@@ -64,7 +64,7 @@ sched.run(function()
 	sched.sleep(1)
 	local m='890'
 	print("tcp sending",m)
-	assert(tcpcli:send(m))
+	assert(socketeer.send(tcpcli, m))
 	tcpcli:close()
 end)
 --]]
