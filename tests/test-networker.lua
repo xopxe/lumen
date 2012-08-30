@@ -11,16 +11,14 @@ require "strict"
 local sched = require "sched"
 local catalog = require "catalog"
 
---local service='socketeer' 
-local service='nixiorator'
-
+local service='socketeer' 
+--local service='nixiorator'
 
 local networker = require "tasks/networker".init({service=service})
 
+--[[udp
 -- Print out data arriving on a udp socket
-print ('1+')
-local udprecv = networker.new_udp(nil, nil, "127.0.0.1", 8888)
-print ('1-')
+local udprecv = networker.new_udp({locaddr="127.0.0.1", locport=8888})
 sched.sigrun(
 	{emitter=udprecv.task, events={udprecv.events.data}}, 
 	function(_, _, ...) print("!U", ...) end
@@ -28,9 +26,7 @@ sched.sigrun(
 
 -- Send data over an udp socket
 sched.run(function()
-	print ('2+')
-	local udpsend = networker.new_udp("127.0.0.1", 8888)
-	print ('2-')
+	local udpsend = networker.new_udp({address="127.0.0.1", port=8888})
 	while true do
 		local m="ping! "..os.time()
 		print("udp sending",m)
@@ -38,6 +34,29 @@ sched.run(function()
 		sched.sleep(2)
 	end
 end)
+--]]
 
+---[[tcp
+local tcp_server = networker.new_tcp_server({
+	locaddr="127.0.0.1", 
+	locport=8888,
+	pattern='line',
+	handler = function(sktd, data, err)
+		print ('****', sktd, data, err or '')
+	end
+})
+
+local tcp_client = networker.new_tcp_client({address="127.0.0.1", port=8888})
+sched.run(function()
+	--while true do
+	for i=1, 5 do
+		local m="ping! "..os.time()
+		print("tcp sending",m)
+		tcp_client:send(m.."\n")
+		sched.sleep(1)
+	end
+	tcp_client:close()
+end)
+--]]
 
 sched.go()
