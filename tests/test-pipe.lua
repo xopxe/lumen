@@ -23,7 +23,7 @@ sched.run(function()
 	local apipe=pipes.waitfor('apipe')
 	while true do
 		sched.sleep(3)
-		local n = apipe:read()
+		local _, n = apipe:read()
 		print("received", n)
 	end
 end)

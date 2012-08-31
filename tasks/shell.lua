@@ -165,7 +165,7 @@ local function new_shell()
 	shell.task=sched.new_task(function()
 		shell.pipe_out:write(shell.prompt_ready, shell.banner)
 		while true do
-			local command, data = shell.pipe_in:read()
+			local _, command, data = shell.pipe_in:read()
 			if command == 'line' then
 				shell.lines[#shell.lines+1] = data
 				shell:handle_sheellbuffer()
@@ -177,7 +177,7 @@ end
 
 local function print_from_pipe(pipe_out, skt)
 	repeat
-		local prompt, out = pipe_out:read()
+		local _, prompt, out = pipe_out:read()
 		if out then 
 			skt:writeall(tostring(out)..'\r\n')
 		end
