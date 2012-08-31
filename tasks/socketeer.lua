@@ -136,9 +136,9 @@ end
 -- @param timeout Max allowed blocking time.
 M.step = function (timeout)
 	--print('+', timeout)
-	local recvt_ready, send_ready, err = socket.select(recvt, nil, timeout)
+	local recvt_ready, send_ready, err_accept = socket.select(recvt, sendt, timeout)
 	--print('-', #recvt_ready, err)
-	if err~='timeout' then
+	if err_accept~='timeout' then
 		for _, skt in ipairs(send_ready) do
 			send_from_pipe(skt)
 		end
@@ -155,12 +155,12 @@ M.step = function (timeout)
 			else
 				--print('&+', skt, mode, partial[skt])
 				if type(mode) == "number" and mode <= 0 then
-					local data,err,part = skt:receive(65000)
+					local data,err,part = skt:receive(CHUNK_SIZE)
 					--print('&-',data,err,part, #part)
 					if err=='closed' then
 						M.unregister(skt)
 						sched.signal(skt, nil, err, part) --data is nil or part?
-					else
+					elseif data then
 						sched.signal(skt, data)
 					end
 				else
