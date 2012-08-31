@@ -29,48 +29,32 @@ function get_register_event (name)
 	end
 end
 
-local piped_read = function (self)
+--- Read from a pipe.
+-- Will block on a empty pipe. Also accessible as piped:read()
+-- @param piped the the pipe descriptor to read from.
+-- @return  _true,..._ if data is available, _nil,'timeout'_ on timeout
+M.read = function (piped)
 	local function format_signal(emitter, ev, ...)
 		if not emitter then return nil, 'timeout' end
 		return ...
 	end
-	if self.buff_data:len() == self.size-1 then
-		sched.signal(self.pipe_enable_signal)
+	if piped.buff_data:len() == piped.size-1 then
+		sched.signal(piped.pipe_enable_signal)
 	end
-	return format_signal(sched.wait(self.waitd_data))
-end
-
-local piped_write = function (self, ...)
-	if self.buff_data:len() >= self.size then
-		local emitter, _, _ = sched.wait(self.waitd_enable)
-		if not emitter then return nil, 'timeout' end
-	end
-	sched.signal(self.pipe_data_signal, ...) 
-	return true
-end
-
---- Read from a pipe.
--- Will block on a empty pipe. Also accessible as piped:read()
--- @param piped the the pipe descriptor to read from.
--- @return  data if available, nil, 'timeout' on timeout
-M.read = function (piped)
-	--first run is a initialization, replaces functions with proper code
-	piped.read = piped_read
-	piped.write = piped_write
-	sched.signal(piped.pipe_enable_signal)
-	return piped_read(piped)
+	return true, format_signal(sched.wait(piped.waitd_data))
 end
 
 --- Write to a pipe.
 -- Will block when writing to a full pipe. Also accessible as piped:write()
 -- @param piped the the pipe descriptor to write to.
 -- @param ... elements to write to pipe. All params are stored as a single entry.
--- @return true on success, nil, 'timeout' on timeout
+-- @return _true_ on success, _nil,'timeout'_ on timeout
 M.write = function (piped, ...)
-	--blocks on no-readers, replaced in piped.read
-	local emitter, _, _ = sched.wait(piped.waitd_enable)
-	if not emitter then return nil, 'timeout' end
-	sched.signal(piped.pipe_data_signal, ...)
+	if piped.buff_data:len() >= piped.size then
+		local emitter, _, _ = sched.wait(piped.waitd_enable)
+		if not emitter then return nil, 'timeout' end
+	end
+	sched.signal(piped.pipe_data_signal, ...) 
 	return true
 end
 
@@ -88,7 +72,7 @@ end
 -- @param size maximum number of signals in the pipe
 -- @param timeout timeout for blocking on pipe operations. -1 or nil disable
 -- timeout
--- @return a pipe descriptor on success, or nil,'exists' if a pipe
+-- @return a pipe descriptor on success, or _nil,'exists'_ if a pipe
 -- with the given name already exists
 M.new = function(name, size, timeout)
 	if pipes[name] then
@@ -131,7 +115,7 @@ end
 -- Can wait up to timeout until it appears.
 -- @param name of the pipe to get
 -- @param timeout max. time time to wait. -1 or nil disables timeout.
--- @return a pipe descriptor with the given name, or nil, 'timeout' on timeout
+-- @return a pipe descriptor with the given name, or _nil,'timeout'_ on timeout
 M.waitfor = function(name, timeout)
 	local piped = pipes[name]
 	log('PIPES', 'INFO', 'a pipe with name "%s" requested, found %s', tostring(name), tostring(piped))
