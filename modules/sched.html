@@ -758,9 +758,9 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
 
     <h3>Fields:</h3>
     <ul>
-       <li><code><em>emitter</em></code>:  optional, task originating the signal we wait for. If nil, will
- only return on timeout. If '*', means anyone. I also can be an array of 
- tasks, in which case any of them is accepted as a source (see <a href="../modules/sched.html#taskd">taskd</a>).</li>
+       <li><code><em>emitter</em></code>:  optional, task originating the signal we wait for. If '*' or nil,
+ means anyone. It also can be an array of  tasks, in which case any of 
+ them is accepted as a source (see <a href="../modules/sched.html#taskd">taskd</a>).</li>
        <li><code><em>timeout</em></code>:  optional, time to wait. nil or negative waits for ever.</li>
        <li><code><em>buff_len</em></code>:  Maximum length of the buffer. A buffer allows for storing
  signals that arrived while the task is not blocked on the wait descriptor.
@@ -772,7 +772,8 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
        <li><code><em>dropped</em></code>:  the scheduler will set this to true when dropping events
  from the buffer. Can be reset by the user.</li>
        <li><code><em>events</em></code>:  optional, array with the events to wait. Can contain a '*', 
- or be '*' instead of a table, to mark interest in any event</li>
+ or be '*' instead of a table, to mark interest in any event. If nil, will
+ only return on timeout.</li>
     </ul>
 
 

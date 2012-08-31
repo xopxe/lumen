@@ -90,7 +90,7 @@
 	<span class="keyword">local</span> apipe=pipes.waitfor(<span class="string">'apipe'</span>)
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
 		sched.sleep(<span class="number">3</span>)
-		<span class="keyword">local</span> n = apipe:read()
+		<span class="keyword">local</span> _, n = apipe:read()
 		<span class="global">print</span>(<span class="string">"received"</span>, n)
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
