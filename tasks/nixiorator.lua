@@ -45,15 +45,16 @@ end
 -- The client socket is automatically registered into nixiorator.
 -- @param skt a nixio server socket
 -- @param block a nixio block mode to use with accepted client sockets
+-- @param backlog The backlog to use on the connection (defaults to 32)
 -- @return the polle structure from nixio
-M.register_server = function (skt, block)
+M.register_server = function (skt, block, backlog)
 	local polle={
 		fd=skt,
 		events=nixio.poll_flags("in"),
 		block=block or 8192,
 		handler=accept
 	}
-	skt:listen(1024)
+	skt:listen(backlog or 32)
 	pollt[#pollt+1]=polle
 	return polle
 end
@@ -128,26 +129,19 @@ M.task = sched.run( function ()
 	end
 end)
 
---- A idling function.
--- this is valid replacement function for Lumen's sched.idle
-M.idle = function (t)
+--- A reference to the nixio library.
+M.nixio = nixio
+
+-- replace sched's default get_time and idle with nixio's
+sched.get_time = function()
+	local sec, usec = nixio.gettimeofday()
+	return sec + usec/1000000
+end
+sched.idle = function (t)
 	local sec = math.floor(t)
 	local nsec = (t-sec)*1000000000
 	nixio.nanosleep(sec, nsec)
 end
-
---- A reference to the nixio library.
-M.nixio = nixio
-
--- replace sched's default get_time with nixio's
-if sched.get_time == os.time then
-	sched.get_time = function()
-		local sec, usec = nixio.gettimeofday()
-		return sec + usec/1000000
-	end
-end
-sched.idle = M.idle
-
 
 return M
 

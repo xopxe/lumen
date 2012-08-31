@@ -190,7 +190,7 @@ end
 --- Start the server.
 -- @param conf the configuration table. The fields of interest are
 -- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 2012)
-M.start = function(conf)
+M.init = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
 	local port = conf.port or 2012
@@ -220,7 +220,9 @@ M.start = function(conf)
 end
 
 M.stop = function ()
-	sched.kill(M.task)
+	if M.task then
+		sched.kill(M.task)
+	end
 end
 
 --- The environment for the shell.

@@ -213,30 +213,29 @@ end
 
 --blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(taskd, waitd)
-	local emitter,  events = waitd.emitter, waitd.events
+	local emitter,  events = waitd.emitter or '*', waitd.events
 	if events=='*' then events={'*'} end
-	--taskd.waitingfor = waitd
 
 	--print('registersignal', task, emitter, timeout, #events)
 	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(taskd), tostring(waitd))
 
-	local function register_emitter(etask)
-		for _, event in ipairs(events) do
-			--print('',':', event)
-			waiting[event]=waiting[event] or setmetatable({}, weak_key)
-			if not waiting[event][etask] then
-				waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
-				waiting_emitter_counter = waiting_emitter_counter +1
+	if events then
+		local function register_emitter(etask)
+			for _, event in ipairs(events) do
+				--print('',':', event)
+				waiting[event]=waiting[event] or setmetatable({}, weak_key)
+				if not waiting[event][etask] then
+					waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
+					waiting_emitter_counter = waiting_emitter_counter +1
+				end
+				waiting[event][etask][taskd]=waitd
 			end
-			waiting[event][etask][taskd]=waitd
+			if waiting_emitter_counter>M.to_clean_up then
+				waiting_emitter_counter = 0
+				clean_up()
+			end
 		end
-		if waiting_emitter_counter>M.to_clean_up then
-			waiting_emitter_counter = 0
-			clean_up()
-		end
-	end
 
-	if events and emitter then
 		if emitter=='*' or emitter.co then
 			--single taskd parameter
 			register_emitter(emitter)
@@ -517,6 +516,8 @@ end
 -- returns _nil, 'timeout'_
 -- @param waitd a Wait Descriptor for the signal (see @{waitd})
 M.wait = function ( waitd )
+	assert(M.running_task, 'attempt to wait outside a task')
+
 	--in case passed a non created waitd
 	waitd=M.new_waitd(waitd)
 	
@@ -547,6 +548,7 @@ end
 -- @param timeout time to sleep
 M.sleep = function (timeout)
 --print('to sleep', timeout)
+	assert(M.running_task, 'attempt to sleep outside a task')
 	local sleep_waitd = M.running_task.sleep_waitd
 	sleep_waitd.timeout=timeout
 	M.wait(sleep_waitd)
@@ -555,6 +557,7 @@ end
 
 --- Yields the execution of a task, as in cooperative multitasking.
 M.yield = function ()
+	assert(M.running_task, 'attempt to yield outside a task')
 	return coroutine.yield( M.running_task.co )
 end
 
@@ -708,9 +711,9 @@ M.running_task = false
 -- when sharing a wait descriptor between several tasks, the buffer is
 -- associated to the wait descriptor, and tasks will service buffered signals
 -- on first request basis.
--- @field emitter optional, task originating the signal we wait for. If nil, will
--- only return on timeout. If '*', means anyone. I also can be an array of 
--- tasks, in which case any of them is accepted as a source (see @{taskd}).
+-- @field emitter optional, task originating the signal we wait for. If '*' or nil,
+-- means anyone. It also can be an array of  tasks, in which case any of 
+-- them is accepted as a source (see @{taskd}).
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
@@ -722,7 +725,8 @@ M.running_task = false
 -- @field dropped the scheduler will set this to true when dropping events
 -- from the buffer. Can be reset by the user.
 -- @field events optional, array with the events to wait. Can contain a '\*', 
--- or be '\*' instead of a table, to mark interest in any event
+-- or be '\*' instead of a table, to mark interest in any event. If nil, will
+-- only return on timeout. 
 -- @table waitd
 
 ------
