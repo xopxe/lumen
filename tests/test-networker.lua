@@ -16,7 +16,7 @@ local service='socketeer'
 
 local networker = require "tasks/networker".init({service=service})
 
----[[udp
+--[[ udp
 -- Print out data arriving on a udp socket
 local udprecv = networker.new_udp({locaddr="127.0.0.1", locport=8888})
 sched.sigrun(
@@ -36,7 +36,7 @@ sched.run(function()
 end)
 --]]
 
----[[tcp
+--[[ tcp sync
 local tcp_server = networker.new_tcp_server({
 	locaddr="127.0.0.1", 
 	locport=8888,
@@ -58,5 +58,28 @@ sched.run(function()
 	tcp_client:close()
 end)
 --]]
+
+---[[ tcp async
+local tcp_server = networker.new_tcp_server({
+	locaddr="127.0.0.1", 
+	locport=8888,
+	pattern=10000,
+	handler = function(sktd, data, err, part)
+		print ('****', sktd, #(data or ''), #(part or ''), err or '')
+	end
+})
+
+local tcp_client = networker.new_tcp_client({address="127.0.0.1", port=8888})
+sched.run(function()
+	--while true do
+	local s = string.rep('x', 105000)
+	print("tcp sending",#s)
+	tcp_client:send_async(s)
+	print ('tcp sent')
+	sched.sleep(1)
+	tcp_client:close()
+end)
+--]]
+
 
 sched.go()

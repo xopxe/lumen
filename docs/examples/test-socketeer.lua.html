@@ -131,7 +131,7 @@ sched.run(<span class="keyword">function</span>()
 	sched.sleep(<span class="number">1</span>)
 	<span class="keyword">local</span> m=<span class="string">'890'</span>
 	<span class="global">print</span>(<span class="string">"tcp sending"</span>,m)
-	<span class="global">assert</span>(tcpcli:send(m))
+	<span class="global">assert</span>(socketeer.send(tcpcli, m))
 	tcpcli:close()
 <span class="keyword">end</span>)
 <span class="comment">--]]

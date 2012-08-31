@@ -96,15 +96,15 @@
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#send_sync">send_sync&nbsp;(skt, data)</a></td>
-	<td class="summary">A synchronous send.</td>
+	<td class="summary">A synchronous send for TCP sockets.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#send_async">send_async&nbsp;(skt, data)</a></td>
-	<td class="summary">An asynchronous send.</td>
+	<td class="summary">An asynchronous send for TCP sockets.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#send">send&nbsp;(skt, data)</a></td>
-	<td class="summary">Send data on a socket.</td>
+	<td class="summary">Send data on a TCP socket.</td>
 	</tr>
 </table>
 <h2><a href="#Fields">Fields</a></h2>
@@ -219,7 +219,7 @@
     <strong>send_sync&nbsp;(skt, data)</strong>
     </dt>
     <dd>
-    A synchronous send. 
+    A synchronous send for TCP sockets. 
  This method will block until all data is sent. 
 
     <h3>Parameters:</h3>
@@ -231,7 +231,7 @@
 
     <h3>Returns:</h3>
     <ol>
-        <em>true</em> on success, or <em>false</em> followed by an error code
+        <em>true</em> on success, or <em>false</em> followed by an error message
  and the count of the last succesfully sent byte.
     </ol>
 
@@ -242,7 +242,7 @@
     <strong>send_async&nbsp;(skt, data)</strong>
     </dt>
     <dd>
-    An asynchronous send. 
+    An asynchronous send for TCP sockets. 
  When using this method, the control is returned 
  immediatelly, while the sending continues in the background.
  This is useful when sending big chunks of data (say, hundreds 
@@ -263,7 +263,7 @@
     <strong>send&nbsp;(skt, data)</strong>
     </dt>
     <dd>
-    Send data on a socket. 
+    Send data on a TCP socket. 
  This is an alias for <a href="../modules/socketeer.html#send_sync">send_sync</a>
 
     <h3>Parameters:</h3>
@@ -275,7 +275,7 @@
 
     <h3>Returns:</h3>
     <ol>
-        <em>true</em> on success, or <em>false</em> followed by an error code
+        <em>true</em> on success, or <em>false</em> followed by an error message
  and the count of the last succesfully sent byte.
     </ol>
 

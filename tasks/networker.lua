@@ -45,9 +45,9 @@ local build_tcp_accept_task = function (service, skt_table)
 				if skt_table.handler then 
 					sched.sigrun(
 						{emitter=service.task, events={inskt}},
-						function(_,_, data, err)
-							if not data then return end
-							skt_table.handler(sktd, data, err)
+						function(_,_, data, err, part)
+							skt_table.handler(sktd, data, err, part)
+							if not data then sched.running_task:kill() end
 						end
 					)
 				end

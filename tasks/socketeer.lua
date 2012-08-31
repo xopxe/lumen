@@ -4,9 +4,10 @@
 -- @usage local socketeer = require 'socketeer'
 -- @alias M
 
-local socket = require("socket")
-local sched = require("sched")
-local catalog = require "catalog"
+local socket = require 'socket'
+local sched = require 'sched'
+local catalog = require 'catalog'
+local pipes = require 'pipes'
 
 --get locals for some useful things
 local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type 
@@ -33,6 +34,7 @@ local outstanding_data = setmetatable({}, weak_key)
 
 local function send_from_pipe (skt)
 	local out_data = outstanding_data[skt]
+	--print ('outdata', skt, out_data)
 	if out_data then 
 		local data, next = out_data.data, out_data.last+1
 		local last, err, lasterr = skt:send(data, next, next+CHUNK_SIZE )
@@ -46,10 +48,12 @@ local function send_from_pipe (skt)
 		end
 		outstanding_data[skt].last = last or lasterr
 	else
-		--local pipe = assert(write_pipes[skt] , "socket not registered?")
-		local pipe = write_pipes[skt] ; if not pipe then return end
-		local data = pipe.read()
-		if  data then 
+		--local piped = assert(write_pipes[skt] , "socket not registered?")
+		local piped = write_pipes[skt] ; if not piped then return end
+		--print ('piped', piped)
+		local _, data, err = piped:read()
+		if data then 
+			--print ('data', #data)
 			local last , err, lasterr = skt:send(data, 1, CHUNK_SIZE)
 			if err == 'closed' then
 				M.unregister(skt)
@@ -59,7 +63,8 @@ local function send_from_pipe (skt)
 			if last < #data then
 				outstanding_data[skt] = {data=data,last=last}
 			end
-		else	
+		else
+			--print ('pipeempty!', err)
 			--emptied the outgoing pipe, stop selecting to write
 			for i=1, #sendt do
 				if sendt[i] == skt then
@@ -135,11 +140,11 @@ end
 -- (see @{register_server} and @{register_client}).
 -- @param timeout Max allowed blocking time.
 M.step = function (timeout)
-	--print('+', timeout)
-	local recvt_ready, send_ready, err_accept = socket.select(recvt, sendt, timeout)
-	--print('-', #recvt_ready, err)
+	--print('+', #recvt, #sendt, timeout)
+	local recvt_ready, sendt_ready, err_accept = socket.select(recvt, sendt, timeout)
+	--print('-', #recvt_ready, #sendt_ready, err_accept or '')
 	if err_accept~='timeout' then
-		for _, skt in ipairs(send_ready) do
+		for _, skt in ipairs(sendt_ready) do
 			send_from_pipe(skt)
 		end
 		for _, skt in ipairs(recvt_ready) do
@@ -212,15 +217,16 @@ M.send_async = function (skt, data)
 		sendt[skt]=true
 	end
 
-	local pipe = write_pipes[skt] 
+	local piped = write_pipes[skt] 
 	
 	-- initialize the pipe on first send
-	if not pipe then
-		pipe = sched.pipes.new(skt, ASYNC_SEND_BUFFER, 0)
-		write_pipes[skt]  = pipe
+	if not piped then
+		piped = pipes.new(skt, ASYNC_SEND_BUFFER, 0)
+		write_pipes[skt] = piped
 	end
 
-	pipe.write(data)
+	--print ('writepipe', piped, #data)
+	piped:write(data)
 
 	sched.yield()
 end
