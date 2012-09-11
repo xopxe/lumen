@@ -10,14 +10,14 @@ require "strict"
 
 local sched = require "sched"
 
-local service='socketeer' 
---local service='nixiorator'
+local service='luasocket'
+--local service='nixio'
 
-local networker = require "tasks/networker".init({service=service})
+local selector = require "tasks/selector".init({service=service})
 
---[[ udp
+---[[ udp
 -- Print out data arriving on a udp socket
-local udprecv = networker.new_udp({locaddr="127.0.0.1", locport=8888})
+local udprecv = selector.new_udp({locaddr="127.0.0.1", locport=8888})
 sched.sigrun(
 	{emitter=udprecv.task, events={udprecv.events.data}}, 
 	function(_, _, ...) print("!U", ...) end
@@ -25,7 +25,7 @@ sched.sigrun(
 
 -- Send data over an udp socket
 sched.run(function()
-	local udpsend = networker.new_udp({address="127.0.0.1", port=8888})
+	local udpsend = selector.new_udp({address="127.0.0.1", port=8888})
 	while true do
 		local m="ping! "..os.time()
 		print("udp sending",m)
@@ -35,31 +35,31 @@ sched.run(function()
 end)
 --]]
 
---[[ tcp sync
-local tcp_server = networker.new_tcp_server({
+---[[ tcp sync
+local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
 	locport=8888,
 	pattern='line',
 	handler = function(sktd, data, err)
-		print ('****', sktd, data, err or '')
+		print ('!T', data, err or '')
 	end
 })
 
-local tcp_client = networker.new_tcp_client({address="127.0.0.1", port=8888})
+local tcp_client = selector.new_tcp_client({address="127.0.0.1", port=8888})
 sched.run(function()
 	--while true do
 	for i=1, 15 do
 		local m="ping! "..os.time()
 		print("tcp sending",m)
 		tcp_client:send(m.."\n")
-		sched.sleep(0.1)
+		sched.sleep(2.1)
 	end
 	tcp_client:close()
 end)
 --]]
 
----[[ tcp async
-local tcp_server = networker.new_tcp_server({
+--[[ tcp async
+local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
 	locport=8888,
 	pattern=10000,
@@ -68,7 +68,7 @@ local tcp_server = networker.new_tcp_server({
 	end
 })
 
-local tcp_client = networker.new_tcp_client({address="127.0.0.1", port=8888})
+local tcp_client = selector.new_tcp_client({address="127.0.0.1", port=8888})
 sched.run(function()
 	--while true do
 	local s = string.rep('x', 105000)
