@@ -9,7 +9,6 @@ package.path = package.path .. ";;;../?.lua"
 require "strict"
 
 local sched = require "sched"
-local catalog = require "catalog"
 
 local service='socketeer' 
 --local service='nixiorator'

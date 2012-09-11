@@ -68,30 +68,42 @@
 
 <h1>Module <code>catalog</code></h1>
 
-<p>Task catalog operations.</p>
-<p> The catalog is used to give tasks names, and then query them.</p>
+<p>A general purpose Catalog.</p>
+<p> The catalog is used to give tasks well known names for sharing purposes. 
+ It also allows synchronization, by blocking the requester until the object
+ is made available. Catalogs themselves are made available under a Well Known
+ name. Typical catalogs are "tasks", "mutexes" and "pipes".
+ The catalog does not check for multiple names per object.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local catalog = require 'catalog'</pre>
+        <pre class="example">local tasks = require 'catalog'.get_catalog('tasks')
+...
+tasks:register('a task', sched.running_task)
+...
+local a_task=tasks:waitfor('a task')</pre>
     </ul>
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#register">register&nbsp;(name)</a></td>
-	<td class="summary">Register a name for the current task</td>
+	<td class="name" nowrap><a href="#register">register&nbsp;(catalogd, name, object)</a></td>
+	<td class="summary">Register a name to a object</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#waitfor">waitfor&nbsp;(name, timeout)</a></td>
-	<td class="summary">Find task with a given name.</td>
+	<td class="name" nowrap><a href="#waitfor">waitfor&nbsp;(catalogd, name, timeout)</a></td>
+	<td class="summary">Retrieve a object with a given name.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#namefor">namefor&nbsp;(taskd)</a></td>
-	<td class="summary">Find the name of a given task.</td>
+	<td class="name" nowrap><a href="#namefor">namefor&nbsp;(catalogd, object)</a></td>
+	<td class="summary">Find the name of a given object.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#iterator">iterator&nbsp;()</a></td>
-	<td class="summary">Iterator for registered tasks.</td>
+	<td class="name" nowrap><a href="#get_catalog">get_catalog&nbsp;(name)</a></td>
+	<td class="summary">Retrieve a catalog.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#iterator">iterator&nbsp;(catalogd)</a></td>
+	<td class="summary">Iterator for registered objects.</td>
 	</tr>
 </table>
 
@@ -104,77 +116,104 @@
     <dl class="function">
     <dt>
     <a name = "register"></a>
-    <strong>register&nbsp;(name)</strong>
+    <strong>register&nbsp;(catalogd, name, object)</strong>
     </dt>
     <dd>
-    Register a name for the current task 
+    Register a name to a object 
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>name</em></code>:  a name for the task</li>
+       <li><code><em>catalogd</em></code>:  the catalog to use.</li>
+       <li><code><em>name</em></code>:  a name for the object</li>
+       <li><code><em>object</em></code>:  the object to name.</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        true is successful; nil, 'used' if the name is already used by another task.
+        true is successful; nil, 'used' if the name is already used by another object.
     </ol>
 
 
 </dd>
     <dt>
     <a name = "waitfor"></a>
-    <strong>waitfor&nbsp;(name, timeout)</strong>
+    <strong>waitfor&nbsp;(catalogd, name, timeout)</strong>
     </dt>
     <dd>
-    Find task with a given name. 
+    Retrieve a object with a given name. 
  Can wait up to timeout until it appears.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>name</em></code>:  name of the task</li>
+       <li><code><em>catalogd</em></code>:  the catalog to use.</li>
+       <li><code><em>name</em></code>:  name of the object</li>
        <li><code><em>timeout</em></code>:  time to wait. nil or negative waits for ever.</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        the task if successful; on timeout expiration returns nil, 'timeout'.
+        the object if successful; on timeout expiration returns nil, 'timeout'.
     </ol>
 
 
 </dd>
     <dt>
     <a name = "namefor"></a>
-    <strong>namefor&nbsp;(taskd)</strong>
+    <strong>namefor&nbsp;(catalogd, object)</strong>
     </dt>
     <dd>
-    Find the name of a given task. 
+    Find the name of a given object. 
+ This does a linear search trough the catalog.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>taskd</em></code>:  task to lookup.</li>
+       <li><code><em>catalogd</em></code>:  the catalog to use.</li>
+       <li><code><em>object</em></code>:  the object to lookup.</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        the name if successful; If the task has not been given a name, returns nil.
+        the object if successful; If the object has not been given a name, returns nil.
     </ol>
 
 
 </dd>
     <dt>
-    <a name = "iterator"></a>
-    <strong>iterator&nbsp;()</strong>
+    <a name = "get_catalog"></a>
+    <strong>get_catalog&nbsp;(name)</strong>
     </dt>
     <dd>
-    Iterator for registered tasks. 
+    Retrieve a catalog. 
+ Catalogs are created on demand
 
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>name</em></code>:  the name of the catalog.</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "iterator"></a>
+    <strong>iterator&nbsp;(catalogd)</strong>
+    </dt>
+    <dd>
+    Iterator for registered objects. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>catalogd</em></code>:  the catalog to use.</li>
+    </ul>
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">for name, task in catalog.iterator() do
+        <pre class="example">local tasks = require 'catalog'.get_catalog('tasks')
+for name, task in tasks:iterator() do
 	print(name, task)
 end</pre>
     </ul>

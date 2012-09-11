@@ -6,7 +6,6 @@
 
 local nixio = require("nixio")
 local sched = require("sched")
-local catalog = require "catalog"
 require ("nixio.util")
 local pollt={}
 
@@ -122,7 +121,7 @@ end
 --local nixiorator = require "nixiorator"
 --sched.sigrun({emitter=nixiorator.task, events='*'}, print)
 M.task = sched.run( function ()
-	catalog.register('nixiorator')
+	require 'catalog'.get_catalog('tasks'):register('nixiorator', sched.running_task)
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )

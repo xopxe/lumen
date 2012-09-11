@@ -73,13 +73,13 @@
 </span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
 
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
-<span class="keyword">local</span> catalog = <span class="global">require</span> <span class="string">'catalog'</span>
+<span class="keyword">local</span> tasks = <span class="global">require</span> <span class="string">'catalog'</span>.get_catalog(<span class="string">'tasks'</span>)
 <span class="global">require</span> <span class="string">"log"</span>.setlevel(<span class="string">'NONE'</span>)
 
 sched.run(<span class="keyword">function</span>()
-	catalog.register(<span class="string">'main'</span>)
+	tasks:register(<span class="string">'main'</span>, sched.running_task)
 	<span class="keyword">local</span> A=sched.run(<span class="keyword">function</span>()
-		catalog.register(<span class="string">'A'</span>)
+		tasks:register(<span class="string">'A'</span>, sched.running_task)
 		<span class="global">print</span>(<span class="string">"A says: going to sleep couple seconds"</span>)
 		sched.sleep(<span class="number">2</span>)
 		<span class="global">print</span>(<span class="string">"A says: emittig 'ev, data!'"</span>)
@@ -87,8 +87,8 @@ sched.run(<span class="keyword">function</span>()
 		<span class="global">print</span>(<span class="string">"A says: finishing"</span>)
 	<span class="keyword">end</span>)
 	<span class="keyword">local</span> B=sched.run(<span class="keyword">function</span>()
-		catalog.register(<span class="string">'B'</span>)
-		<span class="keyword">local</span> A = catalog.waitfor(<span class="string">'A'</span>)
+		tasks:register(<span class="string">'B'</span>, sched.running_task)
+		<span class="keyword">local</span> A = tasks:waitfor(<span class="string">'A'</span>)
 		<span class="global">print</span> (<span class="string">"B says: A found at"</span>, A)
 		<span class="global">print</span> (<span class="string">"B says: waiting for a 'die' from A"</span>)
 		<span class="keyword">local</span> _, _, status = sched.wait({emitter=A, events={sched.EVENT_DIE}})

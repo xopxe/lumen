@@ -17,7 +17,6 @@
 local log=require 'log'
 
 local sched = require 'sched'
-local catalog = require 'catalog'
 local nixiorator = require 'tasks/nixiorator'
 local pipes = require 'pipes'
 local nixio = require 'nixio'
@@ -133,8 +132,8 @@ local function new_shell()
 		banner = 'Welcome to Toribio Shell',
 		env={},
 		lines = {},
-		pipe_in = pipes.new({}, 100),
-		pipe_out = pipes.new({}, 100),
+		pipe_in = pipes.new(100),
+		pipe_out = pipes.new(100),
 		handle_sheellbuffer = handle_sheellbuffer
 	}
 	for k, v in pairs (M.shell_env) do shell.env[k] = v end

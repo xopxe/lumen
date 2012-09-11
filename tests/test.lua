@@ -6,13 +6,13 @@
 package.path = package.path .. ";;;../?.lua"
 
 local sched = require "sched"
-local catalog = require 'catalog'
+local tasks = require 'catalog'.get_catalog('tasks')
 require "log".setlevel('NONE')
 
 sched.run(function()
-	catalog.register('main')
+	tasks:register('main', sched.running_task)
 	local A=sched.run(function()
-		catalog.register('A')
+		tasks:register('A', sched.running_task)
 		print("A says: going to sleep couple seconds")
 		sched.sleep(2)
 		print("A says: emittig 'ev, data!'")
@@ -20,8 +20,8 @@ sched.run(function()
 		print("A says: finishing")
 	end)
 	local B=sched.run(function()
-		catalog.register('B')
-		local A = catalog.waitfor('A')
+		tasks:register('B', sched.running_task)
+		local A = tasks:waitfor('A')
 		print ("B says: A found at", A)
 		print ("B says: waiting for a 'die' from A")
 		local _, _, status = sched.wait({emitter=A, events={sched.EVENT_DIE}})

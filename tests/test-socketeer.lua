@@ -7,7 +7,6 @@ package.path = package.path .. ";;;../?.lua"
 require "strict"
 
 local sched = require "sched"
-local catalog = require "catalog"
 local socketeer = require "tasks/socketeer"
 local socket = socketeer.socket
 
@@ -37,7 +36,6 @@ end)
 --tcp
 ---[[
 sched.run(function()
-	catalog.register('TCPLISTEN')
 	local server = assert(socket.bind('127.0.0.1', 8888))
 	socketeer.register_server(server, 3)-- -1)
 	while true do
@@ -55,7 +53,6 @@ sched.run(function()
 end)
 
 sched.run(function()
-	catalog.register('TCPSEND')
 	local tcpcli = socket.connect('127.0.0.1', 8888)
 	sched.sleep(1)
 	local m='1234567'

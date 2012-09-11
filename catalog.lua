@@ -1,64 +1,75 @@
---- Task catalog operations.
--- The catalog is used to give tasks names, and then query them.
+--- A general purpose Catalog.
+-- The catalog is used to give tasks well known names for sharing purposes. 
+-- It also allows synchronization, by blocking the requester until the object
+-- is made available. Catalogs themselves are made available under a Well Known
+-- name. Typical catalogs are "tasks", "mutexes" and "pipes".
+-- The catalog does not check for multiple names per object.
 -- @module catalog
--- @usage local catalog = require 'catalog'
+-- @usage local tasks = require 'catalog'.get_catalog('tasks')
+--...
+--tasks:register('a task', sched.running_task)
+--...
+--local a_task=tasks:waitfor('a task')
 -- @alias M
 
 local sched = require 'sched'
 local log=require 'log'
 
 --get locals for some useful things
-local next,  setmetatable, tostring
-	= next,  setmetatable, tostring
+local next,  setmetatable, tostring, getmetatable
+	= next,  setmetatable, tostring, getmetatable
 
 local M = {}
 
---register of names for tasks
---tasknames[co]=name
-local tasknames = setmetatable({}, { __mode = 'v' })
-local namestask = setmetatable({}, { __mode = 'kv' })
+local catalogs = {}
 
 local register_events = setmetatable({}, {__mode = "kv"}) 
-function get_register_event (name)
-	if register_events[name] then return register_events[name]
+function get_register_event (catalogd, name)
+	if register_events[catalogd] and register_events[catalogd][name] then 
+		return register_events[catalogd][name]
 	else
-		local register_event = setmetatable({},
-			{__tostring=function() return 'signal: register$'..tostring(name) end,})
-		register_events[name] = register_event
+		local register_event = setmetatable({}, {
+			__tostring=function() return 'signal: register$'..tostring(getmetatable(catalogd).name)..'/'..tostring(name) end,
+		})
+		register_events[catalogd] = register_events[catalogd] or {}
+		register_events[catalogd][name] = register_event
 		return register_event
 	end
 end
 
---- Register a name for the current task
--- @param name a name for the task
--- @return true is successful; nil, 'used' if the name is already used by another task.
-M.register = function ( name )
-	local running_task = sched.running_task
-	if tasknames[name] and tasknames[name] ~= running_task then
+--- Register a name to a object
+-- @param catalogd the catalog to use.
+-- @param name a name for the object
+-- @param object the object to name.
+-- @return true is successful; nil, 'used' if the name is already used by another object.
+M.register = function ( catalogd, name, object )
+	if catalogd[name] and catalogd[name] ~= object then
 		return nil, 'used'
 	end
-	local new_name = 'task: '..tostring(name)
-	log('CATALOG', 'INFO', '%s registered in catalog as "%s", and renamed to %s', 
-		tostring(running_task), tostring(name), new_name)
-	getmetatable(running_task).__tostring = function() return new_name end
-	tasknames[name] = running_task
-	namestask[running_task] = name
-	sched.signal(get_register_event (name))
+	log('CATALOG', 'INFO', '%s registered in catalog %s as "%s"', 
+		tostring(object), tostring(name), tostring(catalogd))
+	catalogd[name] = object
+	sched.signal(get_register_event(catalogd, name))
 	return true
 end
 
---- Find task with a given name.
+--- Retrieve a object with a given name.
 -- Can wait up to timeout until it appears.
--- @param name name of the task
+-- @param catalogd the catalog to use.
+-- @param name name of the object
 -- @param timeout time to wait. nil or negative waits for ever.
--- @return the task if successful; on timeout expiration returns nil, 'timeout'.
-M.waitfor = function ( name, timeout )
-	local taskd = tasknames[name]
+-- @return the object if successful; on timeout expiration returns nil, 'timeout'.
+M.waitfor = function ( catalogd, name, timeout )
+	local taskd = catalogd[name]
 	log('CATALOG', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(taskd))
 	if taskd then
 		return taskd
 	else
-		local emitter, event = sched.wait({emitter='*', timeout=timeout, events={get_register_event (name)}})
+		local emitter, event = sched.wait({
+			emitter='*', 
+			timeout=timeout, 
+			events={get_register_event(catalogd, name)}
+		})
 		if event then
 			return emitter
 		else
@@ -67,20 +78,40 @@ M.waitfor = function ( name, timeout )
 	end
 end
 
---- Find the name of a given task.
--- @param taskd task to lookup.
--- @return the name if successful; If the task has not been given a name, returns nil.
-M.namefor = function ( taskd )
-	return namestask[taskd]
+--- Find the name of a given object.
+-- This does a linear search trough the catalog.
+-- @param catalogd the catalog to use.
+-- @param object the object to lookup.
+-- @return the object if successful; If the object has not been given a name, returns nil.
+M.namefor = function ( catalogd, object )
+	for k, v in pairs(catalogd) do 
+		if v==object then return k end
+	end
 end
 
---- Iterator for registered tasks.
+--- Retrieve a catalog.
+-- Catalogs are created on demand
+-- @param name the name of the catalog.
+M.get_catalog = function (name)
+	if catalogs[name] then 
+		return catalogs[name] 
+	else
+		local catalogd = setmetatable({}, { __mode = 'kv', __index=M})
+		catalogs[name] = catalogd
+		return catalogd
+	end
+end
+
+
+--- Iterator for registered objects.
+-- @param catalogd the catalog to use.
 -- @return iterator
--- @usage for name, task in catalog.iterator() do
+-- @usage local tasks = require 'catalog'.get_catalog('tasks')
+--for name, task in tasks:iterator() do
 --	print(name, task)
 --end
-M.iterator = function ()
-	return function (_, v) return next(tasknames, v) end
+M.iterator = function (catalogd)
+	return function (_, v) return next(catalogd, v) end
 end
 
 return M

@@ -6,7 +6,6 @@
 
 local socket = require 'socket'
 local sched = require 'sched'
-local catalog = require 'catalog'
 local pipes = require 'pipes'
 
 --get locals for some useful things
@@ -221,7 +220,7 @@ M.send_async = function (skt, data)
 	
 	-- initialize the pipe on first send
 	if not piped then
-		piped = pipes.new(skt, ASYNC_SEND_BUFFER, 0)
+		piped = pipes.new(ASYNC_SEND_BUFFER, 0)
 		write_pipes[skt] = piped
 	end
 
@@ -247,7 +246,7 @@ M.send = M.send_sync
 --local socketeer = require 'socketeer'
 --sched.sigrun({emitter=socketeer.task, events='*'}, print)
 M.task = sched.run( function ()
-	catalog.register('socketeer')
+	require 'catalog'.get_catalog('tasks'):register('socketeer', sched.running_task)
 	while true do
 		local t, _ = sched.yield()
 		M.step( t )

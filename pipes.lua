@@ -19,16 +19,6 @@ local M = {}
 --register of pipes
 local pipes =  setmetatable({}, { __mode = 'kv' })
 
-local register_events = setmetatable({}, {__mode = "kv"}) 
-function get_register_event (name)
-	if register_events[name] then return register_events[name]
-	else
-		local register_event = {}
-		register_events[name] = register_event
-		return register_event
-	end
-end
-
 --- Read from a pipe.
 -- Will block on a empty pipe. Also accessible as piped:read()
 -- @param piped the the pipe descriptor to read from.
@@ -68,18 +58,17 @@ end
 
 
 --- Create a new pipe.
--- @param name a name for the pipe
 -- @param size maximum number of signals in the pipe
 -- @param timeout timeout for blocking on pipe operations. -1 or nil disable
 -- timeout
 -- @return a pipe descriptor on success, or _nil,'exists'_ if a pipe
 -- with the given name already exists
-M.new = function(name, size, timeout)
-	if pipes[name] then
-		return nil, 'exists'
-	end
-	log('PIPES', 'INFO', 'pipe with name "%s" created', tostring(name))
-	local piped = setmetatable({}, {__tostring=function() return 'pipe: '..tostring(name) end})
+local n_pipes=0
+M.new = function(size, timeout)
+	n_pipes=n_pipes+1
+	local pipename = 'pipe: #'..tostring(n_pipes)
+	local piped = setmetatable({}, {__tostring=function() return pipename end})
+	log('PIPES', 'INFO', 'pipe with name "%s" created', tostring(pipename))
 	piped.size=size
 	piped.pipe_enable_signal = {} --singleton event for pipe control
 	piped.pipe_data_signal = {} --singleton event for pipe data
@@ -104,31 +93,7 @@ M.new = function(name, size, timeout)
 	piped.write = M.write
 	piped.len=M.len
 	
-	pipes[name]=piped
-	--sched.wait_feed(piped.waitd_data)
-	sched.signal(get_register_event (name), piped)
-	--emit_signal(PIPES_EV, name, 'created', piped)
 	return piped
-end
-
---- Look for a pipe with the given name.
--- Can wait up to timeout until it appears.
--- @param name of the pipe to get
--- @param timeout max. time time to wait. -1 or nil disables timeout.
--- @return a pipe descriptor with the given name, or _nil,'timeout'_ on timeout
-M.waitfor = function(name, timeout)
-	local piped = pipes[name]
-	log('PIPES', 'INFO', 'a pipe with name "%s" requested, found %s', tostring(name), tostring(piped))
-	if piped then
-		return piped
-	else
-		local _, event, received_piped= sched.wait({emitter='*', timeout=timeout, events={get_register_event (name)}})
-		if event == 'created' then
-			return received_piped
-		else
-			return nil, 'timeout'
-		end
-	end
 end
 
 --- Iterator for all pipes.

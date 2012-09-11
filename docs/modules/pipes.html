@@ -33,6 +33,7 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
+<li><a href="#Fields">Fields</a></li>
 </ul>
 
 
@@ -91,16 +92,15 @@
 	<td class="summary">Number of entries in a pipe.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new">new&nbsp;(name, size, timeout)</a></td>
-	<td class="summary">Create a new pipe.</td>
-	</tr>
-	<tr>
-	<td class="name" nowrap><a href="#waitfor">waitfor&nbsp;(name, timeout)</a></td>
-	<td class="summary">Look for a pipe with the given name.</td>
-	</tr>
-	<tr>
 	<td class="name" nowrap><a href="#iterator">iterator&nbsp;()</a></td>
 	<td class="summary">Iterator for all pipes.</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#n_pipes">n_pipes</a></td>
+	<td class="summary">Create a new pipe.</td>
 	</tr>
 </table>
 
@@ -176,52 +176,6 @@
 
 </dd>
     <dt>
-    <a name = "new"></a>
-    <strong>new&nbsp;(name, size, timeout)</strong>
-    </dt>
-    <dd>
-    Create a new pipe. 
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>name</em></code>:  a name for the pipe</li>
-       <li><code><em>size</em></code>:  maximum number of signals in the pipe</li>
-       <li><code><em>timeout</em></code>:  timeout for blocking on pipe operations. -1 or nil disable
- timeout</li>
-    </ul>
-
-
-    <h3>Returns:</h3>
-    <ol>
-        a pipe descriptor on success, or <em>nil,'exists'</em> if a pipe
- with the given name already exists
-    </ol>
-
-
-</dd>
-    <dt>
-    <a name = "waitfor"></a>
-    <strong>waitfor&nbsp;(name, timeout)</strong>
-    </dt>
-    <dd>
-    Look for a pipe with the given name. 
- Can wait up to timeout until it appears.
-
-    <h3>Parameters:</h3>
-    <ul>
-       <li><code><em>name</em></code>:  of the pipe to get</li>
-       <li><code><em>timeout</em></code>:  max. time time to wait. -1 or nil disables timeout.</li>
-    </ul>
-
-
-    <h3>Returns:</h3>
-    <ol>
-        a pipe descriptor with the given name, or <em>nil,'timeout'</em> on timeout
-    </ol>
-
-
-</dd>
-    <dt>
     <a name = "iterator"></a>
     <strong>iterator&nbsp;()</strong>
     </dt>
@@ -240,6 +194,22 @@ end</pre>
     <ol>
         iterator
     </ol>
+
+
+</dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "n_pipes"></a>
+    <strong>n_pipes</strong>
+    </dt>
+    <dd>
+    Create a new pipe. 
+
+
+
 
 
 </dd>

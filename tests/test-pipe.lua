@@ -7,10 +7,12 @@ package.path = package.path .. ";;;../?.lua"
 local sched=require 'sched'
 --require "log".setlevel('ALL')
 local pipes=require 'pipes'
+local catalog_pipes = require 'catalog'.get_catalog('pipes')
 
 -- sender --
 sched.run(function()
-	local apipe=pipes.new('apipe', 3)
+	local apipe=pipes.new(3)
+	catalog_pipes:register('apipe', apipe)
 	for i=1, 10 do
 		print('writing', i )
 		apipe:write(i)
@@ -20,7 +22,7 @@ end)
 
 --receiver
 sched.run(function()
-	local apipe=pipes.waitfor('apipe')
+	local apipe=catalog_pipes:waitfor('apipe')
 	while true do
 		sched.sleep(3)
 		local _, n = apipe:read()

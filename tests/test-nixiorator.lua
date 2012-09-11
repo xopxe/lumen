@@ -9,7 +9,6 @@ package.path = package.path .. ";;;../?.lua"
 require "strict"
 
 local sched = require "sched"
-local catalog = require "catalog"
 local nixiorator = require "tasks/nixiorator"
 local nixio = nixiorator.nixio
 
@@ -33,7 +32,6 @@ sched.sigrun(
 sched.run(function()
 	local tcprecv = assert(nixio.bind("127.0.0.1", 8888, 'inet', 'stream'))
 	nixiorator.register_server(tcprecv, 'line')
-	catalog.register("accepter")
 	local waitd={emitter=nixiorator.task, events={tcprecv}}
 	while true do
 		local _,skt, msg, inskt  = sched.wait(waitd)
@@ -52,7 +50,6 @@ end)
 
 -- Send data over a tcp socket
 sched.run(function()
-	catalog.waitfor('accepter')
 	local tcpsend = assert(nixio.bind("127.0.0.1", 0, 'inet', 'stream'))
 	tcpsend:connect("127.0.0.1",8888)
 	while true do

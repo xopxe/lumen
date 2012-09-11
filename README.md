@@ -55,7 +55,7 @@ Tasks can emit signals, and block waiting for them, and that's it.
 
 ## Pipes
 
-There are also named pipes, for intertask communications. 
+There are also pipes, for intertask communications. 
 
 - Similar to signals, but writers can get blocked too (when pipe gets full).
 - Synchronous and asynchronous (with a timeout) modes supported.
