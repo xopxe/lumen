@@ -9,6 +9,8 @@ local nixio = require 'nixio'
 --local nixiorator = require 'tasks/nixiorator'
 require 'nixio.util'
 
+local floor = math.floor
+
 local M = {}
 
 -------------------
@@ -18,7 +20,7 @@ sched.get_time = function()
 	return sec + usec/1000000
 end
 sched.idle = function (t)
-	local sec = math.floor(t)
+	local sec = floor(t)
 	local nsec = (t-sec)*1000000000
 	nixio.nanosleep(sec, nsec)
 end
@@ -82,7 +84,7 @@ local register_server = function (skt, block, backlog)
 end
 local step = function (timeout)
 	timeout=timeout or -1
-	local stat= nixio.poll(pollt, timeout*1000)
+	local stat= nixio.poll(pollt, floor(timeout*1000))
 	if stat and tonumber(stat) > 0 then
 		for _, polle in ipairs(pollt) do
 			if polle.revents and polle.revents ~= 0 then

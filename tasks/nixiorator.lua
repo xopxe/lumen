@@ -10,7 +10,8 @@ require ("nixio.util")
 local pollt={}
 
 --get locals for some useful things
-local math, ipairs, table = math, ipairs, table
+local ipairs, table = ipairs, table
+local floor = math.floor
 
 local M = {}
 
@@ -103,7 +104,7 @@ end
 -- @param timeout Max allowed blocking time.
 M.step = function (timeout)
 	timeout=timeout or -1
-	local stat= nixio.poll(pollt, timeout*1000)
+	local stat= nixio.poll(pollt, floor(timeout*1000))
 	if stat and tonumber(stat) > 0 then
 		for _, polle in ipairs(pollt) do
 			if polle.revents and polle.revents ~= 0 then
@@ -137,7 +138,7 @@ sched.get_time = function()
 	return sec + usec/1000000
 end
 sched.idle = function (t)
-	local sec = math.floor(t)
+	local sec = floor(t)
 	local nsec = (t-sec)*1000000000
 	nixio.nanosleep(sec, nsec)
 end
