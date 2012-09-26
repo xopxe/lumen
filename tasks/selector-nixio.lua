@@ -11,6 +11,9 @@ require 'nixio.util'
 
 local floor = math.floor
 
+local CHUNK_SIZE = 65536 --8192
+local EAGAIN_WAIT = 0.001
+
 local M = {}
 
 -------------------
@@ -50,6 +53,7 @@ local function client(polle)
 	end
 end
 local register_client = function (fd, block)
+	print ('BLOCKc', block)
 	local polle={
 		fd=fd,
 		events=nixio.poll_flags("in", "pri"),
@@ -57,14 +61,18 @@ local register_client = function (fd, block)
 		handler=client
 	}
 	if polle.block=='line' then
+		print ('PATTERN LINE')
 		polle.it=fd:linesource()
 	else
+		print ('PATTERN BLOCK', polle.block)
 		polle.it=fd:blocksource(polle.block)
 	end
+	fd:setblocking(false)
 	pollt[#pollt+1]=polle
 	return polle
 end
 local function accept(polle)
+	print ('ACCEPTING')
 	local skt, host, port = polle.fd:accept()
 	skt:setblocking(true)
 
@@ -72,6 +80,7 @@ local function accept(polle)
 	sched.signal(polle.fd, 'accepted', skt)
 end
 local register_server = function (skt, block, backlog)
+	print ('BLOCKs', block)
 	local polle={
 		fd=skt,
 		events=nixio.poll_flags("in"),
@@ -195,7 +204,24 @@ M.init = function(conf)
 	M.send = M.send_sync
 	M.send_async = function(sktd, data)
 		--TODO
-		sktd.skt:writeall(data)
+		--sktd.skt:writeall(data)
+		sched.run(function()
+			local skt, block=sktd.skt, tonumber(sktd.pattern) or CHUNK_SIZE
+			local total, start=0, 0
+			repeat
+				if block>#data-total then block=#data-total end
+				local written, err =skt:write(data, start, block)
+				if not written then 
+					print ('!!!!', err)
+					if err~=11 then return end
+					sched.sleep(EAGAIN_WAIT)
+				else
+					total=total + written
+					print ('+++++', block, written, total, #data)
+					sched.yield()
+				end
+			until total >= #data 
+		end)
 	end
 	M.new_fd = function ( skt_table )
 		skt_table.flags = skt_table.flags  or {}

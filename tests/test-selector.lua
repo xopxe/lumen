@@ -10,12 +10,13 @@ require "strict"
 
 local sched = require "sched"
 
-local service='luasocket'
---local service='nixio'
+--local service='luasocket'
+local service='nixio'
+print ('using service:', service)
 
 local selector = require "tasks/selector".init({service=service})
 
----[[ udp
+--[[ udp
 -- Print out data arriving on a udp socket
 local udprecv = selector.new_udp({locaddr="127.0.0.1", locport=8888})
 sched.sigrun(
@@ -35,7 +36,7 @@ sched.run(function()
 end)
 --]]
 
----[[ tcp sync
+--[[ tcp sync
 local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
 	locport=8888,
@@ -44,7 +45,6 @@ local tcp_server = selector.new_tcp_server({
 		print ('!T', data, err or '')
 	end
 })
-
 local tcp_client = selector.new_tcp_client({address="127.0.0.1", port=8888})
 sched.run(function()
 	--while true do
@@ -58,25 +58,33 @@ sched.run(function()
 end)
 --]]
 
---[[ tcp async
+---[[ tcp async
+local total=0
 local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
 	locport=8888,
-	pattern=10000,
+	pattern=1000,
 	handler = function(sktd, data, err, part)
-		print ('****', sktd, #(data or ''), #(part or ''), err or '')
+		local data_read = #(data or '')
+		total=total+ data_read 
+		print ('-----', data_read, total, #(part or ''), err or '')
+		--sktd:close()
 	end
 })
-
-local tcp_client = selector.new_tcp_client({address="127.0.0.1", port=8888})
+---[[
+local tcp_client = selector.new_tcp_client({
+	address="127.0.0.1", 
+	port=8888,
+	--pattern=1000, 
+})
 sched.run(function()
 	--while true do
-	local s = string.rep('x', 105000)
+	local s = string.rep('x', 10000500)
 	print("tcp sending",#s)
 	tcp_client:send_async(s)
 	print ('tcp sent')
-	sched.sleep(1)
-	tcp_client:close()
+	sched.sleep(10)
+	--tcp_client:close()
 end)
 --]]
 
