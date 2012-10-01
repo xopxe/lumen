@@ -158,35 +158,6 @@ local step = function (timeout)
 		end
 	end
 end
-local send_sync = function(sktd, data)
-	local start, err,done=0,nil
-	repeat
-		start, err=sktd.skt:send(data,start+1)
-		done = start==#data 
-	until done or err
-	return done, err, start
-end
-local send_async = function (sktd, data)
-	--make sure were selecting to write
-	local skt=sktd.skt
-	if not sendt[skt] then 
-		sendt[#sendt+1] = skt
-		sendt[skt]=true
-	end
-
-	local piped = write_pipes[skt] 
-	
-	-- initialize the pipe on first send
-	if not piped then
-		piped = pipes.new(ASYNC_SEND_BUFFER, 0)
-		write_pipes[skt] = piped
-	end
-
-	--print ('writepipe', piped, #data)
-	piped:write(data)
-
-	sched.yield()
-end
 local task = sched.run( function ()
 	while true do
 		local t, _ = sched.yield()
@@ -275,10 +246,40 @@ M.init = function()
 		unregister(sktd.skt)
 		sktd.skt:close()
 	end
-	M.send_sync = send_sync
+	M.send_sync = function(sktd, data)
+		local start, err,done=0,nil
+		repeat
+			start, err=sktd.skt:send(data,start+1)
+			done = start==#data 
+		until done or err
+		return done, err, start
+	end
 	M.send = M.send_sync
-	M.send_async = send_async
+	M.send_async = function (sktd, data)
+		--make sure we're selecting to write
+		local skt=sktd.skt
+		if not sendt[skt] then 
+			sendt[#sendt+1] = skt
+			sendt[skt]=true
+		end
 
+		local piped = write_pipes[skt] 
+		
+		-- initialize the pipe on first send
+		if not piped then
+			piped = pipes.new(ASYNC_SEND_BUFFER, 0)
+			write_pipes[skt] = piped
+		end
+
+		--print ('writepipe', piped, #data)
+		piped:write(data)
+
+		sched.yield()
+	end
+	
+	M.new_fd = function ()
+		return nil, 'Not supported by luasocket'
+	end
 
 	--[[
 	M.register_server = service.register_server

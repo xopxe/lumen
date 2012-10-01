@@ -36,11 +36,12 @@ sched.run(function()
 end)
 --]]
 
---[[ tcp sync
+---[[ tcp sync
 local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
 	locport=8888,
-	pattern='line',
+	--pattern='line',
+	pattern=10,
 	handler = function(sktd, data, err)
 		print ('!T', data, err or '')
 	end
@@ -56,9 +57,19 @@ sched.run(function()
 	end
 	tcp_client:close()
 end)
---]]
+local tcp_client2 = selector.new_tcp_client({address="127.0.0.1", port=8888})
+sched.run(function()
+	--while true do
+	for i=1, 15 do
+		local m="pong! "..os.time()
+		print("tcp sending",m)
+		tcp_client:send(m.."\n")
+		sched.sleep(1.5)
+	end
+	tcp_client:close()
+end)--]]
 
----[[ tcp async
+--[[ tcp async
 local total=0
 local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
@@ -71,15 +82,14 @@ local tcp_server = selector.new_tcp_server({
 		--sktd:close()
 	end
 })
----[[
 local tcp_client = selector.new_tcp_client({
 	address="127.0.0.1", 
 	port=8888,
-	--pattern=1000, 
+	pattern=10000, 
 })
 sched.run(function()
 	--while true do
-	local s = string.rep('x', 10000500)
+	local s = string.rep('x', 100500)
 	print("tcp sending",#s)
 	tcp_client:send_async(s)
 	print ('tcp sent')
