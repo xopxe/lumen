@@ -4,7 +4,7 @@
 -- @usage local nixiorator = require 'nixiorator'
 -- @alias M
 
-local sched = require("sched")
+local sched = require 'sched'
 local socket = require 'socket'
 local pipes = require 'pipes'
 
@@ -59,8 +59,8 @@ local function send_from_pipe (skt)
 	local out_data = outstanding_data[skt]
 	--print ('outdata', skt, out_data)
 	if out_data then 
-		local data, next = out_data.data, out_data.last+1
-		local last, err, lasterr = skt:send(data, next, next+CHUNK_SIZE )
+		local data, next_pos = out_data.data, out_data.last+1
+		local last, err, lasterr = skt:send(data, next_pos, next_pos+CHUNK_SIZE )
 		if last == #data then
 			-- all the oustanding data sent
 			outstanding_data[skt] = nil
@@ -74,9 +74,9 @@ local function send_from_pipe (skt)
 		--local piped = assert(write_pipes[skt] , "socket not registered?")
 		local piped = write_pipes[skt] ; if not piped then return end
 		--print ('piped', piped)
-		local _, data, err = piped:read()
-		if data then 
-			--print ('data', #data)
+		--local _, data, err = piped:read()
+		if piped:len()>0 then 
+			local _, data, err = piped:read()
 			local last , err, lasterr = skt:send(data, 1, CHUNK_SIZE)
 			if err == 'closed' then
 				unregister(skt)
@@ -267,11 +267,9 @@ M.init = function()
 		
 		-- initialize the pipe on first send
 		if not piped then
-			piped = pipes.new(ASYNC_SEND_BUFFER, 0)
+			piped = pipes.new(ASYNC_SEND_BUFFER)
 			write_pipes[skt] = piped
 		end
-
-		--print ('writepipe', piped, #data)
 		piped:write(data)
 
 		sched.yield()

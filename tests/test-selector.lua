@@ -36,7 +36,7 @@ sched.run(function()
 end)
 --]]
 
----[[ tcp sync
+--[[ tcp sync
 local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
 	locport=8888,
@@ -69,7 +69,7 @@ sched.run(function()
 	tcp_client:close()
 end)--]]
 
---[[ tcp async
+---[[ tcp async
 local total=0
 local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
@@ -78,7 +78,8 @@ local tcp_server = selector.new_tcp_server({
 	handler = function(sktd, data, err, part)
 		local data_read = #(data or '')
 		total=total+ data_read 
-		print ('-----', data_read, total, #(part or ''), err or '')
+		print ('-----', data_read, total, #(part or ''), err or '', data:sub(1,3),data:sub(-3))
+		assert(total <= 100500)
 		--sktd:close()
 	end
 })
@@ -89,7 +90,7 @@ local tcp_client = selector.new_tcp_client({
 })
 sched.run(function()
 	--while true do
-	local s = string.rep('x', 100500)
+	local s = 'ab'..string.rep('x', 100496)..'yz'
 	print("tcp sending",#s)
 	tcp_client:send_async(s)
 	print ('tcp sent')

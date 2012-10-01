@@ -4,15 +4,24 @@
 -- @usage local nixiorator = require 'nixiorator'
 -- @alias M
 
-local sched = require("sched")
+local sched = require 'sched'
 local nixio = require 'nixio'
+local pipes = require 'pipes'
 --local nixiorator = require 'tasks/nixiorator'
 require 'nixio.util'
 
 local floor = math.floor
+local weak_key = { __mode = 'k' }
 
-local CHUNK_SIZE = 65536 --8192
-local EAGAIN_WAIT = 0.001
+local CHUNK_SIZE = 1500 -- 65536 --8192
+
+--size parameter for pipe for asynchrous sending
+local ASYNC_SEND_BUFFER=10
+
+-- pipe for async writing
+local write_pipes = setmetatable({}, weak_key)
+local outstanding_data = setmetatable({}, weak_key)
+
 
 local M = {}
 
@@ -61,8 +70,21 @@ local register_client = function (sktd)
 		local skt=polle.fd
 		local data,code,msg=polle.it()
 		if data then
-			if sktd.handler then sktd.handler(sktd, data) end
-			sched.signal(skt, data)
+			local block = polle.block
+			if not block or block=='line'  or block == #data then
+				if sktd.handler then sktd.handler(sktd, data) end
+				sched.signal(skt, data)
+				return
+			end
+			if type(block) == 'number' and block > #data then
+				polle.readbuff = (polle.readbuff or '') .. data
+				data = polle.readbuff
+				if block==#data then
+					polle.readbuff = nil
+					if sktd.handler then sktd.handler(sktd, data) end
+					sched.signal(skt, data)
+				end
+			end
 		else
 			--11: 'Resource temporarily unavailable'
 			--print('!!!!!',data,code,msg)
@@ -78,7 +100,8 @@ local register_client = function (sktd)
 		fd=sktd.skt,
 		events=nixio.poll_flags("in", "pri"), --, "out"),
 		block=normalize_pattern(sktd.pattern) or 8192,
-		handler=client_handler
+		handler=client_handler,
+		sktd=sktd,
 	}
 	if polle.block=='line' then
 		print ('PATTERN LINE')
@@ -109,6 +132,7 @@ local register_server = function (sktd ) --, block, backlog)
 	print ('BLOCKs', sktd.pattern)
 	local polle={
 		fd=sktd.skt,
+		sktd=sktd,
 		events=nixio.poll_flags("in"),
 		--block=normalize_pattern(sktd.pattern) or 8192,
 		handler=accept_handler
@@ -117,7 +141,74 @@ local register_server = function (sktd ) --, block, backlog)
 	pollt[#pollt+1]=polle
 	sktd.polle=polle
 end
+local function send_from_pipe (sktd)
+	local out_data = outstanding_data[sktd]
+	local skt=sktd.skt
+	--print ('outdata', skt, out_data)
+	if out_data then 
+		local data, next_pos = out_data.data, out_data.last
+		
+		--local last, err, lasterr = sktd.skt:send(data, next, next+CHUNK_SIZE )
+		local blocksize = CHUNK_SIZE
+		if blocksize>#data-next_pos then blocksize=#data-blocksize end
+		print('>>>>>2', blocksize)
 
+		local written, errwrite =skt:write(data, next_pos, blocksize )
+		print('<<<<<2', written, next_pos+written,#data)
+
+		if not written and errwrite~=11 then --not EAGAIN
+			unregister(sktd.polle)
+			return
+		end
+		local last = next_pos + (written or 0)
+		
+		if last == #data then
+			-- all the oustanding data sent
+			outstanding_data[sktd] = nil
+		else
+			outstanding_data[sktd].last = last
+		end
+	else
+		--local piped = assert(write_pipes[skt] , "socket not registered?")
+		local piped = write_pipes[sktd] ; if not piped then return end
+		--print ('piped', piped)
+		if piped:len()>0 then 
+			--print ('data', #data)
+			--local last , err, lasterr = skt:send(data, 1, CHUNK_SIZE)
+			local _, data, err = piped:read()
+			local blocksize = CHUNK_SIZE
+			if blocksize>#data then blocksize=#data-blocksize end
+			print('>>>>>1', blocksize)
+			local written, errwrite =skt:write(data, 0, blocksize )
+				--[[
+				if not written then 
+					print ('!!!!', err)
+					if err~=11 then return end
+					sched.sleep(EAGAIN_WAIT)
+				else
+					total=total + written
+					print ('+++++', block, written, total, #data)
+					sched.yield()
+				end
+				--]]
+			
+			if not written and errwrite~=11 then --not EAGAIN
+				unregister(sktd.polle)
+				return
+			end
+			written=written or 0
+			if written < #data then
+				outstanding_data[sktd] = {data=data,last=written}
+			end
+			print('<<<<<1', written)
+
+		else
+			--print ('pipeempty!', err)
+			--emptied the outgoing pipe, stop selecting to write
+			sktd.polle.events=nixio.poll_flags("in", "pri")
+		end
+	end
+end
 local step = function (timeout)
 	timeout=timeout or -1
 	local stat= nixio.poll(pollt, floor(timeout*1000))
@@ -126,10 +217,11 @@ local step = function (timeout)
 			local revents = polle.revents 
 			if revents and revents ~= 0 then
 				local mode = nixio.poll_flags(revents)
+				if mode['out'] then 
+					send_from_pipe(polle.sktd)
+				end
 				if mode['in'] then 
 					polle:handler() 
-				else
-					--print ('?',polle.revents )
 				end
 			end
 		end
@@ -200,7 +292,21 @@ M.init = function(conf)
 	end
 	M.send = M.send_sync
 	M.send_async = function(sktd, data)
-	
+		--make sure we're selecting to write
+		sktd.polle.events=nixio.poll_flags("in", "pri", "out")
+		
+		local piped = write_pipes[sktd] 
+		
+		-- initialize the pipe on first send
+		if not piped then
+			piped = pipes.new(ASYNC_SEND_BUFFER)
+			write_pipes[sktd] = piped
+		end
+
+		--print ('writepipe', piped, #data)
+		piped:write(data)
+
+		sched.yield()
 	--[[
 		--TODO
 		--sktd.skt:writeall(data)
