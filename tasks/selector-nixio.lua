@@ -51,7 +51,7 @@ local normalize_pattern = function( pattern)
 	end
 	print ('Could not normalize the pattern:', pattern)
 end
-local new_socket = function(sktdesc)
+local init_sktd = function(sktdesc)
 	local sktd = setmetatable(sktdesc or {},{ __index=M })
 	return sktd
 end
@@ -95,7 +95,6 @@ local register_client = function (sktd)
 			end
 		end
 	end
-	print ('BLOCKc', sktd.pattern)
 	local polle={
 		fd=sktd.skt,
 		events=nixio.poll_flags("in", "pri"), --, "out"),
@@ -104,10 +103,8 @@ local register_client = function (sktd)
 		sktd=sktd,
 	}
 	if polle.block=='line' then
-		print ('PATTERN LINE')
 		polle.it=polle.fd:linesource()
 	else
-		print ('PATTERN BLOCK', polle.block)
 		polle.it=polle.fd:blocksource(polle.block)
 	end
 	polle.fd:setblocking(false)
@@ -116,7 +113,6 @@ local register_client = function (sktd)
 end
 local register_server = function (sktd ) --, block, backlog)
 	local function accept_handler(polle)
-		print ('ACCEPTING')
 		local skt, host, port = polle.fd:accept()
 		local skt_table_client = {
 			skt=skt,
@@ -126,10 +122,9 @@ local register_server = function (sktd ) --, block, backlog)
 			pattern=sktd.pattern,
 		}
 		register_client(skt_table_client)
-		local insktd = new_socket(skt_table_client)
+		local insktd = init_sktd(skt_table_client)
 		sched.signal(sktd.events.accepted, insktd)
 	end
-	print ('BLOCKs', sktd.pattern)
 	local polle={
 		fd=sktd.skt,
 		sktd=sktd,
@@ -144,19 +139,14 @@ end
 local function send_from_pipe (sktd)
 	local out_data = outstanding_data[sktd]
 	local skt=sktd.skt
-	--print ('outdata', skt, out_data)
 	if out_data then 
 		local data, next_pos = out_data.data, out_data.last
 		
 		--local last, err, lasterr = sktd.skt:send(data, next, next+CHUNK_SIZE )
 		local blocksize = CHUNK_SIZE
 		if blocksize>#data-next_pos then blocksize=#data-blocksize end
-		print('>>>>>2', blocksize)
-
 		local written, errwrite =skt:write(data, next_pos, blocksize )
-		print('<<<<<2', written, next_pos+written,#data)
-
-		if not written and errwrite~=11 then --not EAGAIN
+		if not written and errwrite~=11 then --error, is not EAGAIN
 			unregister(sktd.polle)
 			return
 		end
@@ -171,27 +161,12 @@ local function send_from_pipe (sktd)
 	else
 		--local piped = assert(write_pipes[skt] , "socket not registered?")
 		local piped = write_pipes[sktd] ; if not piped then return end
-		--print ('piped', piped)
 		if piped:len()>0 then 
 			--print ('data', #data)
-			--local last , err, lasterr = skt:send(data, 1, CHUNK_SIZE)
 			local _, data, err = piped:read()
 			local blocksize = CHUNK_SIZE
 			if blocksize>#data then blocksize=#data-blocksize end
-			print('>>>>>1', blocksize)
 			local written, errwrite =skt:write(data, 0, blocksize )
-				--[[
-				if not written then 
-					print ('!!!!', err)
-					if err~=11 then return end
-					sched.sleep(EAGAIN_WAIT)
-				else
-					total=total + written
-					print ('+++++', block, written, total, #data)
-					sched.yield()
-				end
-				--]]
-			
 			if not written and errwrite~=11 then --not EAGAIN
 				unregister(sktd.polle)
 				return
@@ -200,10 +175,7 @@ local function send_from_pipe (sktd)
 			if written < #data then
 				outstanding_data[sktd] = {data=data,last=written}
 			end
-			print('<<<<<1', written)
-
 		else
-			--print ('pipeempty!', err)
 			--emptied the outgoing pipe, stop selecting to write
 			sktd.polle.events=nixio.poll_flags("in", "pri")
 		end
@@ -248,7 +220,7 @@ M.init = function(conf)
 		skt_table.skt = assert(nixio.bind(skt_table.locaddr, skt_table.locport, 'inet', 'stream'))
 		skt_table.events = {accepted=skt_table.skt }
 		skt_table.task = task
-		local sktd = new_socket(skt_table)
+		local sktd = init_sktd(skt_table)
 		register_server(sktd)
 		return sktd
 	end
@@ -259,7 +231,7 @@ M.init = function(conf)
 		skt_table.task=task
 		skt_table.skt:connect(skt_table.address,skt_table.port)
 		register_client(skt_table)
-		local sktd = new_socket(skt_table)
+		local sktd = init_sktd(skt_table)
 		return sktd
 	end
 	M.new_udp = function( skt_table )
@@ -270,7 +242,7 @@ M.init = function(conf)
 		skt_table.skt:connect(skt_table.address,skt_table.port or 0)
 		skt_table.block =  normalize_pattern(skt_table.pattern)
 		register_client(skt_table)
-		local sktd = new_socket(skt_table)
+		local sktd = init_sktd(skt_table)
 		return sktd
 	end
 	M.new_fd = function ( skt_table )
@@ -279,7 +251,7 @@ M.init = function(conf)
 		skt_table.events = {data=skt_table.skt}
 		skt_table.task = task
 		register_client(skt_table)
-		local sktd = new_socket(skt_table)
+		local sktd = init_sktd(skt_table)
 		return sktd
 	end
 	M.close = function(sktd)
@@ -303,41 +275,13 @@ M.init = function(conf)
 			write_pipes[sktd] = piped
 		end
 
-		--print ('writepipe', piped, #data)
 		piped:write(data)
 
 		sched.yield()
-	--[[
-		--TODO
-		--sktd.skt:writeall(data)
-		sched.run(function()
-			local skt, block=sktd.skt, tonumber(sktd.pattern) or CHUNK_SIZE
-			local total, start=0, 0
-			repeat
-				if block>#data-total then block=#data-total end
-				local written, err =skt:write(data, start, block)
-				if not written then 
-					print ('!!!!', err)
-					if err~=11 then return end
-					sched.sleep(EAGAIN_WAIT)
-				else
-					total=total + written
-					print ('+++++', block, written, total, #data)
-					sched.yield()
-				end
-			until total >= #data 
-		end)
-	--]]
 	end
 
-	
 	M.task=task
 	
-	--[[
-	M.register_server = service.register_server
-	M.register_client = service.register_client
-	M.unregister = service.unregister
-	--]]
 	return M
 end
 
