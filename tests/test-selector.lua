@@ -10,8 +10,8 @@ require "strict"
 
 local sched = require "sched"
 
---local service='luasocket'
-local service='nixio'
+local service='luasocket'
+--local service='nixio'
 print ('using service:', service)
 
 local selector = require "tasks/selector".init({service=service})
@@ -36,16 +36,19 @@ sched.run(function()
 end)
 --]]
 
---[[ tcp sync
+---[[ tcp sync
 local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 
 	locport=8888,
-	--pattern='line',
-	pattern=10,
+	pattern='line',
+	--pattern=10,
 	handler = function(sktd, data, err)
-		print ('!T', data, err or '')
+		print ('!T', sktd, data, err or '')
 	end
 })
+sched.sigrun({emitter=selector.task, events = '*'}, function(...)
+	print ('           >', ...)
+end)
 local tcp_client = selector.new_tcp_client({address="127.0.0.1", port=8888})
 sched.run(function()
 	--while true do
@@ -69,7 +72,7 @@ sched.run(function()
 	tcp_client:close()
 end)--]]
 
----[[ tcp async
+--[[ tcp async
 local total=0
 local tcp_server = selector.new_tcp_server({
 	locaddr="127.0.0.1", 

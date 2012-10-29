@@ -72,7 +72,7 @@ local register_client = function (sktd)
 			local block = polle.block
 			if not block or block=='line'  or block == #data then
 				if sktd.handler then sktd.handler(sktd, data) end
-				sched.signal(skt, data)
+				sched.signal(sktd.events.data, data)
 				return
 			end
 			if type(block) == 'number' and block > #data then
@@ -81,7 +81,7 @@ local register_client = function (sktd)
 				if block==#data then
 					polle.readbuff = nil
 					if sktd.handler then sktd.handler(sktd, data) end
-					sched.signal(skt, data)
+					sched.signal(sktd.events.data, data)
 				end
 			end
 		else
@@ -89,8 +89,8 @@ local register_client = function (sktd)
 			--print('!!!!!',data,code,msg)
 			if (code==nil)
 			or (code and code~=11) then
-			    unregister(skt)
-			    sched.signal(skt, nil, 'closed')
+			    unregister(sktd)
+			    sched.signal(sktd.events.data, nil, 'closed')
 			end
 		end
 	end
