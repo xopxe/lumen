@@ -20,9 +20,9 @@ local ASYNC_SEND_BUFFER=10
 
 local recvt, sendt={}, {}
 
-local sktmode = setmetatable({}, weak_key)
-local isserver = setmetatable({}, weak_key)
-local partial = setmetatable({}, weak_key)
+local sktds = setmetatable({}, { __mode = 'kv' })
+--local isserver = setmetatable({}, weak_key)
+--local partial = setmetatable({}, weak_key)
 
 local M = {}
 
@@ -55,7 +55,8 @@ local unregister = function (skt)
 		write_pipes[skt] = nil
 		outstanding_data[skt] = nil
 	end
-	partial[skt] = nil
+	sktds[skt].partial = nil
+	sktds[skt] = nil
 end
 local function send_from_pipe (skt)
 	local out_data = outstanding_data[skt]
@@ -101,20 +102,22 @@ local function send_from_pipe (skt)
 		end
 	end
 end
-local new_socket = function(sktdesc)
+local init_sktd = function(sktdesc)
 	local sktd = setmetatable(sktdesc or {},{ __index=M })
 	return sktd
 end
-local register_server = function (skt, pattern)
-	isserver[skt]=true
-	skt:settimeout(0)
-	sktmode[skt] = pattern
-	recvt[#recvt+1]=skt
+local register_server = function (sktd)
+	sktd.isserver=true
+	sktd.skt:settimeout(0)
+	sktds[sktd.skt] = sktd
+	--normalize_pattern(skt_table.pattern)
+	--sktmode[sktd] = pattern
+	recvt[#recvt+1]=sktd.skt
 end
-local register_client = function (skt, pattern)
-	skt:settimeout(0)
-	sktmode[skt] = pattern
-	recvt[#recvt+1]=skt
+local register_client = function (sktd)
+	sktd.skt:settimeout(0)
+	sktds[sktd.skt] = sktd
+	recvt[#recvt+1]=sktd.skt
 end
 local step = function (timeout)
 	--print('+', #recvt, #sendt, timeout)
@@ -125,17 +128,20 @@ local step = function (timeout)
 			send_from_pipe(skt)
 		end
 		for _, skt in ipairs(recvt_ready) do
-			local mode = sktmode[skt]
-			if isserver[skt] then 
+			local sktd = sktds[skt]
+			local pattern=sktd.pattern
+			if sktd.isserver then 
 				local client, err=skt:accept()
 				if client then
 					local skt_table_client = {
 						skt=client,
 						task=task,
 						events={data=client},
-						pattern=mode,
+						pattern=pattern,
+						handler = sktd.handler,
 					}
-					local sktd = new_socket(skt_table_client)
+					print ('XX', sktd.handler)
+					local sktd_cli = init_sktd(skt_table_client)
 					--[[
 					sched.signal(skt_table.events.accepted, sktd)
 					if skt_table.handler then 
@@ -149,14 +155,14 @@ local step = function (timeout)
 					end
 					--]]
 					
-					register_client(client, mode)
-					sched.signal(skt, sktd)
+					register_client(sktd_cli)
+					sched.signal(sktd.events.accepted, sktd_cli)
 				else
-					sched.signal(skt, nil, err)
+					sched.signal(sktd.events.accepted, nil, err)
 				end
 			else
 				--print('&+', skt, mode, partial[skt])
-				if type(mode) == "number" and mode <= 0 then
+				if type(pattern) == "number" and pattern <= 0 then
 					local data,err,part = skt:receive(CHUNK_SIZE)
 					--print('&-',data,err,part, #part)
 					if err=='closed' then
@@ -166,18 +172,19 @@ local step = function (timeout)
 						sched.signal(skt, data)
 					end
 				else
-					local data,err,part = skt:receive(mode,partial[skt])
-					partial[skt]=part
-					--print('&-',data,err,part)
+					local data,err,part = skt:receive(pattern,sktd.partial)
+					sktd.partial=part
+					--print('&-',sktd.handler, data,err,part)
+					if sktd.handler then sktd.handler(sktd, data, err, part) end
 					if not data then
 						if err=='closed' then 
 							unregister(skt)
-							sched.signal(skt, nil, err, part) --data is nil or part?
+							sched.signal(sktd.events.data, nil, err, part) --data is nil or part?
 						elseif not part or part=='' then
-							sched.signal(skt, nil, err)
+							sched.signal(sktd.events.data, nil, err)
 						end
 					else
-						sched.signal(skt, data)
+						sched.signal(sktd.events.data, data)
 					end
 				end
 			end
@@ -206,6 +213,7 @@ local normalize_pattern = function(pattern)
 	print ('Could not normalize the pattern:', pattern)
 end
 
+--[[
 local build_tcp_accept_task = function (skt_table)
 	sched.run(function ()
 		local waitd_accept = {emitter=skt_table.task, events={skt_table.events.accepted}}
@@ -225,6 +233,7 @@ local build_tcp_accept_task = function (skt_table)
 		end
 	end)
 end
+--]]
 
 M.init = function()
 	M.new_tcp_server = function( skt_table )
@@ -232,9 +241,10 @@ M.init = function()
 		skt_table.skt=assert(socket.bind(skt_table.locaddr, skt_table.locport, skt_table.backlog))
 		skt_table.events = {accepted=skt_table.skt}
 		skt_table.task=task
-		build_tcp_accept_task(skt_table)
-		local sktd = new_socket(skt_table)
-		register_server(skt_table.skt, normalize_pattern(skt_table.pattern))
+		skt_table.pattern=normalize_pattern(skt_table.pattern)
+		--build_tcp_accept_task(skt_table)
+		local sktd = init_sktd(skt_table)
+		register_server(skt_table)
 		return sktd
 	end
 	M.new_tcp_client = function( skt_table )
@@ -242,8 +252,9 @@ M.init = function()
 		skt_table.skt=assert(socket.connect(skt_table.address, skt_table.port, skt_table.locaddr, skt_table.locport))
 		skt_table.events = {data=skt_table.skt}
 		skt_table.task=task
-		local sktd = new_socket(skt_table)
-		register_client(skt_table.skt, normalize_pattern(skt_table.pattern))
+		skt_table.pattern=normalize_pattern(skt_table.pattern)
+		local sktd = init_sktd(skt_table)
+		register_client(skt_table)
 		return sktd
 	end
 	M.new_udp = function( skt_table )
@@ -251,10 +262,11 @@ M.init = function()
 		skt_table.skt=socket.udp()
 		skt_table.events = {data=skt_table.skt}
 		skt_table.task=task
-		local sktd = new_socket(skt_table)
+		skt_table.pattern=skt_table.pattern or skt_table.count
+		local sktd = init_sktd(skt_table)
 		skt_table.skt:setsockname(skt_table.locaddr or '*', skt_table.locport or 0)
 		skt_table.skt:setpeername(skt_table.address or '*', skt_table.port)
-		register_client(skt_table.skt, skt_table.count)
+		register_client(skt_table)
 		return sktd
 	end
 	M.close = function(sktd)
