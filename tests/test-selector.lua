@@ -10,15 +10,16 @@ require "strict"
 
 local sched = require "sched"
 
-local service='luasocket'
+
+local service=arg[1] or 'luasocket'
 --local service='nixio'
 print ('using service:', service)
 
 local selector = require "tasks/selector".init({service=service})
 
---[[ udp
+---[[ udp
 -- Print out data arriving on a udp socket
-local udprecv = selector.new_udp({locaddr="127.0.0.1", locport=8888})
+local udprecv = selector.new_udp(nil, nil, "127.0.0.1", 8888, -1)
 sched.sigrun(
 	{emitter=udprecv.task, events={udprecv.events.data}}, 
 	function(_, _, ...) print("!U", ...) end
@@ -26,7 +27,7 @@ sched.sigrun(
 
 -- Send data over an udp socket
 sched.run(function()
-	local udpsend = selector.new_udp({address="127.0.0.1", port=8888})
+	local udpsend = selector.new_udp("127.0.0.1", 8888)
 	while true do
 		local m="ping! "..os.time()
 		print("udp sending",m)
@@ -37,19 +38,16 @@ end)
 --]]
 
 ---[[ tcp sync
-local tcp_server = selector.new_tcp_server({
-	locaddr="127.0.0.1", 
-	locport=8888,
-	pattern='line',
-	--pattern=10,
-	handler = function(sktd, data, err)
+local tcp_server = selector.new_tcp_server("127.0.0.1", 8888, 
+	'line', --10,
+	function(sktd, data, err)
 		print ('!T', sktd, data, err or '')
 	end
-})
+)
 sched.sigrun({emitter=selector.task, events = '*'}, function(...)
 	print ('           >', ...)
 end)
-local tcp_client = selector.new_tcp_client({address="127.0.0.1", port=8888})
+local tcp_client = selector.new_tcp_client("127.0.0.1",8888)
 sched.run(function()
 	--while true do
 	for i=1, 15 do
@@ -60,7 +58,7 @@ sched.run(function()
 	end
 	tcp_client:close()
 end)
-local tcp_client2 = selector.new_tcp_client({address="127.0.0.1", port=8888})
+local tcp_client2 = selector.new_tcp_client("127.0.0.1",8888)
 sched.run(function()
 	--while true do
 	for i=1, 15 do
@@ -74,23 +72,14 @@ end)--]]
 
 --[[ tcp async
 local total=0
-local tcp_server = selector.new_tcp_server({
-	locaddr="127.0.0.1", 
-	locport=8888,
-	pattern=500,
-	handler = function(sktd, data, err, part)
-		local data_read = #(data or '')
-		total=total+ data_read 
-		print ('-----', data_read, total, #(part or ''), err or '', data:sub(1,3),data:sub(-3))
-		assert(total <= 100500)
-		--sktd:close()
-	end
-})
-local tcp_client = selector.new_tcp_client({
-	address="127.0.0.1", 
-	port=8888,
-	pattern=10000, 
-})
+local tcp_server = selector.new_tcp_server("127.0.0.1",8888,500, function(sktd, data, err, part)
+	local data_read = #(data or '')
+	total=total+ data_read 
+	print ('-----', data_read, total, #(part or ''), err or '', data:sub(1,3),data:sub(-3))
+	assert(total <= 100500)
+	--sktd:close()
+end)
+local tcp_client = selector.new_tcp_client("127.0.0.1", 8888, nil, nil, 10000)
 sched.run(function()
 	--while true do
 	local s = 'ab'..string.rep('x', 100496)..'yz'

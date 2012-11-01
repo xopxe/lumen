@@ -65,14 +65,14 @@ local unregister = function (fd)
 	end
 end
 local register_client = function (sktd)
+	local data_event = sktd.events.data
 	local function client_handler(polle)
-		local skt=polle.fd
 		local data,code,msg=polle.it()
 		if data then
 			local block = polle.block
 			if not block or block=='line'  or block == #data then
 				if sktd.handler then sktd.handler(sktd, data) end
-				sched.signal(sktd.events.data, data)
+				sched.signal(data_event, data)
 				return
 			end
 			if type(block) == 'number' and block > #data then
@@ -81,7 +81,7 @@ local register_client = function (sktd)
 				if block==#data then
 					polle.readbuff = nil
 					if sktd.handler then sktd.handler(sktd, data) end
-					sched.signal(sktd.events.data, data)
+					sched.signal(data_event, data)
 				end
 			end
 		else
@@ -90,14 +90,14 @@ local register_client = function (sktd)
 			if (code==nil)
 			or (code and code~=11) then
 			    unregister(sktd)
-			    sched.signal(sktd.events.data, nil, 'closed')
+			    sched.signal(data_event, nil, 'closed')
 			end
 		end
 	end
 	local polle={
-		fd=sktd.skt,
+		fd=sktd.fd,
 		events=nixio.poll_flags("in", "pri"), --, "out"),
-		block=normalize_pattern(sktd.pattern) or 8192,
+		block=sktd.pattern,
 		handler=client_handler,
 		sktd=sktd,
 	}
@@ -111,10 +111,11 @@ local register_client = function (sktd)
 	pollt[#pollt+1]=polle
 end
 local register_server = function (sktd ) --, block, backlog)
+	local accepted_event = sktd.events.data
 	local function accept_handler(polle)
 		local skt, host, port = polle.fd:accept()
 		local skt_table_client = {
-			skt=skt,
+			fd=skt,
 			handler= sktd.handler,
 			task=sktd.task,
 			events={data=skt},
@@ -122,10 +123,10 @@ local register_server = function (sktd ) --, block, backlog)
 		}
 		register_client(skt_table_client)
 		local insktd = init_sktd(skt_table_client)
-		sched.signal(sktd.events.accepted, insktd)
+		sched.signal(accepted_event, insktd)
 	end
 	local polle={
-		fd=sktd.skt,
+		fd=sktd.fd,
 		sktd=sktd,
 		events=nixio.poll_flags("in"),
 		--block=normalize_pattern(sktd.pattern) or 8192,
@@ -137,7 +138,7 @@ local register_server = function (sktd ) --, block, backlog)
 end
 local function send_from_pipe (sktd)
 	local out_data = outstanding_data[sktd]
-	local skt=sktd.skt
+	local skt=sktd.fd
 	if out_data then 
 		local data, next_pos = out_data.data, out_data.last
 		
@@ -215,51 +216,56 @@ M.init = function(conf)
 	M.service=conf.service or 'socketeer'
 	
 	--M.nixiorator=nixiorator
-	M.new_tcp_server = function( skt_table )
+	M.new_tcp_server = function(locaddr, locport, pattern, handler)
 		--address, port, pattern, backlog)
-		skt_table.skt = assert(nixio.bind(skt_table.locaddr, skt_table.locport, 'inet', 'stream'))
-		skt_table.events = {accepted=skt_table.skt }
-		skt_table.task = task
-		local sktd = init_sktd(skt_table)
+		local sktd=init_sktd()
+		sktd.fd = assert(nixio.bind(locaddr, locport, 'inet', 'stream'))
+		sktd.events = {accepted=sktd.fd }
+		sktd.task = task
+		sktd.handler = handler
+		sktd.pattern = normalize_pattern(pattern)
 		register_server(sktd)
 		return sktd
 	end
-	M.new_tcp_client = function(skt_table)
-		--address, port, locaddr, locport, pattern)
-		skt_table.skt = assert(nixio.bind(skt_table.locaddr, skt_table.locport or 0, 'inet', 'stream'))
-		skt_table.events = {data=skt_table.skt}
-		skt_table.task=task
-		skt_table.skt:connect(skt_table.address,skt_table.port)
-		register_client(skt_table)
-		local sktd = init_sktd(skt_table)
+	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler)
+		local sktd=init_sktd()
+		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'stream'))
+		sktd.events = {data=sktd.fd}
+		sktd.task=task
+		sktd.fd:connect(address, port)
+		sktd.pattern=normalize_pattern(pattern)
+		sktd.handler = handler
+		register_client(sktd)
 		return sktd
 	end
-	M.new_udp = function( skt_table )
-		--address, port, locaddr, locport, count)
-		skt_table.skt = assert(nixio.bind(skt_table.locaddr, skt_table.locport or 0, 'inet', 'dgram'))
-		skt_table.events = {data=skt_table.skt}
-		skt_table.task = task
-		skt_table.skt:connect(skt_table.address,skt_table.port or 0)
-		skt_table.block =  normalize_pattern(skt_table.pattern)
-		register_client(skt_table)
-		local sktd = init_sktd(skt_table)
+	M.new_udp = function( address, port, locaddr, locport, pattern, handler)
+		local sktd=init_sktd()
+		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'dgram'))
+		sktd.events = {data=sktd.fd}
+		sktd.task = task
+		sktd.fd:connect(address,port or 0)
+		sktd.pattern =  normalize_pattern(pattern)
+		sktd.handler = handler
+		register_client(sktd)
 		return sktd
 	end
-	M.new_fd = function ( skt_table )
-		skt_table.flags = skt_table.flags  or {}
-		skt_table.skt = assert(nixio.open(skt_table.filename, nixio.open_flags(unpack(skt_table.flags))))
-		skt_table.events = {data=skt_table.skt}
-		skt_table.task = task
-		register_client(skt_table)
-		local sktd = init_sktd(skt_table)
+	M.new_fd = function ( filename, flags, pattern, handler )
+		local sktd=init_sktd()
+		sktd.flags = flags  or {}
+		sktd.fd = assert(nixio.open(filename, nixio.open_flags(unpack(flags))))
+		sktd.events = {data=sktd.fd}
+		sktd.task = task
+		sktd.pattern =  normalize_pattern(pattern)
+		sktd.handler = handler
+		register_client(sktd)
 		return sktd
 	end
 	M.close = function(sktd)
-		unregister(sktd.skt)
-		sktd.skt:close()
+		unregister(sktd.fd)
+		sktd.fd:close()
 	end
 	M.send_sync = function(sktd, data)
-		local written,_,_,writtenerr = sktd.skt:writeall(data)
+		local written,_,_,writtenerr = sktd.fd:writeall(data)
 		return written==#data, 'unknown error', writtenerr
 	end
 	M.send = M.send_sync
