@@ -1,0 +1,10 @@
+* Migrate from nixiorator/socketeer to a selector task with 
+  multiple backends (nixio/luasocket/ljsyscall)
+
+* Proxy task, to route signals trough a socket between Lumen
+  instances.
+
+* Integrate RNR and LuPA (somehow)
+
+* Add telnet support to shell
+
