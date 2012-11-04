@@ -1,7 +1,6 @@
 --- Task for accessing nixio library.
--- Nixiorator is a Lumen task that allow to interface with nixio.
--- @module nixiorator
--- @usage local nixiorator = require 'nixiorator'
+-- Selector-nixio is a Lumen task that allow to interface with nixio.
+-- @module selector-nixio
 -- @alias M
 
 local sched = require 'sched'
@@ -142,7 +141,6 @@ local function send_from_pipe (sktd)
 	if out_data then 
 		local data, next_pos = out_data.data, out_data.last
 		
-		--local last, err, lasterr = sktd.skt:send(data, next, next+CHUNK_SIZE )
 		local blocksize = CHUNK_SIZE
 		if blocksize>#data-next_pos then blocksize=#data-blocksize end
 		local written, errwrite =skt:write(data, next_pos, blocksize )
@@ -150,8 +148,8 @@ local function send_from_pipe (sktd)
 			unregister(sktd.polle)
 			return
 		end
-		local last = next_pos + (written or 0)
 		
+		local last = next_pos + (written or 0)
 		if last == #data then
 			-- all the oustanding data sent
 			outstanding_data[sktd] = nil
@@ -164,6 +162,7 @@ local function send_from_pipe (sktd)
 		if piped:len()>0 then 
 			--print ('data', #data)
 			local _, data, err = piped:read()
+			
 			local blocksize = CHUNK_SIZE
 			if blocksize>#data then blocksize=#data-blocksize end
 			local written, errwrite =skt:write(data, 0, blocksize )
@@ -171,6 +170,7 @@ local function send_from_pipe (sktd)
 				unregister(sktd.polle)
 				return
 			end
+			
 			written=written or 0
 			if written < #data then
 				outstanding_data[sktd] = {data=data,last=written}
