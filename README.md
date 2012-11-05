@@ -83,15 +83,10 @@ possibilities here:
 
     lua test-wait.lua
 
-If you want to see LuaSocket integration working, try:
+If you want to see LuaSocket and nixio integration working for async socket and
+file I/O, try:
 
-    lua test-socketeer.lua
-
-If you want to see TCP, UDP and async file I/O running, and have nixio 
-installed, and in Linux, you can try (root needed as it reads from 
-/dev/input/mice):
-
-    sudo lua test-nixiorator.lua
+    lua test-selector.lua
 
 To see how buffers, pipes and mutexes work and what they are for, try:
 

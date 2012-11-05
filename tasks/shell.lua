@@ -8,7 +8,8 @@
 -- a background task.
 -- If a line starts with a ":", it is equivalent to a "return ...",
 -- filtered trough a simple pretifier (usefull for checking tables).
--- This module depends on nixio and the nixiorator task.
+-- This module depends on the selector task, which must be started
+-- seperataly.
 -- @module shell
 -- @usage local server = require 'shell'
 --server.init({ip='127.0.0.1', port=2012})
@@ -17,9 +18,8 @@
 local log=require 'log'
 
 local sched = require 'sched'
-local nixiorator = require 'tasks/nixiorator'
+local selector = require "tasks/selector"
 local pipes = require 'pipes'
-local nixio = require 'nixio'
 
 local M = {}
 
@@ -129,7 +129,7 @@ local function new_shell()
 	local shell = {
 		prompt_ready = '> ',
 		prompt_more = '+ ',
-		banner = 'Welcome to Toribio Shell',
+		banner = 'Welcome to Lumen Shell',
 		env={},
 		lines = {},
 		pipe_in = pipes.new(100),
@@ -178,10 +178,10 @@ local function print_from_pipe(pipe_out, skt)
 	repeat
 		local _, prompt, out = pipe_out:read()
 		if out then 
-			skt:writeall(tostring(out)..'\r\n')
+			skt:send_sync(tostring(out)..'\r\n')
 		end
 		if prompt then
-			skt:writeall(prompt)
+			skt:send_sync(prompt)
 		end
 	until pipe_out:len() == 0
 end
@@ -193,25 +193,25 @@ M.init = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
 	local port = conf.port or 2012
-	sched.run( function()
-		local tcprecv = assert(nixio.bind(ip, port, 'inet', 'stream'))
-		nixiorator.register_server(tcprecv, 'line')
-		local waitd_accept={emitter=nixiorator.task, events={tcprecv}}
 		
-		M.task = sched.sigrun(waitd_accept, function (_,_, msg, skt)
-			--print ("#", os.time(), msg, skt )
-			if msg=='accepted' then
-				log('SHELL', 'INFO', 'connection accepted from %s %s', skt:getpeername())
+	local tcp_server = selector.new_tcp_server(ip, port, 'line')
+	sched.run( function()
+		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
+		log('SHELL', 'INFO', 'shell accepting connections on %s %s', tcp_server:getsockname())
+		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
+			print ("#", os.time(), sktd_cli )
+			if sktd_cli then
+				log('SHELL', 'INFO', 'connection accepted from %s %s', sktd_cli:getpeername())
 				local shell = new_shell() 
-				print_from_pipe(shell.pipe_out, skt)
-				local waitd_skt = {emitter=nixiorator.task, events={skt}}
+				print_from_pipe(shell.pipe_out, sktd_cli)
+				local waitd_skt = {emitter=selector.task, events={sktd_cli.events.data}}
 				sched.sigrun(waitd_skt, function(_,  _, data, err )
 					if not data then 
-						log('SHELL', 'INFO', 'connection closed from %s %s', skt:getpeername())
+						log('SHELL', 'INFO', 'connection closed from %s %s', sktd_cli:getpeername())
 						return nil, err 
 					end
 					shell.pipe_in:write('line', data)
-					print_from_pipe(shell.pipe_out, skt)
+					print_from_pipe(shell.pipe_out, sktd_cli)
 				end, true)
 			end
 		end)

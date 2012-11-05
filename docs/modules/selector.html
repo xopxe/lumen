@@ -1,0 +1,428 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>Lumen</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><strong>selector</strong></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>selector</code></h1>
+
+<p>Module suporting asynchronous access to sockets and files.</p>
+<p> Selector integrates Lumen with a select/poll-like mechanism. 
+ Backends luasocket and nixio are supported.
+ Module's task will generate signals on data arrival on opened 
+ sockets/files</p>
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">local selector = require 'selector'
+selector.init({service='luasocket'})</pre>
+    </ul>
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
+	<td class="summary">Start the task.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new_tcp_server">new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</a></td>
+	<td class="summary">Creates a TCP server socket.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new_tcp_client">new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler)</a></td>
+	<td class="summary">Creates a TCP client socket.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new_udp">new_udp&nbsp;(address, port, locaddr, locport, pattern, handler)</a></td>
+	<td class="summary">Creates a UDP socket.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new_fd">new_fd&nbsp;(filename, flags, pattern, handler)</a></td>
+	<td class="summary">Opens a file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#close">close&nbsp;(sktd)</a></td>
+	<td class="summary">Closes a socket/file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#send_sync">send_sync&nbsp;(sktd, data)</a></td>
+	<td class="summary">Synchronous data send.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#send">send&nbsp;()</a></td>
+	<td class="summary">Alias for send_sync.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#send_async">send_async&nbsp;(sktd, data)</a></td>
+	<td class="summary">Asynchronous data send.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#getsockname">getsockname&nbsp;(sktd)</a></td>
+	<td class="summary">Get the local address of a socket.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#getpeername">getpeername&nbsp;(sktd)</a></td>
+	<td class="summary">Get the remote address of a socket.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#sktd">sktd</a></td>
+	<td class="summary">Socket/File descriptor.</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#task">task</a></td>
+	<td class="summary">Task that emits signals.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "init"></a>
+    <strong>init&nbsp;(conf)</strong>
+    </dt>
+    <dd>
+    Start the task. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>conf</em></code>:  the configuration table. The fields of interest is
+ <em>service</em> , the backend to use (defaults to 'luasocket')</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "new_tcp_server"></a>
+    <strong>new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</strong>
+    </dt>
+    <dd>
+    Creates a TCP server socket. 
+ Emits a <em>sktd.events.accepted, client_sktd</em> signal on new connections.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
+       <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
+       <li><code><em>handler</em></code>:  optional handler function for new clients, 
+ must have a (sktd, data, err, part) signature</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a <a href="../modules/selector.html#sktd">sktd</a> object
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "new_tcp_client"></a>
+    <strong>new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler)</strong>
+    </dt>
+    <dd>
+    Creates a TCP client socket. 
+ Emits a <em>sktd.events.data, data</em> signal on incommig data, 
+ and <em>sktd.events.data, nil, err</em> on errors.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>address</em></code>:  Remote IP address.</li>
+       <li><code><em>port</em></code>:  Remote port ()</li>
+       <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
+       <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
+       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a <a href="../modules/selector.html#sktd">sktd</a> object
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "new_udp"></a>
+    <strong>new_udp&nbsp;(address, port, locaddr, locport, pattern, handler)</strong>
+    </dt>
+    <dd>
+    Creates a UDP socket. 
+ Emits a <em>sktd.events.data, data</em> signal on incommig data, 
+ and <em>sktd.events.data, nil, err</em> on errors.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>address</em></code>:  Remote IP address.</li>
+       <li><code><em>port</em></code>:  Remote port ()</li>
+       <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
+       <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
+       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a <a href="../modules/selector.html#sktd">sktd</a> object
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "new_fd"></a>
+    <strong>new_fd&nbsp;(filename, flags, pattern, handler)</strong>
+    </dt>
+    <dd>
+    Opens a file. 
+ Emits a <em>sktd.events.data, data</em> signal on incommig data, 
+ and <em>sktd.events.data, nil, err</em> on errors.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>filename</em></code>: 
+
+</li>
+       <li><code><em>flags</em></code>:  ATM as specified for nixio.open()</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
+       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a <a href="../modules/selector.html#sktd">sktd</a> object
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "close"></a>
+    <strong>close&nbsp;(sktd)</strong>
+    </dt>
+    <dd>
+    Closes a socket/file. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>sktd</em></code>:  a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "send_sync"></a>
+    <strong>send_sync&nbsp;(sktd, data)</strong>
+    </dt>
+    <dd>
+    Synchronous data send. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>sktd</em></code>:  a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+       <li><code><em>data</em></code>:  data to send</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <em>true</em> on success. <em>nil, err, partial</em> on failure
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "send"></a>
+    <strong>send&nbsp;()</strong>
+    </dt>
+    <dd>
+    Alias for send_sync. 
+ can be reasigned to to send_async, if so preferred
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "send_async"></a>
+    <strong>send_async&nbsp;(sktd, data)</strong>
+    </dt>
+    <dd>
+    Asynchronous data send. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>sktd</em></code>:  a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+       <li><code><em>data</em></code>:  data to send</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "getsockname"></a>
+    <strong>getsockname&nbsp;(sktd)</strong>
+    </dt>
+    <dd>
+    Get the local address of a socket. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>sktd</em></code>:  a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <em>ip, port</em>
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "getpeername"></a>
+    <strong>getpeername&nbsp;(sktd)</strong>
+    </dt>
+    <dd>
+    Get the remote address of a socket. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>sktd</em></code>:  a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <em>ip, port</em>
+    </ol>
+
+
+</dd>
+</dl>
+    <h2><a name="Tables"></a>Tables</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "sktd"></a>
+    <strong>sktd</strong>
+    </dt>
+    <dd>
+    Socket/File descriptor. 
+ Provides OO-styled access to methods, such as sktd:send(data) and sktd:close()
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>task</em></code>:  task that will emit signal related to this object</li>
+    </ul>
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "task"></a>
+    <strong>task</strong>
+    </dt>
+    <dd>
+    Task that emits signals. 
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
