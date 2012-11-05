@@ -8,7 +8,8 @@
 -- a background task.
 -- If a line starts with a ":", it is equivalent to a "return ...",
 -- filtered trough a simple pretifier (usefull for checking tables).
--- This module depends on nixio and the nixiorator task.
+-- This module depends on the selector task, which must be started
+-- seperataly.
 -- @module shell
 -- @usage local server = require 'shell'
 --server.init({ip='127.0.0.1', port=2012})
@@ -193,17 +194,14 @@ M.init = function(conf)
 	local ip = conf.ip or '*'
 	local port = conf.port or 2012
 		
-	local tcp_server = selector.new_tcp_server({
-		locaddr=ip, 
-		locport=port,
-		pattern='line',
-	})
+	local tcp_server = selector.new_tcp_server(ip, port, 'line')
 	sched.run( function()
 		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
+		log('SHELL', 'INFO', 'shell accepting connections on %s %s', tcp_server:getsockname())
 		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
 			print ("#", os.time(), sktd_cli )
 			if sktd_cli then
-				log('SHELL', 'INFO', 'connection accepted from %s %s', sktd_cli.skt:getpeername())
+				log('SHELL', 'INFO', 'connection accepted from %s %s', sktd_cli:getpeername())
 				local shell = new_shell() 
 				print_from_pipe(shell.pipe_out, sktd_cli)
 				local waitd_skt = {emitter=selector.task, events={sktd_cli.events.data}}

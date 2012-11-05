@@ -55,9 +55,8 @@
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
-  <li><a href="../examples/test-nixiorator.lua.html">test-nixiorator.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
-  <li><a href="../examples/test-socketeer.lua.html">test-socketeer.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
   <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
@@ -69,9 +68,11 @@
 
 <h1>Module <code>selector</code></h1>
 
-<p>Library suporting asynchronous access to sockets and files.</p>
+<p>Module suporting asynchronous access to sockets and files.</p>
 <p> Selector integrates Lumen with a select/poll-like mechanism. 
- Backends luasocket and nixio are supported.</p>
+ Backends luasocket and nixio are supported.
+ Module's task will generate signals on data arrival on opened 
+ sockets/files</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local selector = require 'selector'
@@ -97,6 +98,10 @@ selector.init({service='luasocket'})</pre>
 	<td class="summary">Creates a UDP socket.</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#new_fd">new_fd&nbsp;(filename, flags, pattern, handler)</a></td>
+	<td class="summary">Opens a file.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#close">close&nbsp;(sktd)</a></td>
 	<td class="summary">Closes a socket/file.</td>
 	</tr>
@@ -113,8 +118,12 @@ selector.init({service='luasocket'})</pre>
 	<td class="summary">Asynchronous data send.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_fd">new_fd&nbsp;(filename, flags, pattern, handler)</a></td>
-	<td class="summary">Opens a file.</td>
+	<td class="name" nowrap><a href="#getsockname">getsockname&nbsp;(sktd)</a></td>
+	<td class="summary">Get the local address of a socket.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#getpeername">getpeername&nbsp;(sktd)</a></td>
+	<td class="summary">Get the remote address of a socket.</td>
 	</tr>
 </table>
 <h2><a href="#Tables">Tables</a></h2>
@@ -166,15 +175,9 @@ selector.init({service='luasocket'})</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>locaddr</em></code>: 
-
-</li>
-       <li><code><em>locport</em></code>: 
-
-</li>
-       <li><code><em>pattern</em></code>: 
-
-</li>
+       <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
+       <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  optional handler function for new clients, 
  must have a (sktd, data, err, part) signature</li>
     </ul>
@@ -198,21 +201,11 @@ selector.init({service='luasocket'})</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>address</em></code>: 
-
-</li>
-       <li><code><em>port</em></code>: 
-
-</li>
-       <li><code><em>locaddr</em></code>: 
-
-</li>
-       <li><code><em>locport</em></code>: 
-
-</li>
-       <li><code><em>pattern</em></code>: 
-
-</li>
+       <li><code><em>address</em></code>:  Remote IP address.</li>
+       <li><code><em>port</em></code>:  Remote port ()</li>
+       <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
+       <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
     </ul>
 
@@ -235,21 +228,38 @@ selector.init({service='luasocket'})</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>address</em></code>: 
+       <li><code><em>address</em></code>:  Remote IP address.</li>
+       <li><code><em>port</em></code>:  Remote port ()</li>
+       <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
+       <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
+       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a <a href="../modules/selector.html#sktd">sktd</a> object
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "new_fd"></a>
+    <strong>new_fd&nbsp;(filename, flags, pattern, handler)</strong>
+    </dt>
+    <dd>
+    Opens a file. 
+ Emits a <em>sktd.events.data, data</em> signal on incommig data, 
+ and <em>sktd.events.data, nil, err</em> on errors.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>filename</em></code>: 
 
 </li>
-       <li><code><em>port</em></code>: 
-
-</li>
-       <li><code><em>locaddr</em></code>: 
-
-</li>
-       <li><code><em>locport</em></code>: 
-
-</li>
-       <li><code><em>pattern</em></code>: 
-
-</li>
+       <li><code><em>flags</em></code>:  ATM as specified for nixio.open()</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
     </ul>
 
@@ -329,32 +339,41 @@ selector.init({service='luasocket'})</pre>
 
 </dd>
     <dt>
-    <a name = "new_fd"></a>
-    <strong>new_fd&nbsp;(filename, flags, pattern, handler)</strong>
+    <a name = "getsockname"></a>
+    <strong>getsockname&nbsp;(sktd)</strong>
     </dt>
     <dd>
-    Opens a file. 
- Emits a <em>sktd.events.data, data</em> signal on incommig data, 
- and <em>sktd.events.data, nil, err</em> on errors.
+    Get the local address of a socket. 
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>filename</em></code>: 
-
-</li>
-       <li><code><em>flags</em></code>: 
-
-</li>
-       <li><code><em>pattern</em></code>: 
-
-</li>
-       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+       <li><code><em>sktd</em></code>:  a <a href="../modules/selector.html#sktd">sktd</a> object</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        a <a href="../modules/selector.html#sktd">sktd</a> object
+        <em>ip, port</em>
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "getpeername"></a>
+    <strong>getpeername&nbsp;(sktd)</strong>
+    </dt>
+    <dd>
+    Get the remote address of a socket. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>sktd</em></code>:  a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <em>ip, port</em>
     </ol>
 
 

@@ -1,6 +1,8 @@
---- Library suporting asynchronous access to sockets and files.
+--- Module suporting asynchronous access to sockets and files.
 -- Selector integrates Lumen with a select/poll-like mechanism. 
 -- Backends luasocket and nixio are supported.
+-- Module's task will generate signals on data arrival on opened 
+-- sockets/files
 -- @module selector
 -- @usage local selector = require 'selector'
 --selector.init({service='luasocket'})
@@ -21,9 +23,9 @@ M.init = function(conf)
 	--- Creates a TCP server socket.
 	-- Emits a _sktd.events.accepted, client\_sktd_ signal on new connections.
 	-- @function new_tcp_server
-	-- @param locaddr
-	-- @param locport
-	-- @param pattern
+	-- @param locaddr Local IP address or '*' (defaults to '*')
+	-- @param locport Local port (defaults to 0)
+	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler optional handler function for new clients, 
 	-- must have a (sktd, data, err, part) signature
 	-- @return a @{sktd} object
@@ -33,11 +35,11 @@ M.init = function(conf)
 	-- Emits a _sktd.events.data, data_ signal on incommig data, 
 	-- and _sktd.events.data, nil, err_ on errors.
 	-- @function new_tcp_client
-	-- @param address
-	-- @param port
-	-- @param locaddr
-	-- @param locport
-	-- @param pattern
+	-- @param address Remote IP address. 
+	-- @param port Remote port ()
+	-- @param locaddr Local IP address or '*' (defaults to '*')
+	-- @param locport Local port (defaults to 0)
+	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
 	-- @return a @{sktd} object
 	M.new_tcp_client = native.new_tcp_client
@@ -46,14 +48,25 @@ M.init = function(conf)
 	-- Emits a _sktd.events.data, data_ signal on incommig data, 
 	-- and _sktd.events.data, nil, err_ on errors.
 	-- @function new_udp
-	-- @param address
-	-- @param port
-	-- @param locaddr
-	-- @param locport
-	-- @param pattern
+	-- @param address Remote IP address. 
+	-- @param port Remote port ()
+	-- @param locaddr Local IP address or '*' (defaults to '*')
+	-- @param locport Local port (defaults to 0)
+	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
 	-- @return a @{sktd} object
 	M.new_udp = native.new_udp
+	
+	--- Opens a file.
+	-- Emits a _sktd.events.data, data_ signal on incommig data, 
+	-- and _sktd.events.data, nil, err_ on errors.
+	-- @function new_fd
+	-- @param filename 
+	-- @param flags ATM as specified for nixio.open()
+	-- @param pattern Any of nixio or luasocket patterns.
+	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
+	-- @return a @{sktd} object
+	M.new_fd = native.new_fd
 	
 	--- Closes a socket/file.
 	-- @function close
@@ -78,19 +91,22 @@ M.init = function(conf)
 	-- @param data data to send
 	M.send_async = native.send_async
 	
-	--- Opens a file.
-	-- Emits a _sktd.events.data, data_ signal on incommig data, 
-	-- and _sktd.events.data, nil, err_ on errors.
-	-- @function new_fd
-	-- @param filename
-	-- @param flags
-	-- @param pattern
-	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
-	-- @return a @{sktd} object
-	M.new_fd = native.new_fd
 	
+	--- Get the local address of a socket.
+	-- @function getsockname
+	-- @param sktd a @{sktd} object
+	-- @return  _ip, port_
+	M.getsockname = native.getsockname
+
+	--- Get the remote address of a socket.
+	-- @function getpeername
+	-- @param sktd a @{sktd} object
+	-- @return  _ip, port_
+	M.getpeername = native.getpeername
+
 	--- Task that emits signals.
 	M.task = native.task
+
 
 	require 'catalog'.get_catalog('tasks'):register('selector', M.task)
 

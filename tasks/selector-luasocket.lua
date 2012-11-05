@@ -27,7 +27,7 @@ sched.idle = socket.sleep
 --local write_pipes = setmetatable({}, weak_key)
 --local outstanding_data = setmetatable({}, weak_key)
 
-local task
+local module_task
 
 local unregister = function (fd)
 	local sktd = sktds[fd]
@@ -129,7 +129,7 @@ local step = function (timeout)
 				if client then
 					local skt_table_client = {
 						fd=client,
-						task=task,
+						task=module_task,
 						events={data=client},
 						pattern=pattern,
 						handler = sktd.handler,
@@ -184,7 +184,7 @@ local step = function (timeout)
 		end
 	end
 end
-task = sched.run( function ()
+module_task = sched.new_task( function ()
 	while true do
 		local t, _ = sched.yield()
 		step( t )
@@ -212,7 +212,7 @@ M.init = function()
 		local sktd=init_sktd()
 		sktd.fd=assert(socket.bind(locaddr, locport))
 		sktd.events = {accepted=sktd.fd}
-		sktd.task=task
+		sktd.task=module_task
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
 		register_server(sktd)
@@ -223,7 +223,7 @@ M.init = function()
 		local sktd=init_sktd()
 		sktd.fd=assert(socket.connect(address, port, locaddr, locport))
 		sktd.events = {data=sktd.fd}
-		sktd.task=task
+		sktd.task=module_task
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
 		register_client(sktd)
@@ -234,7 +234,7 @@ M.init = function()
 		local sktd=init_sktd()
 		sktd.fd=socket.udp()
 		sktd.events = {data=sktd.fd}
-		sktd.task=task
+		sktd.task=module_task
 		sktd.pattern=pattern 
 		sktd.fd:setsockname(locaddr or '*', locport or 0)
 		sktd.fd:setpeername(address or '*', port)
@@ -274,11 +274,18 @@ M.init = function()
 
 		sched.yield()
 	end
-	
 	M.new_fd = function ()
 		return nil, 'Not supported by luasocket'
 	end
-
+	M.getsockname = function(sktd)
+		return sktd.fd:getsockname()
+	end
+	M.getpeername = function(sktd)
+		return sktd.fd:getpeername()
+	end
+	
+	M.task=module_task
+	module_task:run()
 	--[[
 	M.register_server = service.register_server
 	M.register_client = service.register_client

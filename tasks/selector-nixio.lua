@@ -24,6 +24,8 @@ local outstanding_data = setmetatable({}, weak_key)
 
 local M = {}
 
+local module_task
+
 -------------------
 -- replace sched's default get_time and idle with nixio's
 sched.get_time = function()
@@ -50,8 +52,10 @@ local normalize_pattern = function( pattern)
 	end
 	print ('Could not normalize the pattern:', pattern)
 end
+
 local init_sktd = function(sktdesc)
 	local sktd = setmetatable(sktdesc or {},{ __index=M })
+	sktd.task = module_task
 	return sktd
 end
 
@@ -111,7 +115,7 @@ local register_client = function (sktd)
 	pollt[#pollt+1]=polle
 end
 local register_server = function (sktd ) --, block, backlog)
-	local accepted_event = sktd.events.data
+	local accepted_event = sktd.events.accepted
 	local function accept_handler(polle)
 		local skt, host, port = polle.fd:accept()
 		local skt_table_client = {
@@ -201,7 +205,7 @@ local step = function (timeout)
 	end
 
 end
-local task = sched.run( function ()
+module_task = sched.new_task( function ()
 	while true do
 		local t, _ = sched.yield()
 		step( t )
@@ -219,9 +223,9 @@ M.init = function(conf)
 	M.new_tcp_server = function(locaddr, locport, pattern, handler)
 		--address, port, pattern, backlog)
 		local sktd=init_sktd()
+		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport, 'inet', 'stream'))
 		sktd.events = {accepted=sktd.fd }
-		sktd.task = task
 		sktd.handler = handler
 		sktd.pattern = normalize_pattern(pattern)
 		register_server(sktd)
@@ -229,9 +233,9 @@ M.init = function(conf)
 	end
 	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler)
 		local sktd=init_sktd()
+		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'stream'))
 		sktd.events = {data=sktd.fd}
-		sktd.task=task
 		sktd.fd:connect(address, port)
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
@@ -240,10 +244,10 @@ M.init = function(conf)
 	end
 	M.new_udp = function( address, port, locaddr, locport, pattern, handler)
 		local sktd=init_sktd()
+		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'dgram'))
 		sktd.events = {data=sktd.fd}
-		sktd.task = task
-		sktd.fd:connect(address,port or 0)
+		if address and port then sktd.fd:connect(address, port) end
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler
 		register_client(sktd)
@@ -254,7 +258,6 @@ M.init = function(conf)
 		sktd.flags = flags  or {}
 		sktd.fd = assert(nixio.open(filename, nixio.open_flags(unpack(flags))))
 		sktd.events = {data=sktd.fd}
-		sktd.task = task
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler
 		register_client(sktd)
@@ -285,8 +288,16 @@ M.init = function(conf)
 
 		sched.yield()
 	end
+	M.getsockname = function(sktd)
+		return sktd.fd:getsockname()
+	end
+	M.getpeername = function(sktd)
+		return sktd.fd:getpeername()
+	end
 
-	M.task=task
+	
+	M.task=module_task
+	module_task:run()
 	
 	return M
 end
