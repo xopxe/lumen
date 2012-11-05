@@ -51,8 +51,7 @@ local sched_tasks = M.tasks
 --    print(waitd)
 --    for taskd, _ in pairs (tasks) do print(taskd) end 
 --end
-M.waitds = {}
-setmetatable(M.waitds, weak_key)
+M.waitds = setmetatable({}, weak_key)
 local sched_waitds = M.waitds
 
 
@@ -461,7 +460,7 @@ M.new_waitd = function(waitd_table)
 		log('SCHED', 'DETAIL', '%s created %s', tostring(M.running_task), tostring(waitd_table))
 		
 		register_signal( M.running_task, waitd_table )
-		sched_waitds[waitd_table] = {[M.running_task]=true}
+		sched_waitds[waitd_table] = setmetatable({[M.running_task]=true}, weak_key)
 	elseif not sched_waitds[waitd_table][M.running_task] then
 		-- additional task using a waitd
 		log('SCHED', 'DETAIL', '%s using existing %s', tostring(M.running_task), tostring(waitd_table))
