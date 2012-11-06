@@ -1,5 +1,6 @@
-* Migrate from nixiorator/socketeer to a selector task with 
-  multiple backends (nixio/luasocket/ljsyscall)
+* add a ljsyscall backend to selector
+
+* rethink waitd structure (why "emitter" and "events"?)
 
 * Proxy task, to route signals trough a socket between Lumen
   instances.
