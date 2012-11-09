@@ -38,7 +38,6 @@ sched.idle = function (t)
 	nixio.nanosleep(sec, nsec)
 end
 
-
 local normalize_pattern = function( pattern)
 	if pattern=='*l' or pattern=='line' then
 		return 'line'
@@ -255,8 +254,35 @@ M.init = function(conf)
 	end
 	M.new_fd = function ( filename, flags, pattern, handler )
 		local sktd=init_sktd()
+		local err
 		sktd.flags = flags  or {}
-		sktd.fd = assert(nixio.open(filename, nixio.open_flags(unpack(flags))))
+		sktd.fd, err = nixio.open(filename, nixio.open_flags(unpack(flags)))
+		if not sktd.fd then return nil, err end
+		sktd.events = {data=sktd.fd}
+		sktd.pattern =  normalize_pattern(pattern)
+		sktd.handler = handler
+		register_client(sktd)
+		return sktd
+	end
+	M.grab_stdout = function ( command, pattern, handler )
+		local function run_shell_nixio(command)
+		    local fdi, fdo = nixio.pipe()
+		    local pid = nixio.fork()
+			if pid > 0 then 
+				--parent
+				fdo:close()
+				return fdi
+			else
+				--child
+				nixio.dup(fdo, nixio.stdout)
+				fdi:close()
+				fdo:close()
+				nixio.exec("/bin/sh", "-c", command) --should not return
+			end
+		end
+		local sktd=init_sktd()
+		sktd.fd =  run_shell_nixio(command)
+		if not sktd.fd then return end
 		sktd.events = {data=sktd.fd}
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler

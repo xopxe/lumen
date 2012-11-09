@@ -68,6 +68,17 @@ M.init = function(conf)
 	-- @return a @{sktd} object
 	M.new_fd = native.new_fd
 	
+	--- Grab the output of a command.
+	-- Usefull for capturing the output of long running programs.
+	-- Emits a _sktd.events.data, data_ signal on incommig data, 
+	-- and _sktd.events.data, nil, err_ on errors.
+	-- @function grab_stdout
+	-- @param command command whose ouput capture
+	-- @param pattern Any of nixio or luasocket patterns.
+	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
+	-- @return a @{sktd} object
+	M.grab_stdout = native.grab_stdout 
+	
 	--- Closes a socket/file.
 	-- @function close
 	-- @param sktd a @{sktd} object
@@ -90,7 +101,6 @@ M.init = function(conf)
 	-- @param sktd a @{sktd} object
 	-- @param data data to send
 	M.send_async = native.send_async
-	
 	
 	--- Get the local address of a socket.
 	-- @function getsockname
