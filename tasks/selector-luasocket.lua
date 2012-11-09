@@ -7,7 +7,7 @@ local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type
 
 local weak_key = { __mode = 'k' }
 
-local CHUNK_SIZE = 1500 --65536
+local CHUNK_SIZE = 1480 --65536
 
 --size parameter for pipe for asynchrous sending
 local ASYNC_SEND_BUFFER=10
