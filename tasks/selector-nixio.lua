@@ -92,8 +92,10 @@ local register_client = function (sktd)
 			--print('!!!!!',data,code,msg)
 			if (code==nil)
 			or (code and code~=11) then
-			    unregister(sktd)
-			    sched.signal(data_event, nil, 'closed')
+				--sktd:close()
+				unregister(sktd)
+				sched.signal(data_event, nil, 'closed')
+				sktd:close()
 			end
 		end
 	end
