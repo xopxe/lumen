@@ -47,7 +47,7 @@ M.register = function ( catalogd, name, object )
 		return nil, 'used'
 	end
 	log('CATALOG', 'INFO', '%s registered in catalog %s as "%s"', 
-		tostring(object), tostring(name), tostring(catalogd))
+		tostring(object), tostring(catalogd), tostring(name))
 	catalogd[name] = object
 	sched.signal(get_register_event(catalogd, name))
 	return true
