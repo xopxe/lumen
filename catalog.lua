@@ -60,10 +60,10 @@ end
 -- @param timeout time to wait. nil or negative waits for ever.
 -- @return the object if successful; on timeout expiration returns nil, 'timeout'.
 M.waitfor = function ( catalogd, name, timeout )
-	local taskd = catalogd[name]
-	log('CATALOG', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(taskd))
-	if taskd then
-		return taskd
+	local object = catalogd[name]
+	log('CATALOG', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(object))
+	if object then
+		return object
 	else
 		local emitter, event = sched.wait({
 			emitter='*', 
@@ -71,7 +71,7 @@ M.waitfor = function ( catalogd, name, timeout )
 			events={get_register_event(catalogd, name)}
 		})
 		if event then
-			return emitter
+			return catalogd[name]
 		else
 			return nil, 'timeout'
 		end
