@@ -37,7 +37,7 @@ function get_register_event (catalogd, name)
 	end
 end
 
---- Register a name to a object
+--- Register a name to a object.
 -- @param catalogd the catalog to use.
 -- @param name a name for the object
 -- @param object the object to name.

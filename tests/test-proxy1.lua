@@ -13,18 +13,32 @@ require "log".setlevel('INFO')
 
 
 sched.run(function()
-	local e = {aaa=true}
-	signals:register('AAA',e)
 	proxy.init({ip='*', port=2002})
-	local i=0
-	while true do
-		i=i+1
-		print (i)
-		sched.signal(e, nil, i)
-		sched.sleep(1)
-	end
-	--tasks:register('main', sched.running_task)
-	
+	sched.run(function()
+		local e = {aaa=true}
+		signals:register('AAA',e)
+		local i=0
+		while true do
+			i=i+1
+			print (i)
+			sched.signal(e, i)
+			sched.sleep(1)
+		end
+		--tasks:register('main', sched.running_task)
+	end)
+	sched.run(function()
+		local e = {bbb=true}
+		signals:register('BBB',e)
+		local i=0
+		while true do
+			i=i+1
+			print (i)
+			sched.signal(e, nil, i)
+			sched.sleep(0.3)
+		end
+		--tasks:register('main', sched.running_task)
+	end)
+
 end)
 
 sched.go()
