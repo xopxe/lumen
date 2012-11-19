@@ -35,7 +35,6 @@ local function bencodeable_to_vararg(b)
 	return unpack(b, 1, b.n)
 end
 
-
 --- Creates a waitd object over a remote Lumen instance.
 -- The remote Lumen instance must have the proxy module started,
 -- and available trough a known ip address.
@@ -51,18 +50,21 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 	local encoded = bencode.encode(waitd_table)
 	--print ('>>>', encoded)
 	
-	local buff = ''
-
-	sktd_client = selector.new_tcp_client(ip, port, nil, nil, nil, function(sktd, data, err) 
-		if not data then sched.running_task:kill() end
-		buff = buff .. data
-		--print ('incomming', buff)
-		local decoded, index = assert(bencode.decode(buff))
-		if decoded then 
-			sched.signal(incomming_signal, bencodeable_to_vararg(decoded)) 
-			buff = buff:sub(index)
+	local function get_incomming_handler()
+		local buff = ''
+		return function(sktd, data, err) 
+			if not data then sched.running_task:kill() end
+			buff = buff .. data
+			--print ('incomming', buff)
+			local decoded, index = assert(bencode.decode(buff))
+			if decoded then 
+				sched.signal(incomming_signal, bencodeable_to_vararg(decoded)) 
+				buff = buff:sub(index)
+			end
 		end
-	end)
+	end
+
+	sktd_client = selector.new_tcp_client(ip, port, nil, nil, nil, get_incomming_handler())
 	sktd_client:send_sync(encoded)
 	local remote_waitd = sched.new_waitd ({
 		emitter = selector.task,
@@ -80,48 +82,53 @@ M.init = function(conf)
 	local ip = assert(conf.ip)
 	local port = conf.port or 1985
 	--M.task = sched.run(function()
-	local buff = ''
-	M.skt_server = selector.new_tcp_server(ip, port, nil, function(sktd, data, err)
-		if data then 
-			buff=buff .. data
-			local rwaitd, index = bencode.decode(buff)
-			
-			if rwaitd then
-				--print ('<<<', rwaitd.events)
+	
+	local function get_request_handler()
+		local buff = ''
+		return function(sktd, data, err)
+			if data then 
+				buff=buff .. data
+				local rwaitd, index = bencode.decode(buff)
 				
-				buff = buff:sub(index)
-				--rwaitd.emitter =
-				
-				local remitter, emitter = rwaitd.emitter, {}
-				for i=1, #remitter do
-					local e = remitter[i]
-					if e=='*' then
-						emitter[#emitter+1] = '*'
-					else
-						emitter[#emitter+1] = tasks:waitfor(e, 0)
+				if rwaitd then
+					--print ('<<<', rwaitd.events)
+					
+					buff = buff:sub(index)
+					--rwaitd.emitter =
+					
+					local remitter, emitter = rwaitd.emitter, {}
+					for i=1, #remitter do
+						local e = remitter[i]
+						if e=='*' then
+							emitter[#emitter+1] = '*'
+						else
+							emitter[#emitter+1] = tasks:waitfor(e)
+						end
 					end
-				end
-				rwaitd.emitter = emitter
-				
-				local revents, events = rwaitd.events, {}
-				for i=1, #revents do
-					local e = revents[i]
-					if e=='*' then
-						events[#events+1] = '*'
-					else
-						events[#events+1] = signals:waitfor(revents[i], 0)
+					rwaitd.emitter = emitter
+					
+					local revents, events = rwaitd.events, {}
+					for i=1, #revents do
+						local e = revents[i]
+						if e=='*' then
+							events[#events+1] = '*'
+						else
+							events[#events+1] = signals:waitfor(e)
+						end
 					end
+					rwaitd.events = events
+					
+					sched.sigrun(rwaitd, function(_,_,...)
+						--print ('caught', ...)
+						local encoded = assert(bencode.encode(vararg_to_bencodeable(...)))
+						sktd:send_sync(encoded)
+					end)
 				end
-				rwaitd.events = events
-				
-				sched.sigrun(rwaitd, function(_,_,...)
-					--print ('caught', ...)
-					local encoded = assert(bencode.encode(vararg_to_bencodeable(...)))
-					sktd:send_sync(encoded)
-				end)
 			end
 		end
-	end)
+	end
+	
+	M.skt_server = selector.new_tcp_server(ip, port, nil, get_request_handler())
 end
 
 
