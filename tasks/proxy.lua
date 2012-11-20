@@ -11,11 +11,13 @@
 
 local sched = require 'sched'
 local selector = require 'tasks/selector'
-local signals = require 'catalog'.get_catalog('signals')
-local tasks = require 'catalog'.get_catalog('tasks')
+local events_catalog = require 'catalog'.get_catalog('signals')
+local tasks_catalog = require 'catalog'.get_catalog('tasks')
+local log=require 'log'
 
 
- require 'lib/bencode'
+require 'lib/bencode'
+local bencode = bencode
 
 local M = {}
 
@@ -40,11 +42,14 @@ end
 -- and available trough a known ip address.
 -- The waitd_table is as the one used in plain _sched\.wait()_ call, with
 -- the difference that the objects in the _emitter_ and _events_ fields are
--- names which will be queried in the remote node's "tasks" and "events" catalogs.
+-- names which will be queried in the remote node's "tasks" and "events" catalogs
+-- (except '*', which has the usual meaning).
+-- There is an additional parameter, _name\_timeout_, which controls the querying
+-- in the catalogs.
 -- @param ip ip of the remote proxy module.
 -- @param port port of the remote proxy module.
--- @param waitd_table
--- @return a waitd objects
+-- @param waitd_table a wait descriptor.
+-- @return a waitd object
 M.new_remote_waitd = function(ip, port, waitd_table)
 	local incomming_signal = {}
 	local encoded = bencode.encode(waitd_table)
@@ -58,8 +63,8 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 			--print ('incomming', buff)
 			local decoded, index = assert(bencode.decode(buff))
 			if decoded then 
-				sched.signal(incomming_signal, bencodeable_to_vararg(decoded)) 
 				buff = buff:sub(index)
+				sched.signal(incomming_signal, bencodeable_to_vararg(decoded)) 
 			end
 		end
 	end
@@ -77,7 +82,7 @@ end
 --- Starts the proxy.
 -- This starts the task that will accept incomming wait requests.
 -- @param conf the configuration table. The fields of interest are
--- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 2012)
+-- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 1985)
 M.init = function(conf)
 	local ip = assert(conf.ip)
 	local port = conf.port or 1985
@@ -85,24 +90,22 @@ M.init = function(conf)
 	
 	local function get_request_handler()
 		local buff = ''
-		return function(sktd, data, err)
-			if data then 
-				buff=buff .. data
+		return function(sktd, decoded, err)
+			if decoded then 
+				buff=buff .. decoded
 				local rwaitd, index = bencode.decode(buff)
 				
 				if rwaitd then
-					--print ('<<<', rwaitd.events)
-					
 					buff = buff:sub(index)
-					--rwaitd.emitter =
 					
+					local name_timeout = rwaitd.name_timeout
 					local remitter, emitter = rwaitd.emitter, {}
 					for i=1, #remitter do
 						local e = remitter[i]
 						if e=='*' then
 							emitter[#emitter+1] = '*'
 						else
-							emitter[#emitter+1] = tasks:waitfor(e)
+							emitter[#emitter+1] = tasks_catalog:waitfor(e, name_timeout)
 						end
 					end
 					rwaitd.emitter = emitter
@@ -113,15 +116,20 @@ M.init = function(conf)
 						if e=='*' then
 							events[#events+1] = '*'
 						else
-							events[#events+1] = signals:waitfor(e)
+							events[#events+1] = events_catalog:waitfor(e, name_timeout)
 						end
 					end
 					rwaitd.events = events
 					
-					sched.sigrun(rwaitd, function(_,_,...)
+					sched.sigrun(rwaitd, function(_, e,...)
 						--print ('caught', ...)
-						local encoded = assert(bencode.encode(vararg_to_bencodeable(...)))
-						sktd:send_sync(encoded)
+						local bencodeable = vararg_to_bencodeable(e, ...)
+						local encoded, err = bencode.encode(bencodeable)
+						if encoded then 
+							sktd:send_sync(encoded) 
+						else
+							log('PROXY', 'ERROR', 'failed to bencode event "%s" with error "%s"', tostring(e), tostring(err))
+						end
 					end)
 				end
 			end

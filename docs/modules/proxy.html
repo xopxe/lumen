@@ -33,7 +33,6 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
-<li><a href="#Tables">Tables</a></li>
 </ul>
 
 
@@ -42,10 +41,10 @@
   <li><a href="../modules/catalog.html">catalog</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
-  <li><a href="../modules/proxy.html">proxy</a></li>
+  <li><strong>proxy</strong></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/selector.html">selector</a></li>
-  <li><strong>shell</strong></li>
+  <li><a href="../modules/shell.html">shell</a></li>
 </ul>
 <h2>Topics</h2>
 <ul>
@@ -66,38 +65,26 @@
 
 <div id="content">
 
-<h1>Module <code>shell</code></h1>
+<h1>Module <code>proxy</code></h1>
 
-<p>Task providing an interactive shell.</p>
-<p> This is a interactive shell that allows a user to connect
- to the Lumen scheduler, and maintain a Lua session.
- To connect, use telnet to the service's ip and port.
- Besides running lua code, the user have some helper syntax:
- If a line starts with a "=", it is equivalent to a "return ..."
- If a line starts with a "&amp;", the following code will run in 
- a background task.
- If a line starts with a ":", it is equivalent to a "return ...",
- filtered trough a simple pretifier (usefull for checking tables).
+<p>Proxy service for signals.</p>
+<p> This module allows to wait on and receive signals emitted in a remote
+ Lumen instance, trough a socket.
+ Signals are serialized using bencode, and thus bencode's restrictions 
+ on what can be passed trough apply: strings, numbers, lists (pure arrays) and
+ tables with strings as  keys.
  This module depends on the selector task, which must be started
  seperataly.</p>
-    <h3>Usage:</h3>
-    <ul>
-        <pre class="example">local server = require 'shell'
-server.init({ip='127.0.0.1', port=2012})</pre>
-    </ul>
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
-	<td class="summary">Start the server.</td>
+	<td class="name" nowrap><a href="#new_remote_waitd">new_remote_waitd&nbsp;(ip, port, waitd_table)</a></td>
+	<td class="summary">Creates a waitd object over a remote Lumen instance.</td>
 	</tr>
-</table>
-<h2><a href="#Tables">Tables</a></h2>
-<table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#shell_env">shell_env</a></td>
-	<td class="summary">The environment for the shell.</td>
+	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
+	<td class="summary">Starts the proxy.</td>
 	</tr>
 </table>
 
@@ -109,41 +96,47 @@ server.init({ip='127.0.0.1', port=2012})</pre>
     
     <dl class="function">
     <dt>
+    <a name = "new_remote_waitd"></a>
+    <strong>new_remote_waitd&nbsp;(ip, port, waitd_table)</strong>
+    </dt>
+    <dd>
+    Creates a waitd object over a remote Lumen instance. 
+ The remote Lumen instance must have the proxy module started,
+ and available trough a known ip address.
+ The waitd_table is as the one used in plain <em>sched.wait()</em> call, with
+ the difference that the objects in the <em>emitter</em> and <em>events</em> fields are
+ names which will be queried in the remote node's "tasks" and "events" catalogs
+ (except '*', which has the usual meaning).
+ There is an additional parameter, <em>name_timeout</em>, which controls the querying
+ in the catalogs.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>ip</em></code>:  ip of the remote proxy module.</li>
+       <li><code><em>port</em></code>:  port of the remote proxy module.</li>
+       <li><code><em>waitd_table</em></code>:  a wait descriptor.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a waitd object
+    </ol>
+
+
+</dd>
+    <dt>
     <a name = "init"></a>
     <strong>init&nbsp;(conf)</strong>
     </dt>
     <dd>
-    Start the server. 
+    Starts the proxy. 
+ This starts the task that will accept incomming wait requests.
 
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>conf</em></code>:  the configuration table. The fields of interest are
- <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 2012)</li>
-    </ul>
-
-
-
-
-</dd>
-</dl>
-    <h2><a name="Tables"></a>Tables</h2>
-    
-    <dl class="function">
-    <dt>
-    <a name = "shell_env"></a>
-    <strong>shell_env</strong>
-    </dt>
-    <dd>
-    The environment for the shell. 
- When starting a new shell session, it's environment will be 
- initialized from this table. 
- By default, it includes everything from _G plus the fields listed below.
- If you want something else, change this table.
-
-    <h3>Fields:</h3>
-    <ul>
-       <li><code><em>sched</em></code>:  A reference to the Lumen scheduler library</li>
-       <li><code><em>ps</em></code>:  A function that prints a human readable tasks list</li>
+ <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 1985)</li>
     </ul>
 
 

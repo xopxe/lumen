@@ -17,7 +17,8 @@ sched.run(function()
 	local w = proxy.new_remote_waitd('127.0.0.1', 2002, {
 		emitter={'*'},
 		events={'AAA'},
-		timeout=10,
+		--timeout=10,
+		name_timeout = 30,
 	})
 	sched.sigrun(w, function(...)
 		print ('+A', ...)
@@ -26,7 +27,8 @@ sched.run(function()
 	local w = proxy.new_remote_waitd('127.0.0.1', 2002, {
 		emitter={'*'},
 		events={'BBB'},
-		timeout=10,
+		--timeout=10,
+		name_timeout = 30,
 	})
 	sched.sigrun(w, function(...)
 		print ('+B', ...)
