@@ -11,7 +11,7 @@
 
 local sched = require 'sched'
 local selector = require 'tasks/selector'
-local events_catalog = require 'catalog'.get_catalog('signals')
+local events_catalog = require 'catalog'.get_catalog('events')
 local tasks_catalog = require 'catalog'.get_catalog('tasks')
 local log=require 'log'
 
@@ -61,15 +61,17 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 			if not data then sched.running_task:kill() end
 			buff = buff .. data
 			--print ('incomming', buff)
-			local decoded, index = assert(bencode.decode(buff))
+			local decoded, index, e = bencode.decode(buff)
 			if decoded then 
 				buff = buff:sub(index)
 				sched.signal(incomming_signal, bencodeable_to_vararg(decoded)) 
+			else
+				log('PROXY', 'ERROR', 'failed to bdecode buff  with length %s with error "%s"', tostring(#buff), tostring(index).." "..tostring(e))
 			end
 		end
 	end
 
-	sktd_client = selector.new_tcp_client(ip, port, nil, nil, nil, get_incomming_handler())
+	local sktd_client = selector.new_tcp_client(ip, port, nil, nil, nil, get_incomming_handler())
 	sktd_client:send_sync(encoded)
 	local remote_waitd = sched.new_waitd ({
 		emitter = selector.task,
@@ -84,58 +86,61 @@ end
 -- @param conf the configuration table. The fields of interest are
 -- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 1985)
 M.init = function(conf)
-	local ip = assert(conf.ip)
+	local ip = conf.ip or '*'
 	local port = conf.port or 1985
 	--M.task = sched.run(function()
 	
 	local function get_request_handler()
 		local buff = ''
-		return function(sktd, decoded, err)
-			if decoded then 
-				buff=buff .. decoded
+		return function(sktd, encoded, err)
+			if encoded then 
+				buff=buff .. encoded
 				local rwaitd, index = bencode.decode(buff)
 				
 				if rwaitd then
 					buff = buff:sub(index)
 					
-					local name_timeout = rwaitd.name_timeout
-					local remitter, emitter = rwaitd.emitter, {}
-					for i=1, #remitter do
-						local e = remitter[i]
-						if e=='*' then
-							emitter[#emitter+1] = '*'
-						else
-							emitter[#emitter+1] = tasks_catalog:waitfor(e, name_timeout)
+					sched.run( function()
+						local name_timeout = rwaitd.name_timeout
+						local remitter, emitter = rwaitd.emitter, {}
+						for i=1, #remitter do
+							local e = remitter[i]
+							if e=='*' then
+								emitter[#emitter+1] = '*'
+							else
+								emitter[#emitter+1] = tasks_catalog:waitfor(e, name_timeout)
+							end
 						end
-					end
-					rwaitd.emitter = emitter
-					
-					local revents, events = rwaitd.events, {}
-					for i=1, #revents do
-						local e = revents[i]
-						if e=='*' then
-							events[#events+1] = '*'
-						else
-							events[#events+1] = events_catalog:waitfor(e, name_timeout)
+						rwaitd.emitter = emitter
+						
+						local revents, events = rwaitd.events, {}
+						for i=1, #revents do
+							local e = revents[i]
+							if e=='*' then
+								events[#events+1] = '*'
+							else
+								events[#events+1] = events_catalog:waitfor(e, name_timeout)
+							end
 						end
-					end
-					rwaitd.events = events
-					
-					sched.sigrun(rwaitd, function(_, e,...)
-						--print ('caught', ...)
-						local bencodeable = vararg_to_bencodeable(e, ...)
-						local encoded, err = bencode.encode(bencodeable)
-						if encoded then 
-							sktd:send_sync(encoded) 
-						else
-							log('PROXY', 'ERROR', 'failed to bencode event "%s" with error "%s"', tostring(e), tostring(err))
-						end
+						rwaitd.events = events
+						
+						sched.sigrun(rwaitd, function(_, e,...)
+							--print ('caught', ...)
+							local bencodeable = vararg_to_bencodeable(e, ...)
+							local encoded, err = bencode.encode(bencodeable)
+							if encoded then 
+								sktd:send_sync(encoded) 
+							else
+								log('PROXY', 'ERROR', 'failed to bencode event "%s" with error "%s"', tostring(e), tostring(err))
+							end
+						end)
 					end)
 				end
 			end
 		end
 	end
 	
+	log('PROXY', 'INFO', 'starting proxy on ip "%s" port "%s"', tostring(ip), tostring(port))	
 	M.skt_server = selector.new_tcp_server(ip, port, nil, get_request_handler())
 end
 
