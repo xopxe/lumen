@@ -1,9 +1,10 @@
 --- Mutex operations.
 -- Mutexes are used to ensure portions of code are accessed by a single
--- task at a time. The module is a function that will return a new 
--- mutex object (see @{mutexd}) when invoked.
+-- task at a time. Said portions are called "critical sections", and are delimited by
+-- a lock acquisition at the beginning, and a lock release at the end. Only one task can acquire
+-- a lock at a time, so there is only one task inside the critical section at a time.
 -- Notice that Lumen being a cooperative scheduler, it will never preempt
--- control from a task. Thus mutexes only make are needed if the fragment of code 
+-- control from a task. Thus mutexes can be needed only if the fragment of code 
 -- being locked contains a call that explicitly relinquish control, such as 
 -- sched.sleep(), sched.yield(), sched.signal() or sched.wait().
 -- @module mutex
@@ -32,66 +33,77 @@ local waitd_locks = setmetatable({}, {__mode = "kv"})
 
 local n_mutex=0
 
-local M = function()
+local M = {}
+
+local event_release = {} --singleton event when releasing a lock
+local events_release = {event_release, sched.EVENT_DIE} --all the events that can release a lock
+
+--memoize waitds that wait for a unlock signal from a certain task
+local function get_waitd_lock (task) 
+	if waitd_locks[task] then return waitd_locks[task] 
+	else
+		local waitd = {emitter=task, events=events_release}
+		waitd_locks[task] = waitd
+		return waitd
+	end
+end
+
+--- Create a new mutex.
+-- @return a mutexd object.
+M.new = function()
 	n_mutex = n_mutex+1
 	local mutex_name = 'MUTEX#'..n_mutex
-	local m = setmetatable({}, {__tostring=function() return mutex_name end})
-
-	local event_release = {}
-	local events_release = {event_release, sched.EVENT_DIE}
-	local function get_waitd_lock (task) --memoize waitds
-		if waitd_locks[task] then return waitd_locks[task] 
-		else
-			local waitd = {emitter=task, events=events_release}
-			waitd_locks[task] = waitd
-			return waitd
-		end
-	end
-	
-	m.acquire = function()
-		while m.locker and m.locker.status~='dead' do
-			sched.wait(get_waitd_lock (m.locker))
-		end
-		m.locker = sched.running_task
-		log('MUTEX', 'DETAIL', '%s locked %s', tostring(m.locker), tostring(m))
-	end
-	
-	m.release = function()
-		if sched.running_task~=m.locker then
-			error('Attempt to release a non-acquired lock')
-		end
-		log('MUTEX', 'DETAIL', '%s released %s', tostring(m.locker), tostring(m))
-		m.locker = nil
-		sched.signal(event_release)
-	end
-
-	m.synchronize = function (f)
-		local wrapper = function(...)
-			m.acquire()
-			local ret = table.pack(f(...))
-			m.release()
-			return unpack(ret,1, ret.n)
-		end
-		log('MUTEX', 'INFO', '%s synchronized on mutex %s as %s'
-			, tostring(f), tostring(m), tostring(wrapper))
-		return wrapper
-	end
-	
+	local m = setmetatable({}, {
+		__tostring=function() return mutex_name end, 
+		__index = M,
+	})
 	return m
 end
 
---- Mutex object.
--- mutexes are used to ensure portions of code are accessed by a single
--- task at a time. Said portions are called "critical sections", and are delimited by
--- a lock acquisition at the beginning, and a lock release at the end. Only one task can acquire
--- a lock at a time, so there is only one task inside the critical section at a time.
--- @field acquire acquires a lock. If the lock is already acquired, will block until the task that 
--- holds it releases the lock or finshes
--- @field release releases the lock. A task can only release a lock it acquired before, otherwise a
+--- Acquire a lock.
+-- If the lock is already acquired, this call will block until the task that 
+-- holds it releases the lock or finishes. Can be invoked in OO fashion 
+-- as _mutexd:acquire()_.
+-- @param mutexd a mutexd object.
+M.acquire = function(mutexd)
+	while mutexd.locker and mutexd.locker.status~='dead' do
+		sched.wait(get_waitd_lock (mutexd.locker))
+	end
+	mutexd.locker = sched.running_task
+	log('MUTEX', 'DETAIL', '%s locked %s', tostring(mutexd.locker), tostring(mutexd))
+end
+
+--- Releases a lock.
+-- A task can only release a lock it acquired before, otherwise a
 -- error is triggered. If a task finishes or is killed, all locks it held will be released automatically.
--- @field synchronize  a helper that takes a function, and returns a wrapper that is locked with 
+-- Can be invoked in OO fashion as _mutexd:release()_.
+-- @param mutexd a mutexd object.
+M.release = function(mutexd)
+	if sched.running_task~=mutexd.locker then
+		error('Attempt to release a non-acquired lock')
+	end
+	log('MUTEX', 'DETAIL', '%s released %s', tostring(mutexd.locker), tostring(mutexd))
+	mutexd.locker = nil
+	sched.signal(event_release)
+end
+
+--- Generate a synchronizzed version of a function.
+-- This is a helper that takes a function, and returns a wrapper that is locked with 
 -- the mutex.
--- @table mutexd
+-- Can be invoked in OO fashion as _mutexd:synchronize(f)_.
+-- @param mutexd a mutexd object.
+-- @param f function to be locked.
+M.synchronize = function (mutexd, f)
+	local wrapper = function(...)
+		mutexd:acquire()
+		local ret = table.pack(f(...))
+		mutexd:release()
+		return unpack(ret,1, ret.n)
+	end
+	log('MUTEX', 'INFO', '%s synchronized on mutex %s as %s'
+		, tostring(f), tostring(mutexd), tostring(wrapper))
+	return wrapper
+end
 
 return M
 

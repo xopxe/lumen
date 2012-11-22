@@ -74,7 +74,9 @@
 <span class="comment">--require "strict"
 </span>
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
-<span class="keyword">local</span> mutex = <span class="global">require</span> <span class="string">"mutex"</span>()
+<span class="keyword">local</span> mutex = <span class="global">require</span> <span class="string">"mutex"</span>
+
+<span class="keyword">local</span> mx = mutex.new()
 
 <span class="keyword">local</span> <span class="keyword">function</span> func(n)
 	<span class="global">print</span>(<span class="string">'+'</span>..n)
@@ -82,7 +84,7 @@
 	<span class="global">print</span>(<span class="string">''</span>, <span class="string">'-'</span>..n)
 <span class="keyword">end</span>
 
-<span class="keyword">local</span> critical=mutex.synchronize(func)
+<span class="keyword">local</span> critical=mx:synchronize(func)
 
 <span class="comment">---[[
 </span><span class="global">print</span> <span class="string">"non synchronized access"</span>
