@@ -43,6 +43,7 @@
   <li><a href="../modules/catalog.html">catalog</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><strong>selector</strong></li>
   <li><a href="../modules/shell.html">shell</a></li>
@@ -100,6 +101,10 @@ selector.init({service='luasocket'})</pre>
 	<tr>
 	<td class="name" nowrap><a href="#new_fd">new_fd&nbsp;(filename, flags, pattern, handler)</a></td>
 	<td class="summary">Opens a file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#grab_stdout">grab_stdout&nbsp;(command, pattern, handler)</a></td>
+	<td class="summary">Grab the output of a command.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#close">close&nbsp;(sktd)</a></td>
@@ -259,6 +264,31 @@ selector.init({service='luasocket'})</pre>
 
 </li>
        <li><code><em>flags</em></code>:  ATM as specified for nixio.open()</li>
+       <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
+       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a <a href="../modules/selector.html#sktd">sktd</a> object
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "grab_stdout"></a>
+    <strong>grab_stdout&nbsp;(command, pattern, handler)</strong>
+    </dt>
+    <dd>
+    Grab the output of a command. 
+ Usefull for capturing the output of long running programs.
+ Emits a <em>sktd.events.data, data</em> signal on incommig data, 
+ and <em>sktd.events.data, nil, err</em> on errors.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>command</em></code>:  command whose ouput capture</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
     </ul>

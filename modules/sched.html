@@ -44,6 +44,7 @@
   <li><a href="../modules/catalog.html">catalog</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
   <li><strong>sched</strong></li>
   <li><a href="../modules/selector.html">selector</a></li>
   <li><a href="../modules/shell.html">shell</a></li>
@@ -175,13 +176,13 @@ end)</pre>
 	<td class="name" nowrap><a href="#tasks">tasks</a></td>
 	<td class="summary">Tasks in scheduler.</td>
 	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
 	<tr>
 	<td class="name" nowrap><a href="#waitds">waitds</a></td>
 	<td class="summary">Wait descriptors in scheduler.</td>
 	</tr>
-</table>
-<h2><a href="#Fields">Fields</a></h2>
-<table class="function_list">
 	<tr>
 	<td class="name" nowrap><a href="#EVENT_DIE">EVENT_DIE</a></td>
 	<td class="summary">Task dying event.</td>
@@ -662,6 +663,10 @@ _,_,emitter, ev, par1, par2 = sched.wait(multiwaitd)</pre>
 
 
 </dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+    
+    <dl class="function">
     <dt>
     <a name = "waitds"></a>
     <strong>waitds</strong>
@@ -683,10 +688,6 @@ end</pre>
 
 
 </dd>
-</dl>
-    <h2><a name="Fields"></a>Fields</h2>
-    
-    <dl class="function">
     <dt>
     <a name = "EVENT_DIE"></a>
     <strong>EVENT_DIE</strong>

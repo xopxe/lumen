@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>Lumen</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+
+
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><strong>test-selector.lua</strong></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
+</ul>
+<h2>Modules</h2>
+<ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Example <code>test-selector.lua</code></h1>
+
+    <pre>
+<span class="comment">---
+</span><span class="comment">-- A task that interfaces with nixio. Supports UDP, TCP and async
+</span><span class="comment">-- file I/O.
+</span><span class="comment">-- Should run as root or sudo, for reading /dev/input/mice
+</span>
+<span class="comment">--look for packages one folder up.
+</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
+
+<span class="global">require</span> <span class="string">"strict"</span>
+
+<span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
+
+
+<span class="keyword">local</span> service=arg[<span class="number">1</span>] <span class="keyword">or</span> <span class="string">'luasocket'</span>
+<span class="comment">--local service='nixio'
+</span><span class="global">print</span> (<span class="string">'using service:'</span>, service)
+
+<span class="keyword">local</span> selector = <span class="global">require</span> <span class="string">"tasks/selector"</span>.init({service=service})
+
+<span class="comment">---[[ udp
+</span><span class="comment">-- Print out data arriving on a udp socket
+</span><span class="keyword">local</span> udprecv = selector.new_udp(<span class="keyword">nil</span>, <span class="keyword">nil</span>, <span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, -<span class="number">1</span>)
+sched.sigrun(
+	{emitter=udprecv.task, events={udprecv.events.data}}, 
+	<span class="keyword">function</span>(_, _, ...) <span class="global">print</span>(<span class="string">"!U"</span>, ...) <span class="keyword">end</span>
+)
+
+<span class="comment">-- Send data over an udp socket
+</span>sched.run(<span class="keyword">function</span>()
+	<span class="keyword">local</span> udpsend = selector.new_udp(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>)
+	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+		<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
+		<span class="global">print</span>(<span class="string">"udp sending"</span>,m)
+		udpsend:send(m)
+		sched.sleep(<span class="number">1</span>)
+	<span class="keyword">end</span>
+<span class="keyword">end</span>)
+<span class="comment">--]]
+</span>
+<span class="comment">---[[ tcp sync
+</span><span class="keyword">local</span> tcp_server = selector.new_tcp_server(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, 
+	<span class="string">'line'</span>, <span class="comment">--10,
+</span>	<span class="keyword">function</span>(sktd, data, err)
+		<span class="global">print</span> (<span class="string">'!T'</span>, sktd, data, err <span class="keyword">or</span> <span class="string">''</span>)
+	<span class="keyword">end</span>
+)
+sched.sigrun({emitter=selector.task, events = <span class="string">'*'</span>}, <span class="keyword">function</span>(...)
+	<span class="global">print</span> (<span class="string">'           &gt;'</span>, ...)
+<span class="keyword">end</span>)
+<span class="keyword">local</span> tcp_client = selector.new_tcp_client(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
+sched.run(<span class="keyword">function</span>()
+	<span class="comment">--while true do
+</span>	<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">15</span> <span class="keyword">do</span>
+		<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
+		<span class="global">print</span>(<span class="string">"tcp sending"</span>,m)
+		tcp_client:send(m..<span class="string">"\n"</span>)
+		sched.sleep(<span class="number">2.1</span>)
+	<span class="keyword">end</span>
+	tcp_client:close()
+<span class="keyword">end</span>)
+<span class="keyword">local</span> tcp_client2 = selector.new_tcp_client(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
+sched.run(<span class="keyword">function</span>()
+	<span class="comment">--while true do
+</span>	<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">15</span> <span class="keyword">do</span>
+		<span class="keyword">local</span> m=<span class="string">"pong! "</span>..<span class="global">os</span>.time()
+		<span class="global">print</span>(<span class="string">"tcp sending"</span>,m)
+		tcp_client:send(m..<span class="string">"\n"</span>)
+		sched.sleep(<span class="number">1.5</span>)
+	<span class="keyword">end</span>
+	tcp_client:close()
+<span class="keyword">end</span>)<span class="comment">--]]
+</span>
+<span class="comment">--[[ tcp async
+local total=0
+local tcp_server = selector.new_tcp_server("127.0.0.1",8888,500, function(sktd, data, err, part)
+	local data_read = #(data or '')
+	total=total+ data_read 
+	print ('-----', data_read, total, #(part or ''), err or '', data:sub(1,3),data:sub(-3))
+	assert(total &lt;= 100500)
+	--sktd:close()
+end)
+local tcp_client = selector.new_tcp_client("127.0.0.1", 8888, nil, nil, 10000)
+sched.run(function()
+	--while true do
+	local s = 'ab'..string.rep('x', 100496)..'yz'
+	print("tcp sending",#s)
+	tcp_client:send_async(s)
+	print ('tcp sent')
+	sched.sleep(10)
+	--tcp_client:close()
+end)
+--]]</span>
+
+
+sched.go()
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

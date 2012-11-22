@@ -41,6 +41,7 @@
   <li><strong>catalog</strong></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/selector.html">selector</a></li>
   <li><a href="../modules/shell.html">shell</a></li>
@@ -67,10 +68,10 @@
 <h1>Module <code>catalog</code></h1>
 
 <p>A general purpose Catalog.</p>
-<p> The catalog is used to give tasks well known names for sharing purposes. 
+<p> The catalog is used to give objects well known names for sharing purposes. 
  It also allows synchronization, by blocking the requester until the object
  is made available. Catalogs themselves are made available under a Well Known
- name. Typical catalogs are "tasks", "mutexes" and "pipes".
+ name. Typical catalogs are "tasks", "events", "mutexes" and "pipes".
  The catalog does not check for multiple names per object.</p>
     <h3>Usage:</h3>
     <ul>
@@ -85,7 +86,7 @@ local a_task=tasks:waitfor('a task')</pre>
 <table class="function_list">
 	<tr>
 	<td class="name" nowrap><a href="#register">register&nbsp;(catalogd, name, object)</a></td>
-	<td class="summary">Register a name to a object</td>
+	<td class="summary">Register a name to a object.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#waitfor">waitfor&nbsp;(catalogd, name, timeout)</a></td>
@@ -117,7 +118,7 @@ local a_task=tasks:waitfor('a task')</pre>
     <strong>register&nbsp;(catalogd, name, object)</strong>
     </dt>
     <dd>
-    Register a name to a object 
+    Register a name to a object. 
 
     <h3>Parameters:</h3>
     <ul>

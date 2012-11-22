@@ -33,7 +33,6 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
-<li><a href="#Fields">Fields</a></li>
 </ul>
 
 
@@ -42,6 +41,7 @@
   <li><a href="../modules/catalog.html">catalog</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><strong>pipes</strong></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/selector.html">selector</a></li>
   <li><a href="../modules/shell.html">shell</a></li>
@@ -90,15 +90,12 @@
 	<td class="summary">Number of entries in a pipe.</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#new">new&nbsp;(size, timeout)</a></td>
+	<td class="summary">Create a new pipe.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#iterator">iterator&nbsp;()</a></td>
 	<td class="summary">Iterator for all pipes.</td>
-	</tr>
-</table>
-<h2><a href="#Fields">Fields</a></h2>
-<table class="function_list">
-	<tr>
-	<td class="name" nowrap><a href="#n_pipes">n_pipes</a></td>
-	<td class="summary">Create a new pipe.</td>
 	</tr>
 </table>
 
@@ -174,6 +171,29 @@
 
 </dd>
     <dt>
+    <a name = "new"></a>
+    <strong>new&nbsp;(size, timeout)</strong>
+    </dt>
+    <dd>
+    Create a new pipe. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>size</em></code>:  maximum number of signals in the pipe</li>
+       <li><code><em>timeout</em></code>:  timeout for blocking on pipe operations. -1 or nil disable
+ timeout</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a pipe descriptor on success, or <em>nil,'exists'</em> if a pipe
+ with the given name already exists
+    </ol>
+
+
+</dd>
+    <dt>
     <a name = "iterator"></a>
     <strong>iterator&nbsp;()</strong>
     </dt>
@@ -192,22 +212,6 @@ end</pre>
     <ol>
         iterator
     </ol>
-
-
-</dd>
-</dl>
-    <h2><a name="Fields"></a>Fields</h2>
-    
-    <dl class="function">
-    <dt>
-    <a name = "n_pipes"></a>
-    <strong>n_pipes</strong>
-    </dt>
-    <dd>
-    Create a new pipe. 
-
-
-
 
 
 </dd>
