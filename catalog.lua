@@ -23,11 +23,11 @@ local M = {}
 
 local catalogs = {}
 
-local register_events = setmetatable({}, {__mode = "kv"}) 
+local register_events = {} -- setmetatable({}, {__mode = "kv"}) 
 
 -- Creates a and queries singleton event for each queried name in a catalog, 
 -- to be used to wake tasks waiting for it to appear.
-function get_register_event (catalogd, name)
+local function get_register_event (catalogd, name)
 	if register_events[catalogd] and register_events[catalogd][name] then 
 		return register_events[catalogd][name]
 	else
@@ -64,7 +64,7 @@ end
 -- @return the object if successful; on timeout expiration returns nil, 'timeout'.
 M.waitfor = function ( catalogd, name, timeout )
 	local object = catalogd[name]
-	log('CATALOG', 'INFO', 'catalog queried for name "%s", found %s', tostring(name), tostring(object))
+	log('CATALOG', 'INFO', 'catalog %s queried for name "%s", found %s', tostring(catalogd), tostring(name), tostring(object))
 	if object then
 		return object
 	else
@@ -103,7 +103,7 @@ M.get_catalog = function (name)
 	if catalogs[name] then 
 		return catalogs[name] 
 	else
-		local catalogd = setmetatable({}, { __mode = 'kv', __index=M})
+		local catalogd = setmetatable({}, { __mode = 'kv', __index=M, name=name})
 		catalogs[name] = catalogd
 		return catalogd
 	end
