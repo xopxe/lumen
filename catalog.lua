@@ -1,8 +1,8 @@
 --- A general purpose Catalog.
--- The catalog is used to give tasks well known names for sharing purposes. 
+-- The catalog is used to give objects well known names for sharing purposes. 
 -- It also allows synchronization, by blocking the requester until the object
 -- is made available. Catalogs themselves are made available under a Well Known
--- name. Typical catalogs are "tasks", "mutexes" and "pipes".
+-- name. Typical catalogs are "tasks", "events", "mutexes" and "pipes".
 -- The catalog does not check for multiple names per object.
 -- @module catalog
 -- @usage local tasks = require 'catalog'.get_catalog('tasks')
@@ -24,6 +24,9 @@ local M = {}
 local catalogs = {}
 
 local register_events = setmetatable({}, {__mode = "kv"}) 
+
+-- Creates a and queries singleton event for each queried name in a catalog, 
+-- to be used to wake tasks waiting for it to appear.
 function get_register_event (catalogd, name)
 	if register_events[catalogd] and register_events[catalogd][name] then 
 		return register_events[catalogd][name]
@@ -85,8 +88,12 @@ end
 -- @return the object if successful; If the object has not been given a name, returns nil.
 M.namefor = function ( catalogd, object )
 	for k, v in pairs(catalogd) do 
-		if v==object then return k end
+		if v==object then 
+			log('CATALOG', 'INFO', 'catalog queried for object %s, found name "%s"', tostring(object), tostring(k))
+			return k 
+		end
 	end
+	log('CATALOG', 'INFO', 'catalog queried for object %s, name not found.', tostring(object))
 end
 
 --- Retrieve a catalog.
