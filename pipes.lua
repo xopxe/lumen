@@ -56,14 +56,13 @@ M.len = function (piped)
 	return piped.buff_data:len()
 end
 
-
+local n_pipes=0
 --- Create a new pipe.
 -- @param size maximum number of signals in the pipe
 -- @param timeout timeout for blocking on pipe operations. -1 or nil disable
 -- timeout
 -- @return a pipe descriptor on success, or _nil,'exists'_ if a pipe
 -- with the given name already exists
-local n_pipes=0
 M.new = function(size, timeout)
 	n_pipes=n_pipes+1
 	local pipename = 'pipe: #'..tostring(n_pipes)
