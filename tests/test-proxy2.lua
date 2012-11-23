@@ -21,7 +21,7 @@ sched.run(function()
 		timeout=5,
 		name_timeout = 30,
 	})
-	sched.sigrun(w, function(_,_,arrived,...)
+	sched.sigrun(w, function(_,arrived,...)
 		print ('+A', arrived~=nil, ...)
 	end)
 	--]]
@@ -33,7 +33,7 @@ sched.run(function()
 		--timeout=10,
 		name_timeout = 30,
 	})
-	sched.sigrun(w, function(_,_,arrived,...)
+	sched.sigrun(w, function(_,arrived,...)
 		print ('+B', arrived~=nil, ...)
 	end)
 	--]]

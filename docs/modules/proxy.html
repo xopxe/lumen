@@ -87,7 +87,7 @@
  	emitter = {'*'},
  	events = {'a_event_name', 'other_event_name'},
  })
- sched.wait(waitd, function(_,_, taskname, eventname, ...)
+ sched.wait(waitd, function(_, _, taskname, eventname, ...)
  	print ('received signal', taskname, eventname, ...)
  end)</pre>
     </ul>
