@@ -6,6 +6,19 @@
 -- tables with strings as  keys.
 -- This module depends on the selector task, which must be started
 -- seperataly.
+-- @usage  local proxy = require 'proxy'
+--
+-- --for accepting connections
+-- proxy.init({ip='*', port=1985}) 
+-- 
+-- --connect to a remote node
+-- local waitd = proxy.new_remote_waitd('192.1681.1', 1985, {
+-- 	emitter = {'*'},
+-- 	events = {'a_event_name', 'other_event_name'},
+-- })
+-- sched.wait(waitd, function(_,_, taskname, eventname, ...)
+-- 	print ('received signal', taskname, eventname, ...)
+-- end)
 -- @module proxy
 -- @alias M
 
@@ -40,17 +53,24 @@ end
 --- Creates a waitd object over a remote Lumen instance.
 -- The remote Lumen instance must have the proxy module started,
 -- and available trough a known ip address.
--- The waitd_table is as the one used in plain _sched\.wait()_ call, with
+-- The waitd_table is as the one used in plain _sched.new\_waitd()_ call, with
 -- the difference that the objects in the _emitter_ and _events_ fields are
 -- names which will be queried in the remote node's "tasks" and "events" catalogs
 -- (except '*', which has the usual meaning).
 -- There is an additional parameter, _name\_timeout_, which controls the querying
 -- in the catalogs.
+-- The obtained waitd will react with a non null event, followed by the remote emitter and
+-- event names (as put in the waitd_table), followed by the parameters of the original event.
+-- On timeout, returns _nil, 'timeout'_.
 -- @param ip ip of the remote proxy module.
 -- @param port port of the remote proxy module.
 -- @param waitd_table a wait descriptor.
 -- @return a waitd object
 M.new_remote_waitd = function(ip, port, waitd_table)
+	-- the timeout will be applied on the proxy's side
+	local timeout = waitd_table.timeout
+	waitd_table.timeout = nil
+	
 	local incomming_signal = {}
 	local encoded = bencode.encode(waitd_table)
 	--print ('>>>', encoded)
@@ -76,6 +96,7 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 	local remote_waitd = sched.new_waitd ({
 		emitter = selector.task,
 		events = {incomming_signal},
+		timeout = timeout,
 	})
 	
 	return remote_waitd
@@ -88,7 +109,10 @@ end
 M.init = function(conf)
 	local ip = conf.ip or '*'
 	local port = conf.port or 1985
-	--M.task = sched.run(function()
+
+	local meta_name_default = {__index=function() return '*' end}
+	local task_to_name = setmetatable({}, meta_name_default)
+	local event_to_name = setmetatable({}, meta_name_default)
 	
 	local function get_request_handler()
 		local buff = ''
@@ -104,43 +128,56 @@ M.init = function(conf)
 						local name_timeout = rwaitd.name_timeout
 						local remitter, emitter = rwaitd.emitter, {}
 						for i=1, #remitter do
-							local e = remitter[i]
-							if e=='*' then
+							local emname = remitter[i]
+							if emname=='*' then
 								emitter[#emitter+1] = '*'
 							else
-								emitter[#emitter+1] = tasks_catalog:waitfor(e, name_timeout)
+								local task = tasks_catalog:waitfor(emname, name_timeout)
+								if task then
+									emitter[#emitter+1] =task
+									task_to_name[task] = emname
+								end
 							end
 						end
 						rwaitd.emitter = emitter
 						
 						local revents, events = rwaitd.events, {}
 						for i=1, #revents do
-							local e = revents[i]
-							if e=='*' then
+							local evname = revents[i]
+							if evname=='*' then
 								events[#events+1] = '*'
 							else
-								events[#events+1] = events_catalog:waitfor(e, name_timeout)
+								local event = events_catalog:waitfor(evname, name_timeout)
+								if event then 
+									events[#events+1] = event
+									event_to_name[event] = evname
+								end
 							end
 						end
 						rwaitd.events = events
 						
-						sched.sigrun(rwaitd, function(_, e,...)
+						sched.sigrun(rwaitd, function(em, ev,...)
 							--print ('caught', ...)
-							local bencodeable = vararg_to_bencodeable(e, ...)
-							local encoded, err = bencode.encode(bencodeable)
+							local emname = event_to_name[em] 
+							local evname = event_to_name[ev] 
+							local bencodeable = vararg_to_bencodeable(emname, evname, ...)
+							local encodedout, encodeerr = bencode.encode(bencodeable)
 							if encoded then 
-								sktd:send_sync(encoded) 
+								sktd:send_sync(encodedout) 
 							else
-								log('PROXY', 'ERROR', 'failed to bencode event "%s" with error "%s"', tostring(e), tostring(err))
+								log('PROXY', 'ERROR', 'failed to bencode event "%s" with error "%s"', 
+									tostring(evname), tostring(encodeerr))
 							end
 						end)
 					end)
 				end
+			else
+				log('PROXY', 'ERROR', 'socket handler called with error "%s"', tostring(err))
 			end
 		end
 	end
 	
-	log('PROXY', 'INFO', 'starting proxy on ip "%s" port "%s"', tostring(ip), tostring(port))	
+	log('PROXY', 'INFO', 'starting proxy on ip "%s" port "%s"', tostring(ip), tostring(port))
 	M.skt_server = selector.new_tcp_server(ip, port, nil, get_request_handler())
 end
 

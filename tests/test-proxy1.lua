@@ -16,16 +16,18 @@ sched.run(function()
 	proxy.init({ip='*', port=2002})
 	sched.run(function()
 		local e = {aaa=1}
-		--catalog_events:register('AAA',e)
+		catalog_events:register('AAA',e)
 		local i=0
 		while true do
 			i=i+1
 			print ('a', i)
-			if i==5 then catalog_events:register('AAA',e) end
+			--if i==5 then catalog_events:register('AAA',e) end
 			sched.signal(e, i)
 			sched.sleep(1)
 		end
 	end)
+	
+	--[[
 	sched.run(function()
 		local e = {bbb=1}
 		catalog_events:register('BBB',e)
@@ -37,7 +39,7 @@ sched.run(function()
 			sched.sleep(0.3)
 		end
 	end)
-
+	--]]
 end)
 
 sched.go()

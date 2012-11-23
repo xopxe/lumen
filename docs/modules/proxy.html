@@ -75,6 +75,22 @@
  tables with strings as  keys.
  This module depends on the selector task, which must be started
  seperataly.</p>
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">local proxy = require 'proxy'
+
+ --for accepting connections
+ proxy.init({ip='*', port=1985}) 
+ 
+ --connect to a remote node
+ local waitd = proxy.new_remote_waitd('192.1681.1', 1985, {
+ 	emitter = {'*'},
+ 	events = {'a_event_name', 'other_event_name'},
+ })
+ sched.wait(waitd, function(_,_, taskname, eventname, ...)
+ 	print ('received signal', taskname, eventname, ...)
+ end)</pre>
+    </ul>
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
@@ -103,12 +119,15 @@
     Creates a waitd object over a remote Lumen instance. 
  The remote Lumen instance must have the proxy module started,
  and available trough a known ip address.
- The waitd_table is as the one used in plain <em>sched.wait()</em> call, with
+ The waitd_table is as the one used in plain <em>sched.new_waitd()</em> call, with
  the difference that the objects in the <em>emitter</em> and <em>events</em> fields are
  names which will be queried in the remote node's "tasks" and "events" catalogs
  (except '*', which has the usual meaning).
  There is an additional parameter, <em>name_timeout</em>, which controls the querying
  in the catalogs.
+ The obtained waitd will react with a non null event, followed by the remote emitter and
+ event names (as put in the waitd_table), followed by the parameters of the original event.
+ On timeout, returns <em>nil, 'timeout'</em>.
 
     <h3>Parameters:</h3>
     <ul>
