@@ -4,9 +4,10 @@
 	This module includes both a recursive decoder and a recursive encoder.
 
 ]]--
+-- Modified by xxopxe@gmail.com for best effort encoding (attempt a tostring on failure)
 
 local sort, concat, insert = table.sort, table.concat, table.insert
-local pairs, ipairs, type, tonumber = pairs, ipairs, type, tonumber
+local pairs, ipairs, type, tonumber, tostring = pairs, ipairs, type, tonumber, tostring
 local sub, find = string.sub, string.find
 
 module "bencode"
@@ -92,7 +93,9 @@ encode_rec = function(t, x)
 		else                  return encode_dict (t, x)
 		end
 	else
-		return "type cannot be converted to an acceptable type for bencoding", typx
+		--return "type cannot be converted to an acceptable type for bencoding", typx
+		--best effort
+		return encode_str(t, tostring(x))
 	end
 end
 
@@ -112,7 +115,7 @@ end
 -- decoder functions
 
 local function decode_integer(s, index) 
-	local a, b, int = find(s, "^([0-9]+)e", index) 
+	local a, b, int = find(s, "^(%-?[0-9]+)e", index) 
 	if not int then return nil, "not a number", nil end
 	int = tonumber(int) 
 	if not int then return nil, "not a number", int end
