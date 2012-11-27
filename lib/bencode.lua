@@ -54,7 +54,9 @@ local function encode_dict(t, x)
 	local sortedkeys = {}
 	for k, v in pairs(x) do
 		if type(k) ~= "string" then
-			return "bencoding requires dictionary keys to be strings", k
+			--return "bencoding requires dictionary keys to be strings", k
+			--best effort
+			k=tostring(k)
 		end
 		insert(sortedkeys, k)
 	end
