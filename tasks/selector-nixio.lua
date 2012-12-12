@@ -225,10 +225,10 @@ M.init = function(conf)
 		--address, port, pattern, backlog)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
-		sktd.fd = assert(nixio.bind(locaddr, locport, 'inet', 'stream'))
 		sktd.events = {accepted=sktd.fd }
 		sktd.handler = handler
 		sktd.pattern = normalize_pattern(pattern)
+		sktd.fd = assert(nixio.bind(locaddr, locport, 'inet', 'stream'))
 		register_server(sktd)
 		return sktd
 	end
@@ -237,10 +237,12 @@ M.init = function(conf)
 		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'stream'))
 		sktd.events = {data=sktd.fd}
-		sktd.fd:connect(address, port)
+		--sktd.fd:connect(address, port)
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
 		register_client(sktd)
+		sktd.fd:connect(address, port)
+		print ('!!!!', sktd.fd:getpeername())
 		return sktd
 	end
 	M.new_udp = function( address, port, locaddr, locport, pattern, handler)
@@ -248,21 +250,21 @@ M.init = function(conf)
 		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'dgram'))
 		sktd.events = {data=sktd.fd}
-		if address and port then sktd.fd:connect(address, port) end
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler
 		register_client(sktd)
+		if address and port then sktd.fd:connect(address, port) end
 		return sktd
 	end
 	M.new_fd = function ( filename, flags, pattern, handler )
 		local sktd=init_sktd()
 		local err
 		sktd.flags = flags  or {}
+		sktd.pattern =  normalize_pattern(pattern)
+		sktd.handler = handler
 		sktd.fd, err = nixio.open(filename, nixio.open_flags(unpack(flags)))
 		if not sktd.fd then return nil, err end
 		sktd.events = {data=sktd.fd}
-		sktd.pattern =  normalize_pattern(pattern)
-		sktd.handler = handler
 		register_client(sktd)
 		return sktd
 	end
