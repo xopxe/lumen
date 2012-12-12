@@ -23,7 +23,7 @@ sched.run(function()
 			print ('a', i)
 			--if i==5 then catalog_events:register('AAA',e) end
 			sched.signal(e, i)
-			sched.sleep(1)
+			sched.sleep(10)
 		end
 	end)
 	

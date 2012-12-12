@@ -21,8 +21,12 @@ sched.run(function()
 		timeout=5,
 		name_timeout = 30,
 	})
-	sched.sigrun(w, function(_,arrived,...)
-		print ('+A', arrived~=nil, ...)
+	sched.sigrun(w, function(emitter,arrived,...)
+		if emitter then 
+			print ('+A', ...)
+		else
+			print ('=A', arrived, ...)
+		end
 	end)
 	--]]
 
