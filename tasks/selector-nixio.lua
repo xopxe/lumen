@@ -196,7 +196,7 @@ local step = function (timeout)
 				if mode['out'] then 
 					send_from_pipe(polle.sktd)
 				end
-				if mode['in'] then 
+                if mode['in'] or mode ['hup'] or mode['pri'] then
 					polle:handler() 
 				end
 			end
