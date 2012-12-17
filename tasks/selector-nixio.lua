@@ -92,8 +92,10 @@ local register_client = function (sktd)
 			--print('!!!!!',data,code,msg)
 			if (code==nil)
 			or (code and code~=11) then
-			    unregister(sktd)
-			    sched.signal(data_event, nil, 'closed')
+				--sktd:close()
+				unregister(sktd)
+				sched.signal(data_event, nil, 'closed')
+				sktd:close()
 			end
 		end
 	end
@@ -196,7 +198,7 @@ local step = function (timeout)
 				if mode['out'] then 
 					send_from_pipe(polle.sktd)
 				end
-                if mode['in'] or mode ['hup'] or mode['pri'] then
+				if mode['in'] or mode ['hup'] or mode['pri'] then
 					polle:handler() 
 				end
 			end

@@ -40,16 +40,14 @@ local event_die = setmetatable({}, {__tostring=function() return "event: DIE" en
 
 --- Tasks in scheduler.
 -- Table holding @{taskd} objects of the tasks in the scheduler. 
--- @usage for taskd, _ in pairs (M.tasks) do print(taskd) end
+-- @usage for taskd, _ in pairs (sched.tasks) do print(taskd) end
 M.tasks = {}
 local sched_tasks = M.tasks
 
 --- Wait descriptors in scheduler.
 -- Table holding @{waitd} objects used in the scheduler. Associates to each waitd
--- a table with the @{taskd}s of tasks that use it.
--- @usage for waitd, tasks in pairs (M.waitds) do
---    print(waitd)
---    for taskd, _ in pairs (tasks) do print(taskd) end 
+-- a table with the @{waitd}s of tasks that use it.
+-- @usage for waitd, _ in pairs (sched.waitds) do print(waitd) end 
 --end
 M.waitds = setmetatable({}, weak_key)
 local sched_waitds = M.waitds
@@ -285,13 +283,8 @@ M.new_task = function ( f )
 		co=co,
 		attached=setmetatable({}, weak_key),
 		sleep_waitd={}, --see M.sleep()
-		--for : calls
-		kill=M.kill,
-		set_pause=M.set_pause,
-		run=M.run,
-		attach=M.attach,
-		set_as_attached=M.set_as_attached,
 	}, {
+		__index=M, --OO-styled access
 		__tostring=function() return task_name end,
 	})
 	sched_tasks[taskd] = true

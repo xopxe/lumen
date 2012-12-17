@@ -8,7 +8,9 @@ package.path = package.path .. ";;;../?.lua"
 --require "strict"
 
 local sched = require "sched"
-local mutex = require "mutex"()
+local mutex = require "mutex"
+
+local mx = mutex.new()
 
 local function func(n)
 	print('+'..n)
@@ -16,7 +18,7 @@ local function func(n)
 	print('', '-'..n)
 end
 
-local critical=mutex.synchronize(func)
+local critical=mx:synchronize(func)
 
 ---[[
 print "non synchronized access"
