@@ -162,6 +162,7 @@ step_task = function(taskd, ...)
 	if taskd.status=='ready' then
 		local check = function(ok, ...)
 			--M.running_task = nil
+			taskd.debug._track_statistics('out')
 			if coroutine.status(taskd.co)=='dead' then
 				taskd.status='dead'
 				sched_tasks[taskd]=nil
@@ -180,6 +181,7 @@ step_task = function(taskd, ...)
 		end
 		local previous_task = M.running_task
 		M.running_task = taskd
+		taskd.debug._track_statistics('in')
 		check(coroutine.resume(taskd.co, ...))
 		M.running_task = previous_task
 	end
@@ -264,6 +266,61 @@ end
 
 local n_task = 0
 
+
+local function new_taskd_debug_table(taskd)
+  local debug = {
+          runtime = 0,
+          cycles = 0,
+          _track_statistics = function () end,
+  }
+  local debugstate
+  return setmetatable(debug,{
+    __index = function(t, k)
+    print('?????I',t, k)
+      if k=='track_statistics' then
+        return debugstate
+      elseif k=='runtime' then
+          local last_start, last_stop = rawget(debug,'last_start'), rawget(debug,'last_stop')
+	  print("----1",last_start, last_stop)
+          if last_start<last_stop then
+            return rawget(debug, 'runtime')
+          else
+		print("----2",rawget(debug, 'runtime') , M.get_time() , last_start)
+            return rawget(debug, 'runtime') + M.get_time() - last_start
+          end
+      else
+        return rawget(t,k)
+      end
+    end,
+    __newindex = function(t,k,v)
+    
+    --print('?????N',t, k, v)
+      if k == 'track_statistics' then
+        if v then --enable
+          rawset(debug, 'runtime', debug.runtime or 0)
+          rawset(debug, 'cycles', debug.cycles or 0)
+	  rawset(debug, 'last_start', rawget(debug, 'last_start') or M.get_time())
+          rawset(debug, '_track_statistics', function (op)
+            if op == 'in' then
+              rawset(debug, 'last_start', M.get_time())
+            else
+              assert (op=='out')
+              rawset(debug, 'last_stop', M.get_time())
+	      --print ('!!!!!!!', rawget(debug, 'last_start'), rawget(debug, 'last_stop') )
+              rawset(debug, 'runtime', debug.runtime + rawget(debug, 'last_stop') - rawget(debug, 'last_start'))
+              rawset(debug, 'cycles', rawget(debug,'cycles')+1)
+            end
+          end)
+        else --disable
+          rawset(debug, '_track_statistics', function () end)
+        end
+        debugstate = v
+      end
+      rawset(t, k, v)      
+    end
+  })
+end
+
 --- Create a task.
 -- The task is created in paused mode. To run the created task,
 -- use @{run} or @{set_pause}.
@@ -287,6 +344,7 @@ M.new_task = function ( f )
 		__index=M, --OO-styled access
 		__tostring=function() return task_name end,
 	})
+  taskd.debug = new_taskd_debug_table(taskd)
 	sched_tasks[taskd] = true
 	log('SCHED', 'INFO', 'created %s from %s', tostring(taskd), tostring(f))
 	--step_task(taskd, ...)
