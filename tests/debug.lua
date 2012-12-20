@@ -7,12 +7,14 @@ package.path = package.path .. ";;;../?.lua"
 
 local sched = require "sched"
 local tasks = require 'catalog'.get_catalog('tasks')
+local selector = require "tasks/selector".init({service='nixio'})
 --require "log".setlevel('NONE')
+
+sched.debug.track_statistics = true
 
 sched.run(function()
 	tasks:register('main', sched.running_task)
 	local A=sched.run(function()
-    sched.running_task.debug.track_statistics = true
 		tasks:register('A', sched.running_task)
 		print("A says: going to sleep couple seconds")
 		sched.sleep(2)
@@ -21,13 +23,18 @@ sched.run(function()
 		print("A says: finishing")
 	end)
 
-  sched.run(function()
-    local adebug=A.debug
-    while true do
-      print("====",adebug.runtime, adebug.cycles)
-      sched.sleep(0.5)
-    end
-  end)
+	local waitd_ev = sched.new_waitd({emitter=A, events={'ev'}})
+	
+	sched.run(function()
+		while true do
+			print("====T",A.debug.runtime, A.debug.cycles)
+			print("====W",waitd_ev.debug and waitd_ev.debug.triggered, 
+				waitd_ev.debug and waitd_ev.debug.buffered, 
+				waitd_ev.debug and waitd_ev.debug.missed, 
+				waitd_ev.debug and waitd_ev.debug.dropped)
+			sched.sleep(0.5)
+		end
+	end)
 
 	local B=sched.run(function()
 		tasks:register('B', sched.running_task)
@@ -41,7 +48,7 @@ sched.run(function()
 	end)
 
 	print ("0 says: waiting for a 'ev' from A")
-	local _, _, x = sched.wait({emitter=A, events={'ev'}})
+	local _, _, x = sched.wait(waitd_ev)
 	print ("0 says: received a 'ev' from A, with a", x)
 	print ("0 says: going to kill A")
 	sched.kill(A)

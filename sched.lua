@@ -64,10 +64,16 @@ local next_waketime
 
 local step_task
 
+--triggered, buffered, missed, dropped
+local  track_waitd_statistics
+local track_trackd_statistics 
+
+
 --changes the status of a task from waiting to active (if everything is right)
 local wake_up = function (taskd, waitd)
 	if not taskd or taskd.status~='ready'
 	or (waitd and waitd~=taskd.waitingfor) then
+		track_waitd_statistics (waitd, 'missed')
 		return false
 	end
 
@@ -94,11 +100,13 @@ local to_buffer = function (waitd, emitter, event, ...)
 				waitd.dropped = true
 				if waitd.buff_mode == 'drop_first' then
 					for _ = 0, overpopulation do
+						track_waitd_statistics (waitd, 'dropped')
 						buff:popleft()
 					end
 					buff:pushright(table.pack(emitter, event, ...))
 				else --'drop_last', default
 					for _ = 1, overpopulation do
+						track_waitd_statistics (waitd, 'dropped')
 						buff:popright()
 					end
 				end
@@ -122,6 +130,7 @@ local walktasks = function (waitingtasks, emitter, event, ...)
 		end
 		--]]
 		if wake_up( taskd, waitd ) then
+			track_waitd_statistics (waitd, 'triggered')
 			waked_up[taskd] = waitd
 		else
 			bufferable[waitd] = true
@@ -131,6 +140,7 @@ local walktasks = function (waitingtasks, emitter, event, ...)
 		bufferable[waitd] = nil
 	end
 	for waitd, _ in pairs(bufferable) do
+		track_waitd_statistics (waitd, 'buffered')
 		to_buffer(waitd, emitter, event, ...)
 	end
 	for taskd, _ in pairs(waked_up) do
@@ -162,7 +172,7 @@ step_task = function(taskd, ...)
 	if taskd.status=='ready' then
 		local check = function(ok, ...)
 			--M.running_task = nil
-			taskd.debug._track_statistics('out')
+			track_trackd_statistics(taskd, 'out')
 			if coroutine.status(taskd.co)=='dead' then
 				taskd.status='dead'
 				sched_tasks[taskd]=nil
@@ -181,7 +191,7 @@ step_task = function(taskd, ...)
 		end
 		local previous_task = M.running_task
 		M.running_task = taskd
-		taskd.debug._track_statistics('in')
+		track_trackd_statistics(taskd, 'in')
 		check(coroutine.resume(taskd.co, ...))
 		M.running_task = previous_task
 	end
@@ -266,61 +276,6 @@ end
 
 local n_task = 0
 
-
-local function new_taskd_debug_table(taskd)
-  local debug = {
-          runtime = 0,
-          cycles = 0,
-          _track_statistics = function () end,
-  }
-  local debugstate
-  return setmetatable(debug,{
-    __index = function(t, k)
-    print('?????I',t, k)
-      if k=='track_statistics' then
-        return debugstate
-      elseif k=='runtime' then
-          local last_start, last_stop = rawget(debug,'last_start'), rawget(debug,'last_stop')
-	  print("----1",last_start, last_stop)
-          if last_start<last_stop then
-            return rawget(debug, 'runtime')
-          else
-		print("----2",rawget(debug, 'runtime') , M.get_time() , last_start)
-            return rawget(debug, 'runtime') + M.get_time() - last_start
-          end
-      else
-        return rawget(t,k)
-      end
-    end,
-    __newindex = function(t,k,v)
-    
-    --print('?????N',t, k, v)
-      if k == 'track_statistics' then
-        if v then --enable
-          rawset(debug, 'runtime', debug.runtime or 0)
-          rawset(debug, 'cycles', debug.cycles or 0)
-	  rawset(debug, 'last_start', rawget(debug, 'last_start') or M.get_time())
-          rawset(debug, '_track_statistics', function (op)
-            if op == 'in' then
-              rawset(debug, 'last_start', M.get_time())
-            else
-              assert (op=='out')
-              rawset(debug, 'last_stop', M.get_time())
-	      --print ('!!!!!!!', rawget(debug, 'last_start'), rawget(debug, 'last_stop') )
-              rawset(debug, 'runtime', debug.runtime + rawget(debug, 'last_stop') - rawget(debug, 'last_start'))
-              rawset(debug, 'cycles', rawget(debug,'cycles')+1)
-            end
-          end)
-        else --disable
-          rawset(debug, '_track_statistics', function () end)
-        end
-        debugstate = v
-      end
-      rawset(t, k, v)      
-    end
-  })
-end
-
 --- Create a task.
 -- The task is created in paused mode. To run the created task,
 -- use @{run} or @{set_pause}.
@@ -340,11 +295,17 @@ M.new_task = function ( f )
 		co=co,
 		attached=setmetatable({}, weak_key),
 		sleep_waitd={}, --see M.sleep()
+		
+		--OO-styled access
+		run = M.run,
+		attach = M.attach,
+		set_as_attached = M.set_as_attached,
+		kill = M.kill,
+		set_pause = M.set_pause,
 	}, {
-		__index=M, --OO-styled access
+		--__index=M, --OO-styled access
 		__tostring=function() return task_name end,
 	})
-  taskd.debug = new_taskd_debug_table(taskd)
 	sched_tasks[taskd] = true
 	log('SCHED', 'INFO', 'created %s from %s', tostring(taskd), tostring(f))
 	--step_task(taskd, ...)
@@ -506,6 +467,8 @@ M.new_waitd = function(waitd_table)
 		--OO
 		waitd_table.new_sigrun_task = M.new_sigrun_task
 		waitd_table.new_sigrunonce_task = M.new_sigrunonce_task
+		waitd_table.new_sigrun = M.new_sigrun
+		waitd_table.new_sigrunonce = M.new_sigrunonce
 		waitd_table.wait = M.wait
 		
 		log('SCHED', 'DETAIL', '%s created %s', tostring(M.running_task), tostring(waitd_table))
@@ -746,6 +709,73 @@ M.to_clean_up = 1000
 --- Currently running task.
 -- the task descriptor from current task.
 M.running_task = false
+
+local track_statistics_enabled
+
+M.debug = setmetatable({},
+	{__index = function(t, k)
+		print ('IIIIII', t, k)
+		if k=='track_statistics' then
+			return track_statistics_enabled
+		else
+			return rawget(t, k)
+		end
+	end,
+	
+	__newindex = function(t,k,v)
+		if k == 'track_statistics' then
+			print ('Track', v)
+			if v then --enable
+				track_trackd_statistics = function (taskd, op)
+					taskd.debug = taskd.debug or {
+						runtime = 0,
+						cycles = 0,
+					}
+					local wdebug = taskd.debug
+					if op == 'in' then
+						wdebug.last_start = M.get_time()
+					elseif op == 'out' then
+						wdebug.last_start = wdebug.last_start or M.get_time() --debugging itself, can lack last_start call
+						wdebug.last_stop = M.get_time()
+						wdebug.runtime = wdebug.runtime + wdebug.last_stop - wdebug.last_start
+						wdebug.cycles = wdebug.cycles+1
+					else
+						error('Not supported action', 2)
+					end
+				end
+				track_waitd_statistics = function(waitd, op)
+					--triggered, buffered, missed, dropped
+					waitd.debug = waitd.debug or {
+						triggered = 0,
+						buffered = 0,
+						missed = 0,
+						dropped = 0,
+					}
+					local wdebug = waitd.debug
+					if op == 'triggered' then
+						wdebug.triggered = wdebug.triggered+1
+					elseif op == 'buffered' then
+						wdebug.buffered = wdebug.buffered+1
+					elseif op == 'missed' then
+						wdebug.missed = wdebug.missed+1
+					elseif op == 'dropped' then
+						wdebug.dropped = wdebug.dropped+1
+					else
+						error('Not supported action', 2)
+					end
+				end
+			else --disable
+				track_trackd_statistics = function () end
+				track_waitd_statistics = function () end
+			end
+			track_statistics_enabled = v
+		else
+			rawset(t, k, v)
+		end
+	end
+})
+
+M.debug.track_statistics = false
 
 --- Data structures.
 -- Main structures used.
