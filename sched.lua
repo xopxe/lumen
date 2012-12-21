@@ -482,6 +482,7 @@ M.new_waitd = function(waitd_table)
 		sched_waitds[waitd_table][M.running_task] = true
 	end
 	
+	track_waitd_statistics (waitd_table, 'registered')
 	return waitd_table
 end
 
@@ -712,9 +713,11 @@ M.running_task = false
 
 local track_statistics_enabled
 
+--- Debugging module.
+-- The debug module allows to have a better look at the workings of a Lumen
+-- application (see @{debug}).
 M.debug = setmetatable({},
 	{__index = function(t, k)
-		print ('IIIIII', t, k)
 		if k=='track_statistics' then
 			return track_statistics_enabled
 		else
@@ -724,8 +727,8 @@ M.debug = setmetatable({},
 	
 	__newindex = function(t,k,v)
 		if k == 'track_statistics' then
-			print ('Track', v)
 			if v then --enable
+				log('SCHED', 'INFO', 'Statistics tracking enabled')
 				track_trackd_statistics = function (taskd, op)
 					taskd.debug = taskd.debug or {
 						runtime = 0,
@@ -750,21 +753,14 @@ M.debug = setmetatable({},
 						buffered = 0,
 						missed = 0,
 						dropped = 0,
+						registered = 0,
 					}
 					local wdebug = waitd.debug
-					if op == 'triggered' then
-						wdebug.triggered = wdebug.triggered+1
-					elseif op == 'buffered' then
-						wdebug.buffered = wdebug.buffered+1
-					elseif op == 'missed' then
-						wdebug.missed = wdebug.missed+1
-					elseif op == 'dropped' then
-						wdebug.dropped = wdebug.dropped+1
-					else
-						error('Not supported action', 2)
-					end
+					assert(wdebug[op], 'Not supported action')
+					wdebug[op] = wdebug[op] +1
 				end
 			else --disable
+				log('SCHED', 'INFO', 'Statistics tracking disabled')
 				track_trackd_statistics = function () end
 				track_waitd_statistics = function () end
 			end

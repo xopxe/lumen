@@ -42,6 +42,7 @@
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/debug.html">debug</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/proxy.html">proxy</a></li>
@@ -194,6 +195,10 @@ end)</pre>
 	<tr>
 	<td class="name" nowrap><a href="#running_task">running_task</a></td>
 	<td class="summary">Currently running task.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#debug">debug</a></td>
+	<td class="summary">Debugging module.</td>
 	</tr>
 </table>
 <h2><a href="#Data_structures">Data structures</a></h2>
@@ -657,7 +662,7 @@ _,_,emitter, ev, par1, par2 = sched.wait(multiwaitd)</pre>
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">for taskd, _ in pairs (M.tasks) do print(taskd) end</pre>
+        <pre class="example">for taskd, _ in pairs (sched.tasks) do print(taskd) end</pre>
     </ul>
 
 
@@ -674,14 +679,12 @@ _,_,emitter, ev, par1, par2 = sched.wait(multiwaitd)</pre>
     <dd>
     Wait descriptors in scheduler. 
  Table holding <a href="../modules/sched.html#waitd">waitd</a> objects used in the scheduler. Associates to each waitd
- a table with the <a href="../modules/sched.html#taskd">taskd</a>s of tasks that use it.
+ a table with the <a href="../modules/sched.html#waitd">waitd</a>s of tasks that use it.
 
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">for waitd, tasks in pairs (M.waitds) do
-    print(waitd)
-    for taskd, _ in pairs (tasks) do print(taskd) end 
+        <pre class="example">for waitd, _ in pairs (sched.waitds) do print(waitd) end 
 end</pre>
     </ul>
 
@@ -730,6 +733,20 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)</pre>
     <dd>
     Currently running task. 
  the task descriptor from current task.
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "debug"></a>
+    <strong>debug</strong>
+    </dt>
+    <dd>
+    Debugging module. 
+ The debug module allows to have a better look at the workings of a Lumen
+ application (see <a href="../modules/debug.html#">debug</a>).
 
 
 

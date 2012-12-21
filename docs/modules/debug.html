@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>Lumen</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Tables">Tables</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><strong>debug</strong></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>debug</code></h1>
+
+<p>Debugging utilities.</p>
+<p> The debug module allows to have a better look at the workings of a Lumen
+ application. The module is available trough the <a href="../modules/sched.html#debug">sched.debug</a>  table.</p>
+
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#waitd.debug">waitd.debug</a></td>
+	<td class="summary">Wait descriptor debug tables.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#taskd.debug">taskd.debug</a></td>
+	<td class="summary">Task descriptor debug tables.</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#track_statistics">track_statistics</a></td>
+	<td class="summary">Control statistic collection.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Tables"></a>Tables</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "waitd.debug"></a>
+    <strong>waitd.debug</strong>
+    </dt>
+    <dd>
+    Wait descriptor debug tables. 
+ When the <a href="../modules/debug.html#track_statistics">track_statistics</a>  is set to true <a href="../modules/sched.html#waitd">sched.waitd</a>  objects will gain this 
+ table. There use statistics will be collected.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>waitd.debug.buffered</em></code>:  Number of times a waitd has buffered an event</li>
+       <li><code><em>waitd.debug.dropped</em></code>:  Number of times a waitd dropped events from its buffer</li>
+       <li><code><em>waitd.debug.missed</em></code>:  Number of times a waitd missed an event (the task was not waiting on it)</li>
+       <li><code><em>waitd.debug.registered</em></code>:  Number of tasks that use a waitd</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "taskd.debug"></a>
+    <strong>taskd.debug</strong>
+    </dt>
+    <dd>
+    Task descriptor debug tables. 
+ When the <a href="../modules/debug.html#track_statistics">track_statistics</a>  is set to true <a href="../modules/sched.html#taskd">sched.taskd</a>  objects will gain this 
+ table. There use statistics will be collected.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>taskd.debug.runtime</em></code>:  Total runtime in seconds (updated on task yielding)</li>
+       <li><code><em>taskd.debug.cycles</em></code>:  Number of times a task has been waken</li>
+       <li><code><em>waitd.debug.triggered</em></code>:  Number of times a waitd has waken up a task</li>
+    </ul>
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "track_statistics"></a>
+    <strong>track_statistics</strong>
+    </dt>
+    <dd>
+    Control statistic collection. <br/>
+ When set to true, <a href="../modules/sched.html#taskd">sched.taskd</a>  and <a href="../modules/sched.html#waitd">sched.waitd</a>  objects gain <a href="../modules/debug.html#taskd.debug">taskd.debug</a>  and
+ <a href="../modules/debug.html#waitd.debug">waitd.debug</a>  tables, respectivelly. 
+ This is usefull to find performance bottlenecks as well
+ as isolating misbehaving components for bug detection. <br/>
+ Collectig statistics has impact on performance.
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

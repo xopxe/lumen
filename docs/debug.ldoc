@@ -1,0 +1,30 @@
+--- Debugging utilities.
+-- The debug module allows to have a better look at the workings of a Lumen
+-- application. The module is available trough the `sched.debug` table.
+-- @module debug
+
+--- Control statistic collection.  
+-- When set to true, `sched.taskd` and `sched.waitd` objects gain `taskd.debug` and
+-- `waitd.debug` tables, respectivelly. 
+-- This is usefull to find performance bottlenecks as well
+-- as isolating misbehaving components for bug detection.  
+-- Collectig statistics has impact on performance.
+debug.track_statistics = false
+
+--- Wait descriptor debug tables.
+-- When the `track_statistics` is set to true `sched.waitd` objects will gain this 
+-- table. There use statistics will be collected.
+-- @field waitd.debug.buffered Number of times a waitd has buffered an event  
+-- @field waitd.debug.dropped Number of times a waitd dropped events from its buffer  
+-- @field waitd.debug.missed Number of times a waitd missed an event (the task was not waiting on it)  
+-- @field waitd.debug.registered Number of tasks that use a waitd  
+-- @table waitd.debug
+
+--- Task descriptor debug tables.
+-- When the `track_statistics` is set to true `sched.taskd` objects will gain this 
+-- table. There use statistics will be collected.
+-- @field taskd.debug.runtime Total runtime in seconds (updated on task yielding)  
+-- @field taskd.debug.cycles Number of times a task has been waken  
+-- @field waitd.debug.triggered Number of times a waitd has waken up a task  
+-- @table taskd.debug
+
