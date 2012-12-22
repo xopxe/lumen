@@ -3,13 +3,23 @@
 -- application. The module is available trough the `sched.debug` table.
 -- @module debug
 
---- Control statistic collection.  
+--- Control statistics collection.  
 -- When set to true, `sched.taskd` and `sched.waitd` objects gain `taskd.debug` and
 -- `waitd.debug` tables, respectivelly. 
 -- This is usefull to find performance bottlenecks as well
 -- as isolating misbehaving components for bug detection.  
 -- Collectig statistics has impact on performance.
 debug.track_statistics = false
+
+--- Control task yielding.  
+-- When set to a true valor, any attempt to yield from a task will trigger an error.
+-- This flag is usefull for delimiting critical sections of a program, to make sure
+-- none of the code inside yields indirectly (for example sending a signal,
+-- or sleeping).  
+-- The error message will contain the flags valor.  
+-- If a critical section contains yielding code, you can use a @{mutex} to control 
+-- access.
+debug.do_not_yield = false
 
 --- Wait descriptor debug tables.
 -- When the `track_statistics` is set to true `sched.waitd` objects will gain this 

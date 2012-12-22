@@ -64,10 +64,10 @@ local next_waketime
 
 local step_task
 
---triggered, buffered, missed, dropped
+-- debugging stuff
 local  track_waitd_statistics
-local track_trackd_statistics 
-
+local track_taskd_statistics 
+local do_not_yield 
 
 --changes the status of a task from waiting to active (if everything is right)
 local wake_up = function (taskd, waitd)
@@ -172,7 +172,12 @@ step_task = function(taskd, ...)
 	if taskd.status=='ready' then
 		local check = function(ok, ...)
 			--M.running_task = nil
-			track_trackd_statistics(taskd, 'out')
+			if do_not_yield then 
+				error("Task "..tostring(taskd).." yielded under do_not_yield: "
+					..tostring(do_not_yield), 0) 
+			end
+		
+			track_taskd_statistics(taskd, 'out')
 			if coroutine.status(taskd.co)=='dead' then
 				taskd.status='dead'
 				sched_tasks[taskd]=nil
@@ -191,7 +196,7 @@ step_task = function(taskd, ...)
 		end
 		local previous_task = M.running_task
 		M.running_task = taskd
-		track_trackd_statistics(taskd, 'in')
+		track_taskd_statistics(taskd, 'in')
 		check(coroutine.resume(taskd.co, ...))
 		M.running_task = previous_task
 	end
@@ -475,14 +480,15 @@ M.new_waitd = function(waitd_table)
 		
 		register_signal( M.running_task, waitd_table )
 		sched_waitds[waitd_table] = setmetatable({[M.running_task]=true}, weak_key)
+		track_waitd_statistics (waitd_table, 'registered')
 	elseif not sched_waitds[waitd_table][M.running_task] then
 		-- additional task using a waitd
 		log('SCHED', 'DETAIL', '%s using existing %s', tostring(M.running_task), tostring(waitd_table))
 		register_signal( M.running_task, waitd_table )
 		sched_waitds[waitd_table][M.running_task] = true
+		track_waitd_statistics (waitd_table, 'registered')
 	end
 	
-	track_waitd_statistics (waitd_table, 'registered')
 	return waitd_table
 end
 
@@ -720,6 +726,8 @@ M.debug = setmetatable({},
 	{__index = function(t, k)
 		if k=='track_statistics' then
 			return track_statistics_enabled
+		elseif k=='do_not_yield' then
+			return do_not_yield 
 		else
 			return rawget(t, k)
 		end
@@ -729,7 +737,7 @@ M.debug = setmetatable({},
 		if k == 'track_statistics' then
 			if v then --enable
 				log('SCHED', 'INFO', 'Statistics tracking enabled')
-				track_trackd_statistics = function (taskd, op)
+				track_taskd_statistics = function (taskd, op)
 					taskd.debug = taskd.debug or {
 						runtime = 0,
 						cycles = 0,
@@ -747,7 +755,6 @@ M.debug = setmetatable({},
 					end
 				end
 				track_waitd_statistics = function(waitd, op)
-					--triggered, buffered, missed, dropped
 					waitd.debug = waitd.debug or {
 						triggered = 0,
 						buffered = 0,
@@ -761,10 +768,12 @@ M.debug = setmetatable({},
 				end
 			else --disable
 				log('SCHED', 'INFO', 'Statistics tracking disabled')
-				track_trackd_statistics = function () end
+				track_taskd_statistics = function () end
 				track_waitd_statistics = function () end
 			end
 			track_statistics_enabled = v
+		elseif k=='do_not_yield' then
+			do_not_yield = v
 		else
 			rawset(t, k, v)
 		end
