@@ -94,10 +94,6 @@
 	<td class="name" nowrap><a href="#new">new&nbsp;(size, timeout)</a></td>
 	<td class="summary">Create a new pipe.</td>
 	</tr>
-	<tr>
-	<td class="name" nowrap><a href="#iterator">iterator&nbsp;()</a></td>
-	<td class="summary">Iterator for all pipes.</td>
-	</tr>
 </table>
 
 <br/>
@@ -190,28 +186,6 @@
     <ol>
         a pipe descriptor on success, or <em>nil,'exists'</em> if a pipe
  with the given name already exists
-    </ol>
-
-
-</dd>
-    <dt>
-    <a name = "iterator"></a>
-    <strong>iterator&nbsp;()</strong>
-    </dt>
-    <dd>
-    Iterator for all pipes. 
-
-
-    <h3>Usage:</h3>
-    <ul>
-        <pre class="example">for name, pipe in pipes.iterator() do
-	print(name, pipe)
-end</pre>
-    </ul>
-
-    <h3>Returns:</h3>
-    <ol>
-        iterator
     </ol>
 
 

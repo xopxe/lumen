@@ -16,9 +16,6 @@ local next, setmetatable, tostring
 
 local M = {}
 
---register of pipes
-local pipes =  setmetatable({}, { __mode = 'kv' })
-
 --- Read from a pipe.
 -- Will block on a empty pipe. Also accessible as piped:read()
 -- @param piped the the pipe descriptor to read from.
@@ -94,16 +91,6 @@ M.new = function(size, timeout)
 	
 	return piped
 end
-
---- Iterator for all pipes.
--- @return iterator
--- @usage for name, pipe in pipes.iterator() do
---	print(name, pipe)
---end
-M.iterator = function ()
-	return function (_, v) return next(pipes, v) end
-end
-
 
 return M
 
