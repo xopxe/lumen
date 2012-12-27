@@ -33,7 +33,6 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
-<li><a href="#Tables">Tables</a></li>
 </ul>
 
 
@@ -46,8 +45,8 @@
   <li><a href="../modules/proxy.html">proxy</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/selector.html">selector</a></li>
-  <li><strong>shell</strong></li>
-  <li><a href="../modules/stream.html">stream</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><strong>stream</strong></li>
 </ul>
 <h2>Topics</h2>
 <ul>
@@ -68,38 +67,29 @@
 
 <div id="content">
 
-<h1>Module <code>shell</code></h1>
+<h1>Module <code>stream</code></h1>
 
-<p>Task providing an interactive shell.</p>
-<p> This is a interactive shell that allows a user to connect
- to the Lumen scheduler, and maintain a Lua session.
- To connect, use telnet to the service's ip and port.
- Besides running lua code, the user have some helper syntax:
- If a line starts with a "=", it is equivalent to a "return ..."
- If a line starts with a "&amp;", the following code will run in 
- a background task.
- If a line starts with a ":", it is equivalent to a "return ...",
- filtered trough a simple pretifier (usefull for checking tables).
- This module depends on the selector task, which must be started
- seperataly.</p>
+<p>String streams.</p>
+<p> Streams are similar to <a href="../modules/pipes.html#">pipes</a>, but specialized for strings. They serve
+ the same purpose as LTN12, i.e. typically processing input from a socket.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local server = require 'shell'
-server.init({ip='127.0.0.1', port=2012})</pre>
+        <pre class="example">local stream = require 'stream'</pre>
     </ul>
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
-	<td class="summary">Start the server.</td>
+	<td class="name" nowrap><a href="#read">read&nbsp;(streamd)</a></td>
+	<td class="summary">Read from a stream.</td>
 	</tr>
-</table>
-<h2><a href="#Tables">Tables</a></h2>
-<table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#shell_env">shell_env</a></td>
-	<td class="summary">The environment for the shell.</td>
+	<td class="name" nowrap><a href="#write">write&nbsp;(streamd, s)</a></td>
+	<td class="summary">Write to a stream.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new">new&nbsp;(size, timeout)</a></td>
+	<td class="summary">Create a new stream.</td>
 	</tr>
 </table>
 
@@ -111,44 +101,68 @@ server.init({ip='127.0.0.1', port=2012})</pre>
     
     <dl class="function">
     <dt>
-    <a name = "init"></a>
-    <strong>init&nbsp;(conf)</strong>
+    <a name = "read"></a>
+    <strong>read&nbsp;(streamd)</strong>
     </dt>
     <dd>
-    Start the server. 
+    Read from a stream. 
+ Will block if there is no data to read, until it appears. Also accessible as streamd:read()
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>conf</em></code>:  the configuration table. The fields of interest are
- <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 2012)</li>
+       <li><code><em>streamd</em></code>:  the the stream descriptor to read from.</li>
     </ul>
 
 
+    <h3>Returns:</h3>
+    <ol>
+        a string if data is available, <em>nil,'timeout'</em> on timeout
+    </ol>
 
 
 </dd>
-</dl>
-    <h2><a name="Tables"></a>Tables</h2>
-    
-    <dl class="function">
     <dt>
-    <a name = "shell_env"></a>
-    <strong>shell_env</strong>
+    <a name = "write"></a>
+    <strong>write&nbsp;(streamd, s)</strong>
     </dt>
     <dd>
-    The environment for the shell. 
- When starting a new shell session, it's environment will be 
- initialized from this table. 
- By default, it includes everything from _G plus the fields listed below.
- If you want something else, change this table.
+    Write to a stream. 
+ Will block when writing to a full stream. Also accessible as streamd:write(s)
 
-    <h3>Fields:</h3>
+    <h3>Parameters:</h3>
     <ul>
-       <li><code><em>sched</em></code>:  A reference to the Lumen scheduler library</li>
-       <li><code><em>ps</em></code>:  A function that prints a human readable tasks list</li>
+       <li><code><em>streamd</em></code>:  the the stream descriptor to write to.</li>
+       <li><code><em>s</em></code>:  the string to write to the stream.</li>
     </ul>
 
 
+    <h3>Returns:</h3>
+    <ol>
+        <em>true</em> on success, <em>nil,'timeout'</em> on timeout
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "new"></a>
+    <strong>new&nbsp;(size, timeout)</strong>
+    </dt>
+    <dd>
+    Create a new stream. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>size</em></code>:  When the buffered string length surpases this value, follwing attempts to
+ write will block. nil means no limit.</li>
+       <li><code><em>timeout</em></code>:  timeout for blocking on stream operations. -1 or nil disable
+ timeout</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a stream descriptor
+    </ol>
 
 
 </dd>

@@ -46,6 +46,7 @@
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/selector.html">selector</a></li>
   <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/stream.html">stream</a></li>
 </ul>
 <h2>Topics</h2>
 <ul>
@@ -70,7 +71,8 @@
 
 <p>Named pipes.</p>
 <p> Pipes allow can be used to communicate tasks. Unlike plain signals,
- no message can get lost: writers get blocked when the pipe is full</p>
+ no message can be missed by  task doing something else when the signal occurs:
+ writers get blocked when the pipe is full</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local pipes = require 'pipes'</pre>
@@ -184,8 +186,7 @@
 
     <h3>Returns:</h3>
     <ol>
-        a pipe descriptor on success, or <em>nil,'exists'</em> if a pipe
- with the given name already exists
+        a pipe descriptor
     </ol>
 
 

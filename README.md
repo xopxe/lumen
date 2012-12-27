@@ -53,16 +53,17 @@ Tasks can emit signals, and block waiting for them, and that's it.
 - Tasks can register a name, and query for tasks by name.
 - Tasks also can wait for a given name to get registered.
 
-## Pipes
+## Pipes & Streams
 
-There are also pipes, for intertask communications. 
+There are also pipes and streams, for intertask communications. 
 
-- Similar to signals, but writers can get blocked too (when pipe gets full).
+- Unlike with plain signals, writers can get blocked too (when pipe or stream gets full).
 - Synchronous and asynchronous (with a timeout) modes supported.
-- Multiple readers and writers per pipe supported. 
+- Multiple readers and writers supported. 
 - For when no signal can get lost!
 
-## Mutex
+
+## Mutexes
 
 There are cases when you must guarantee that only one task is accessing a piece 
 of code at a time. Mutexes provide a mechanism for that. Notice that Lumen, being a 

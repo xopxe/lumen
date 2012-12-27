@@ -1,6 +1,7 @@
 --- Named pipes.
 -- Pipes allow can be used to communicate tasks. Unlike plain signals,
--- no message can get lost: writers get blocked when the pipe is full
+-- no message can be missed by  task doing something else when the signal occurs:
+-- writers get blocked when the pipe is full
 -- @module pipes
 -- @usage local pipes = require 'pipes'
 -- @alias M
@@ -10,8 +11,7 @@ local log=require 'log'
 local queue=require 'lib/queue'
 
 --get locals for some useful things
-local next, setmetatable, tostring
-	= next, setmetatable, tostring
+local setmetatable, tostring = setmetatable, tostring
 
 
 local M = {}
@@ -58,8 +58,7 @@ local n_pipes=0
 -- @param size maximum number of signals in the pipe
 -- @param timeout timeout for blocking on pipe operations. -1 or nil disable
 -- timeout
--- @return a pipe descriptor on success, or _nil,'exists'_ if a pipe
--- with the given name already exists
+-- @return a pipe descriptor 
 M.new = function(size, timeout)
 	n_pipes=n_pipes+1
 	local pipename = 'pipe: #'..tostring(n_pipes)
