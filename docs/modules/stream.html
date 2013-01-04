@@ -116,7 +116,8 @@
 
     <h3>Returns:</h3>
     <ol>
-        a string if data is available, <em>nil,'timeout'</em> on timeout
+        a string if data is available, <em>nil,'timeout'</em> on timeout, <em>nil, 'closed'</em>if 
+ stream is closed and empty.
     </ol>
 
 
@@ -132,13 +133,14 @@
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>streamd</em></code>:  the the stream descriptor to write to.</li>
-       <li><code><em>s</em></code>:  the string to write to the stream.</li>
+       <li><code><em>s</em></code>:  the string to write to the stream. false or nil closes the stream.</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        <em>true</em> on success, <em>nil,'timeout'</em> on timeout
+        <em>true</em> on success, <em>nil,'timeout'</em> on timeout, <em>nil, 'closed'</em>if 
+ stream is closed
     </ol>
 
 

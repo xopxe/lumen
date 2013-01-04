@@ -18,8 +18,12 @@ local M = {}
 --- Read from a stream.
 -- Will block if there is no data to read, until it appears. Also accessible as streamd:read()
 -- @param streamd the the stream descriptor to read from.
--- @return  a string if data is available, _nil,'timeout'_ on timeout
+-- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed'_if 
+-- stream is closed and empty.
 M.read = function (streamd)
+	if streamd.closed and #streamd.buff_data == 0 then
+		return nil, 'closed'
+	end
 	local emitter = sched.wait(streamd.waitd_data)
 	if not emitter then return nil, 'timeout' end
 	local s = table.concat(streamd.buff_data)
@@ -32,9 +36,17 @@ end
 --- Write to a stream.
 -- Will block when writing to a full stream. Also accessible as streamd:write(s)
 -- @param streamd the the stream descriptor to write to.
--- @param s the string to write to the stream. 
--- @return _true_ on success, _nil,'timeout'_ on timeout
+-- @param s the string to write to the stream. false or nil closes the stream.
+-- @return _true_ on success, _nil,'timeout'_ on timeout, _nil, 'closed'_if 
+-- stream is closed
 M.write = function (streamd, s)
+	if not s then --closing stream
+		streamd.closed=true
+		return true
+	end
+	if streamd.closed then --closing stream
+		return nil, 'closed'
+	end
 	if streamd.size and streamd.len > streamd.size then
 		local emitter = sched.wait(streamd.waitd_enable)
 		if not emitter then return nil, 'timeout' end
