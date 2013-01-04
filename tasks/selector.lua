@@ -2,7 +2,8 @@
 -- Selector integrates Lumen with a select/poll-like mechanism. 
 -- Backends luasocket and nixio are supported.
 -- Module's task will generate signals on data arrival on opened 
--- sockets/files
+-- sockets/files. Also a @{stream} can be used to pipe data from 
+-- sockets/files.
 -- @module selector
 -- @usage local selector = require 'selector'
 --selector.init({service='luasocket'})
@@ -28,6 +29,7 @@ M.init = function(conf)
 	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler optional handler function for new clients, 
 	-- must have a (sktd, data, err, part) signature
+	-- @param create_stream create a new stream object for new clients.
 	-- @return a @{sktd} object
 	M.new_tcp_server = native.new_tcp_server
 
@@ -41,6 +43,7 @@ M.init = function(conf)
 	-- @param locport Local port (defaults to 0)
 	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
+	-- @param stream an optional @{stream} object to pipe data into.
 	-- @return a @{sktd} object
 	M.new_tcp_client = native.new_tcp_client
 	
@@ -132,6 +135,7 @@ end
 -- Socket/File descriptor.
 -- Provides OO-styled access to methods, such as sktd:send(data) and sktd:close()
 -- @field task task that will emit signal related to this object
+-- @field stream If asigned a @{stream} object, will write data into it (in addittion to signals)
 -- @table sktd
 
 

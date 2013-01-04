@@ -75,7 +75,8 @@
 <p> Selector integrates Lumen with a select/poll-like mechanism. 
  Backends luasocket and nixio are supported.
  Module's task will generate signals on data arrival on opened 
- sockets/files</p>
+ sockets/files. Also a <a href="../modules/stream.html#">stream</a> can be used to pipe data from 
+ sockets/files.</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local selector = require 'selector'
@@ -89,11 +90,11 @@ selector.init({service='luasocket'})</pre>
 	<td class="summary">Start the task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_tcp_server">new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</a></td>
+	<td class="name" nowrap><a href="#new_tcp_server">new_tcp_server&nbsp;(locaddr, locport, pattern, handler, create_stream)</a></td>
 	<td class="summary">Creates a TCP server socket.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_tcp_client">new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler)</a></td>
+	<td class="name" nowrap><a href="#new_tcp_client">new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler, stream)</a></td>
 	<td class="summary">Creates a TCP client socket.</td>
 	</tr>
 	<tr>
@@ -174,7 +175,7 @@ selector.init({service='luasocket'})</pre>
 </dd>
     <dt>
     <a name = "new_tcp_server"></a>
-    <strong>new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</strong>
+    <strong>new_tcp_server&nbsp;(locaddr, locport, pattern, handler, create_stream)</strong>
     </dt>
     <dd>
     Creates a TCP server socket. 
@@ -187,6 +188,7 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  optional handler function for new clients, 
  must have a (sktd, data, err, part) signature</li>
+       <li><code><em>create_stream</em></code>:  create a new stream object for new clients.</li>
     </ul>
 
 
@@ -199,7 +201,7 @@ selector.init({service='luasocket'})</pre>
 </dd>
     <dt>
     <a name = "new_tcp_client"></a>
-    <strong>new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler)</strong>
+    <strong>new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler, stream)</strong>
     </dt>
     <dd>
     Creates a TCP client socket. 
@@ -214,6 +216,7 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+       <li><code><em>stream</em></code>:  an optional <a href="../modules/stream.html#">stream</a> object to pipe data into.</li>
     </ul>
 
 
@@ -425,6 +428,7 @@ selector.init({service='luasocket'})</pre>
     <h3>Fields:</h3>
     <ul>
        <li><code><em>task</em></code>:  task that will emit signal related to this object</li>
+       <li><code><em>stream</em></code>:  If asigned a <a href="../modules/stream.html#">stream</a> object, will write data into it (in addittion to signals)</li>
     </ul>
 
 

@@ -1,6 +1,7 @@
 local sched = require 'sched'
 local socket = require 'socket'
 local pipes = require 'pipes'
+local streams = require 'stream'
 
 --get locals for some useful things
 local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type 
@@ -133,6 +134,7 @@ local step = function (timeout)
 						events={data=client},
 						pattern=pattern,
 						handler = sktd.handler,
+						stream = sktd.create_stream and streams.new(), 
 					}
 					local sktd_cli = init_sktd(skt_table_client)
 					--[[
@@ -161,8 +163,10 @@ local step = function (timeout)
 					if err=='closed' then
 						unregister(fd)
 						sched.signal(fd, nil, err, part) --data is nil or part?
+						if sktd.stream then sktd.stream:write(nil, 'fd closed') end
 					elseif data then
 						sched.signal(fd, data)
+						if sktd.stream then sktd.stream:write(data) end
 					end
 				else
 					local data,err,part = fd:receive(pattern,sktd.partial)
@@ -172,9 +176,11 @@ local step = function (timeout)
 					if not data then
 						if err=='closed' then 
 							unregister(fd)
-							sched.signal(sktd.events.data, nil, err, part) --data is nil or part?
+							sched.signal(sktd.events.data, nil, 'fd closed', part) --data is nil or part?
+							if sktd.stream then sktd.stream:write(nil, err) end
 						elseif not part or part=='' then
 							sched.signal(sktd.events.data, nil, err)
+							if sktd.stream then sktd.stream:write(nil, err) end
 						end
 					else
 						sched.signal(sktd.events.data, data)
@@ -207,7 +213,7 @@ local normalize_pattern = function(pattern)
 end
 
 M.init = function()
-	M.new_tcp_server = function(locaddr, locport, pattern, handler)
+	M.new_tcp_server = function(locaddr, locport, pattern, handler, create_stream)
 		--address, port, backlog, pattern)
 		local sktd=init_sktd()
 		sktd.fd=assert(socket.bind(locaddr, locport))
@@ -215,10 +221,11 @@ M.init = function()
 		sktd.task=module_task
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
+		sktd.create_stream = create_stream
 		register_server(sktd)
 		return sktd
 	end
-	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler)
+	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler, stream)
 		--address, port, locaddr, locport, pattern)
 		local sktd=init_sktd()
 		sktd.fd=assert(socket.connect(address, port, locaddr, locport))
@@ -226,10 +233,11 @@ M.init = function()
 		sktd.task=module_task
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
+		sktd.stream = stream
 		register_client(sktd)
 		return sktd
 	end
-	M.new_udp = function( address, port, locaddr, locport, pattern, handler)
+	M.new_udp = function( address, port, locaddr, locport, pattern, handler, stream)
 	--address, port, locaddr, locport, count)
 		local sktd=init_sktd()
 		sktd.fd=socket.udp()
@@ -239,6 +247,7 @@ M.init = function()
 		sktd.fd:setsockname(locaddr or '*', locport or 0)
 		sktd.fd:setpeername(address or '*', port)
 		sktd.handler = handler
+		sktd.stream = stream
 		register_client(sktd)
 		return sktd
 	end
