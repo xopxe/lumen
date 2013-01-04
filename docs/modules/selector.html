@@ -147,6 +147,10 @@ selector.init({service='luasocket'})</pre>
 	<td class="name" nowrap><a href="#task">task</a></td>
 	<td class="summary">Task that emits signals.</td>
 	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ASYNC_SEND_BUFFER">ASYNC_SEND_BUFFER</a></td>
+	<td class="summary">Suggested max buffer size for asynchronous sending.</td>
+	</tr>
 </table>
 
 <br/>
@@ -445,6 +449,19 @@ selector.init({service='luasocket'})</pre>
     </dt>
     <dd>
     Task that emits signals. 
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ASYNC_SEND_BUFFER"></a>
+    <strong>ASYNC_SEND_BUFFER</strong>
+    </dt>
+    <dd>
+    Suggested max buffer size for asynchronous sending. 
+ Must be set before fist async send. Defaults to 1mb.
 
 
 

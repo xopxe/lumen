@@ -5,7 +5,6 @@
 
 local sched = require 'sched'
 local nixio = require 'nixio'
-local pipes = require 'pipes'
 local streams = require 'stream'
 
 --local nixiorator = require 'tasks/nixiorator'
@@ -16,11 +15,8 @@ local weak_key = { __mode = 'k' }
 
 local CHUNK_SIZE = 1480 -- 65536 --8192
 
---size parameter for pipe for asynchrous sending
-local ASYNC_SEND_BUFFER=10
-
 -- pipe for async writing
-local write_pipes = setmetatable({}, weak_key)
+local write_streams = setmetatable({}, weak_key)
 local outstanding_data = setmetatable({}, weak_key)
 
 
@@ -170,10 +166,10 @@ local function send_from_pipe (sktd)
 		end
 	else
 		--local piped = assert(write_pipes[skt] , "socket not registered?")
-		local piped = write_pipes[sktd] ; if not piped then return end
-		if piped:len()>0 then 
+		local streamd = write_streams[sktd] ; if not streamd then return end
+		if streamd.len>0 then 
 			--print ('data', #data)
-			local _, data, err = piped:read()
+			local data, err = streamd:read()
 			
 			local blocksize = CHUNK_SIZE
 			if blocksize>#data then blocksize=#data-blocksize end
@@ -220,7 +216,6 @@ module_task = sched.new_task( function ()
 end)
 
 -------------------
-
 
 M.init = function(conf)
 	conf=conf or {}
@@ -315,15 +310,14 @@ M.init = function(conf)
 		--make sure we're selecting to write
 		sktd.polle.events=nixio.poll_flags("in", "pri", "out")
 		
-		local piped = write_pipes[sktd] 
+		local streamd = write_streams[sktd] 
 		
-		-- initialize the pipe on first send
-		if not piped then
-			piped = pipes.new(ASYNC_SEND_BUFFER)
-			write_pipes[sktd] = piped
+		-- initialize the stream on first send
+		if not streamd then
+			streamd = streams.new(M.ASYNC_SEND_BUFFER)
+			write_streams[sktd] = streamd
 		end
-
-		piped:write(data)
+		streamd:write(data)
 
 		sched.yield()
 	end

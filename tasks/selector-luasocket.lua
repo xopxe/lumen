@@ -1,17 +1,12 @@
 local sched = require 'sched'
 local socket = require 'socket'
-local pipes = require 'pipes'
+--local pipes = require 'pipes'
 local streams = require 'stream'
 
 --get locals for some useful things
 local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type 
 
-local weak_key = { __mode = 'k' }
-
 local CHUNK_SIZE = 1480 --65536
-
---size parameter for pipe for asynchrous sending
-local ASYNC_SEND_BUFFER=10
 
 local recvt, sendt={}, {}
 
@@ -46,7 +41,7 @@ local unregister = function (fd)
 				break
 			end
 		end
-		sktd.write_pipes = nil
+		sktd.write_stream = nil
 		sktd.outstanding_data = nil
 	end
 	sktd.partial = nil
@@ -69,12 +64,9 @@ local function send_from_pipe (fd)
 		end
 		sktd.outstanding_data.last = last or lasterr
 	else
-		--local piped = assert(write_pipes[skt] , "socket not registered?")
-		local piped = sktd.write_pipes ; if not piped then return end
-		--print ('piped', piped)
-		--local _, data, err = piped:read()
-		if piped:len()>0 then 
-			local _, data, err = piped:read()
+		local streamd = sktd.write_stream ; if not streamd then return end
+		if streamd.len>0 then 
+			local data, serr = streamd:read()
 			local last , err, lasterr = fd:send(data, 1, CHUNK_SIZE)
 			if err == 'closed' then
 				unregister(fd)
@@ -85,7 +77,6 @@ local function send_from_pipe (fd)
 				sktd.outstanding_data = {data=data,last=last}
 			end
 		else
-			--print ('pipeempty!', err)
 			--emptied the outgoing pipe, stop selecting to write
 			for i=1, #sendt do
 				if sendt[i] == fd then
@@ -272,14 +263,14 @@ M.init = function()
 			sendt[skt]=true
 		end
 
-		local piped = sktd.write_pipes
+		local streamd = sktd.write_stream
 		
 		-- initialize the pipe on first send
-		if not piped then
-			piped = pipes.new(ASYNC_SEND_BUFFER)
-			sktd.write_pipes = piped
+		if not streamd then
+			streamd = streams.new(M.ASYNC_SEND_BUFFER)
+			sktd.write_stream = streamd
 		end
-		piped:write(data)
+		streamd:write(data)
 
 		sched.yield()
 	end

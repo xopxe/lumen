@@ -120,6 +120,9 @@ M.init = function(conf)
 	--- Task that emits signals.
 	M.task = native.task
 
+	--- Suggested max buffer size for asynchronous sending.
+	-- Must be set before fist async send. Defaults to 1mb.
+	M.ASYNC_SEND_BUFFER=1024^2 --1mb
 
 	require 'catalog'.get_catalog('tasks'):register('selector', M.task)
 
