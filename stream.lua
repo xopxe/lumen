@@ -26,8 +26,17 @@ M.read = function (streamd)
 	end
 	local emitter = sched.wait(streamd.waitd_data)
 	if not emitter then return nil, 'timeout' end
-	local s = table.concat(streamd.buff_data)
-	streamd.buff_data = {}
+	local s
+	local buff_data = streamd.buff_data
+	if #buff_data == 1 then 
+		--fast path
+		s = buff_data[1]
+		buff_data[1] = nil
+	else
+		--slow path
+		s = table.concat(buff_data)
+		streamd.buff_data = {}
+	end
 	streamd.len = 0
 	sched.signal(streamd.pipe_enable_signal)
 	return s
