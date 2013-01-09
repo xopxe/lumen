@@ -1,0 +1,206 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>Lumen</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/debug.html">debug</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><strong>stream</strong></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>stream</code></h1>
+
+<p>String streams.</p>
+<p> Streams are similar to <a href="../modules/pipes.html#">pipes</a>, but specialized for strings. They serve
+ the same purpose as LTN12, i.e. typically processing input from a socket.</p>
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">local stream = require 'stream'</pre>
+    </ul>
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#read">read&nbsp;(streamd)</a></td>
+	<td class="summary">Read from a stream.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#write">write&nbsp;(streamd, s, err)</a></td>
+	<td class="summary">Write to a stream.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#set_timeout">set_timeout&nbsp;(streamd, read_timeout, write_timeout)</a></td>
+	<td class="summary">Change the timeout settings.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new">new&nbsp;(size, read_timeout, write_timeout)</a></td>
+	<td class="summary">Create a new stream.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "read"></a>
+    <strong>read&nbsp;(streamd)</strong>
+    </dt>
+    <dd>
+    Read from a stream. 
+ Will block if there is no data to read, until it appears. Also accessible as streamd:read()
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>streamd</em></code>:  the the stream descriptor to read from.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a string if data is available, <em>nil,'timeout'</em> on timeout, <em>nil, 'closed', err</em> if 
+ stream is closed and empty (<em>err</em> is the additinal error parameter provided on <a href="../modules/stream.html#write">write</a>).
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "write"></a>
+    <strong>write&nbsp;(streamd, s, err)</strong>
+    </dt>
+    <dd>
+    Write to a stream. 
+ Will block when writing to a full stream. Also accessible as streamd:write(s ,err)
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>streamd</em></code>:  the the stream descriptor to write to.</li>
+       <li><code><em>s</em></code>:  the string to write to the stream. false or nil closes the stream.</li>
+       <li><code><em>err</em></code>:  optional error message to register on stream closing.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <em>true</em> on success, <em>nil,'timeout'</em> on timeout, <em>nil, 'closed', err</em> if 
+ stream is closed
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "set_timeout"></a>
+    <strong>set_timeout&nbsp;(streamd, read_timeout, write_timeout)</strong>
+    </dt>
+    <dd>
+    Change the timeout settings. 
+ Can be invoked as streamd:set_timeout(read_timeout, write_timeout)
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>streamd</em></code>:  the the stream descriptor to configure.</li>
+       <li><code><em>read_timeout</em></code>:  timeout for blocking on stream reading operations. -1 or nil wait forever</li>
+       <li><code><em>write_timeout</em></code>:  timeout for blocking on stream writing operations. -1 or nil wait forever</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "new"></a>
+    <strong>new&nbsp;(size, read_timeout, write_timeout)</strong>
+    </dt>
+    <dd>
+    Create a new stream. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>size</em></code>:  When the buffered string length surpases this value, follwing attempts to
+ write will block. nil means no limit.</li>
+       <li><code><em>read_timeout</em></code>:  timeout for blocking on stream reading operations. -1 or nil wait forever
+ timeout</li>
+       <li><code><em>write_timeout</em></code>:  timeout for blocking on stream writing operations. -1 or nil wait forever</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a stream descriptor
+    </ol>
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

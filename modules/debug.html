@@ -47,6 +47,7 @@
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/selector.html">selector</a></li>
   <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/stream.html">stream</a></li>
 </ul>
 <h2>Topics</h2>
 <ul>
@@ -88,7 +89,11 @@
 <table class="function_list">
 	<tr>
 	<td class="name" nowrap><a href="#track_statistics">track_statistics</a></td>
-	<td class="summary">Control statistic collection.</td>
+	<td class="summary">Control statistics collection.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#do_not_yield">do_not_yield</a></td>
+	<td class="summary">Control task yielding.</td>
 	</tr>
 </table>
 
@@ -149,12 +154,31 @@
     <strong>track_statistics</strong>
     </dt>
     <dd>
-    Control statistic collection. <br/>
+    Control statistics collection. <br/>
  When set to true, <a href="../modules/sched.html#taskd">sched.taskd</a>  and <a href="../modules/sched.html#waitd">sched.waitd</a>  objects gain <a href="../modules/debug.html#taskd.debug">taskd.debug</a>  and
  <a href="../modules/debug.html#waitd.debug">waitd.debug</a>  tables, respectivelly. 
  This is usefull to find performance bottlenecks as well
  as isolating misbehaving components for bug detection. <br/>
  Collectig statistics has impact on performance.
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "do_not_yield"></a>
+    <strong>do_not_yield</strong>
+    </dt>
+    <dd>
+    Control task yielding. <br/>
+ When set to a true valor, any attempt to yield from a task will trigger an error.
+ This flag is usefull for delimiting critical sections of a program, to make sure
+ none of the code inside yields indirectly (for example sending a signal,
+ or sleeping). <br/>
+ The error message will contain the flags valor. <br/>
+ If a critical section contains yielding code, you can use a <a href="../modules/mutex.html#">mutex</a> to control 
+ access.
 
 
 
