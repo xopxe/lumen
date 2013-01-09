@@ -35,6 +35,6 @@ debug.do_not_yield = false
 -- table. There use statistics will be collected.
 -- @field taskd.debug.runtime Total runtime in seconds (updated on task yielding)  
 -- @field taskd.debug.cycles Number of times a task has been waken  
--- @field waitd.debug.triggered Number of times a waitd has waken up a task  
+-- @field taskd.debug.triggered Number of times a waitd has waken up the task  
 -- @table taskd.debug
 
