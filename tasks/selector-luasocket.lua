@@ -14,6 +14,9 @@ local sktds = setmetatable({}, { __mode = 'kv' })
 
 local M = {}
 
+-- output streams
+local read_streams = setmetatable({},  { __mode = 'k' })
+
 ---------------------------------------
 -- replace sched's default get_time and idle with luasocket's
 sched.get_time = socket.gettime 
@@ -127,19 +130,12 @@ local step = function (timeout)
 						handler = sktd.handler,
 						stream = sktd.create_stream and streams.new(), 
 					}
-					local sktd_cli = init_sktd(skt_table_client)
-					--[[
-					sched.signal(skt_table.events.accepted, sktd)
-					if skt_table.handler then 
-						sched.sigrun(
-							{emitter=task, events={inskt}},
-							function(_,_, data, err, part)
-								skt_table.handler(sktd, data, err, part)
-								if not data then sched.running_task:kill() end
-							end
-						)
+					if sktd.handler=='stream' then
+						skt_table_client.handler = streams.new()
+					else
+						skt_table_client.handler = sktd.handler
 					end
-					--]]
+					local sktd_cli = init_sktd(skt_table_client)
 					
 					register_client(sktd_cli)
 					sched.signal(sktd.events.accepted, sktd_cli)
@@ -153,11 +149,21 @@ local step = function (timeout)
 					--print('&-',data,err,part, #part)
 					if err=='closed' then
 						unregister(fd)
-						sched.signal(fd, nil, err, part) --data is nil or part?
-						if sktd.stream then sktd.stream:write(nil, 'fd closed') end
+						if sktd.handler then 
+							sktd.handler(sktd, nil, 'closed', part) 
+						elseif read_streams[sktd] then
+							read_streams[sktd]:write(nil, 'fd closed')
+						else
+							sched.signal(sktd.events.data, nil, err, part) --data is nil or part?
+						end
 					elseif data then
-						sched.signal(fd, data)
-						if sktd.stream then sktd.stream:write(data) end
+						if sktd.handler then 
+							sktd.handler(sktd, data) 
+						elseif read_streams[sktd] then
+							read_streams[sktd]:write(data)
+						else
+							sched.signal(sktd.events.data, data) 
+						end
 					end
 				else
 					local data,err,part = fd:receive(pattern,sktd.partial)
@@ -204,7 +210,7 @@ local normalize_pattern = function(pattern)
 end
 
 M.init = function()
-	M.new_tcp_server = function(locaddr, locport, pattern, handler, create_stream)
+	M.new_tcp_server = function (locaddr, locport, pattern, handler)
 		--address, port, backlog, pattern)
 		local sktd=init_sktd()
 		sktd.fd=assert(socket.bind(locaddr, locport))
@@ -212,11 +218,10 @@ M.init = function()
 		sktd.task=module_task
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
-		sktd.create_stream = create_stream
 		register_server(sktd)
 		return sktd
 	end
-	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler, stream)
+	M.new_tcp_client = function (address, port, locaddr, locport, pattern, handler)
 		--address, port, locaddr, locport, pattern)
 		local sktd=init_sktd()
 		sktd.fd=assert(socket.connect(address, port, locaddr, locport))
@@ -224,11 +229,10 @@ M.init = function()
 		sktd.task=module_task
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
-		sktd.stream = stream
 		register_client(sktd)
 		return sktd
 	end
-	M.new_udp = function( address, port, locaddr, locport, pattern, handler, stream)
+	M.new_udp = function ( address, port, locaddr, locport, pattern, handler)
 	--address, port, locaddr, locport, count)
 		local sktd=init_sktd()
 		sktd.fd=socket.udp()
@@ -238,7 +242,6 @@ M.init = function()
 		sktd.fd:setsockname(locaddr or '*', locport or 0)
 		sktd.fd:setpeername(address or '*', port)
 		sktd.handler = handler
-		sktd.stream = stream
 		register_client(sktd)
 		return sktd
 	end

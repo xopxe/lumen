@@ -19,6 +19,9 @@ local CHUNK_SIZE = 1480 -- 65536 --8192
 local write_streams = setmetatable({}, weak_key)
 local outstanding_data = setmetatable({}, weak_key)
 
+-- output streams
+local read_streams = setmetatable({}, weak_key)
+
 
 local M = {}
 
@@ -66,15 +69,18 @@ local unregister = function (fd)
 	end
 end
 local register_client = function (sktd)
-	local data_event = sktd.events.data
 	local function client_handler(polle)
 		local data,code,msg=polle.it()
 		if data then
 			local block = polle.block
 			if not block or block=='line'  or block == #data then
-				if sktd.handler then sktd.handler(sktd, data) end
-				sched.signal(data_event, data)
-				if sktd.stream then sktd.stream:write(data) end
+				if sktd.handler then 
+					sktd.handler(sktd, data) 
+				elseif read_streams[sktd] then
+					read_streams[sktd]:write(data)
+				else
+					sched.signal(sktd.events.data, data)
+				end
 				return
 			end
 			if type(block) == 'number' and block > #data then
@@ -82,9 +88,13 @@ local register_client = function (sktd)
 				data = polle.readbuff
 				if block==#data then
 					polle.readbuff = nil
-					if sktd.handler then sktd.handler(sktd, data) end
-					sched.signal(data_event, data)
-					if sktd.stream then sktd.stream:write(data) end
+					if sktd.handler then 
+						sktd.handler(sktd, data) 
+					elseif read_streams[sktd] then
+						read_streams[sktd]:write(data)
+					else
+						sched.signal(sktd.events.data, data)
+					end
 				end
 			end
 		else
@@ -94,8 +104,13 @@ local register_client = function (sktd)
 			or (code and code~=11) then
 				--sktd:close()
 				unregister(sktd)
-				sched.signal(data_event, nil, 'closed')
-				if sktd.stream then sktd.stream:write(nil, 'fd closed') end
+				if sktd.handler then 
+					sktd.handler(sktd, nil, 'closed') 
+				elseif read_streams[sktd] then
+					read_streams[sktd]:write(nil, 'fd closed')
+				else
+					sched.signal(sktd.events.data, nil, 'closed')
+				end
 				sktd:close()
 			end
 		end
@@ -114,20 +129,27 @@ local register_client = function (sktd)
 	end
 	polle.fd:setblocking(false)
 	sktd.polle=polle
+	if type (sktd.handler) == 'table' then --is a stream
+		read_streams[sktd] = sktd.handler
+		sktd.handler = nil
+	end
 	pollt[#pollt+1]=polle
 end
-local register_server = function (sktd ) --, block, backlog)
+local register_server = function (sktd) --, block, backlog)
 	local accepted_event = sktd.events.accepted
 	local function accept_handler(polle)
 		local skt, host, port = polle.fd:accept()
 		local skt_table_client = {
 			fd=skt,
-			handler= sktd.handler,
 			task=sktd.task,
 			events={data=skt},
 			pattern=sktd.pattern,
-			stream = sktd.create_stream and streams.new(), 
 		}
+		if sktd.handler=='stream' then
+			skt_table_client.handler = streams.new()
+		else
+			skt_table_client.handler = sktd.handler
+		end
 		register_client(skt_table_client)
 		local insktd = init_sktd(skt_table_client)
 		sched.signal(accepted_event, insktd)
@@ -222,7 +244,7 @@ M.init = function(conf)
 	M.service=conf.service or 'socketeer'
 	
 	--M.nixiorator=nixiorator
-	M.new_tcp_server = function(locaddr, locport, pattern, handler, create_stream)
+	M.new_tcp_server = function(locaddr, locport, pattern, handler)
 		--address, port, pattern, backlog)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
@@ -230,11 +252,10 @@ M.init = function(conf)
 		sktd.events = {accepted=sktd.fd }
 		sktd.handler = handler
 		sktd.pattern = normalize_pattern(pattern)
-		sktd.create_stream = create_stream
 		register_server(sktd)
 		return sktd
 	end
-	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler, stream)
+	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'stream'))
@@ -242,11 +263,10 @@ M.init = function(conf)
 		sktd.fd:connect(address, port)
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
-		sktd.stream = stream
 		register_client(sktd)
 		return sktd
 	end
-	M.new_udp = function( address, port, locaddr, locport, pattern, handler, stream)
+	M.new_udp = function( address, port, locaddr, locport, pattern, handler)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'dgram'))
@@ -254,7 +274,6 @@ M.init = function(conf)
 		if address and port then sktd.fd:connect(address, port) end
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler
-		sktd.stream = stream
 		register_client(sktd)
 		return sktd
 	end
@@ -271,7 +290,7 @@ M.init = function(conf)
 		register_client(sktd)
 		return sktd
 	end
-	M.grab_stdout = function ( command, pattern, handler, stream )
+	M.grab_stdout = function ( command, pattern, handler )
 		local function run_shell_nixio(command)
 		    local fdi, fdo = nixio.pipe()
 		    local pid = nixio.fork()
@@ -293,7 +312,6 @@ M.init = function(conf)
 		sktd.events = {data=sktd.fd}
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler
-		sktd.stream = stream
 		register_client(sktd)
 		return sktd
 	end

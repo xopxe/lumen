@@ -72,11 +72,10 @@
 <h1>Module <code>selector</code></h1>
 
 <p>Module suporting asynchronous access to sockets and files.</p>
-<p> Selector integrates Lumen with a select/poll-like mechanism. 
- Backends luasocket and nixio are supported.
- Module's task will generate signals on data arrival on opened 
- sockets/files. Also a <a href="../modules/stream.html#">stream</a> can be used to pipe data from 
- sockets/files.</p>
+<p> Selector integrates Lumen with a select/poll-like mechanism. <br/>
+ Backends luasocket and nixio are supported. <br/>
+ The socket can be setup to react to data arrival by either calling a handler function,
+ writing to a <a href="../modules/stream.html#">stream</a>, or emiting signals.</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local selector = require 'selector'
@@ -90,11 +89,11 @@ selector.init({service='luasocket'})</pre>
 	<td class="summary">Start the task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_tcp_server">new_tcp_server&nbsp;(locaddr, locport, pattern, handler, create_stream)</a></td>
+	<td class="name" nowrap><a href="#new_tcp_server">new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</a></td>
 	<td class="summary">Creates a TCP server socket.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_tcp_client">new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler, stream)</a></td>
+	<td class="name" nowrap><a href="#new_tcp_client">new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler)</a></td>
 	<td class="summary">Creates a TCP client socket.</td>
 	</tr>
 	<tr>
@@ -179,20 +178,21 @@ selector.init({service='luasocket'})</pre>
 </dd>
     <dt>
     <a name = "new_tcp_server"></a>
-    <strong>new_tcp_server&nbsp;(locaddr, locport, pattern, handler, create_stream)</strong>
+    <strong>new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</strong>
     </dt>
     <dd>
     Creates a TCP server socket. 
- Emits a <em>sktd.events.accepted, client_sktd</em> signal on new connections.
+ Emits a <em>sktd.events.accepted, client_sktd, [stream]</em> signal on new connections.
 
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
        <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
-       <li><code><em>handler</em></code>:  optional handler function for new clients, 
- must have a (sktd, data, err, part) signature</li>
-       <li><code><em>create_stream</em></code>:  create a new stream object for new clients.</li>
+       <li><code><em>handler</em></code>:  Optional,  a handler function or 'stream'. Will be used 
+ when creating new client sockets.  See <a href="../modules/selector.html#new_tcp_client">new_tcp_client</a>. 
+ 'stream' mean a new stream will be created, and provided in 
+ the accepted signal.</li>
     </ul>
 
 
@@ -205,12 +205,12 @@ selector.init({service='luasocket'})</pre>
 </dd>
     <dt>
     <a name = "new_tcp_client"></a>
-    <strong>new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler, stream)</strong>
+    <strong>new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler)</strong>
     </dt>
     <dd>
     Creates a TCP client socket. 
- Emits a <em>sktd.events.data, data</em> signal on incommig data, 
- and <em>sktd.events.data, nil, err</em> on errors.
+ Can be set up to use a handler function, write to a stream, or emit signals
+ (<em>sktd.events.data, data</em> signal on incommig data, and <em>sktd.events.data, nil, err</em> on errors).
 
     <h3>Parameters:</h3>
     <ul>
@@ -219,8 +219,11 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
        <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
-       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
-       <li><code><em>stream</em></code>:  an optional <a href="../modules/stream.html#">stream</a> object to pipe data into.</li>
+       <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. 
+ The handler function must have a (sktd, data, err, part) signature. When a stream it will
+ be used to push data as it arrives. On socket closing, the stream will be closed with the error
+ message as provided by the socket. If the handler parameter is nil, the socket object will 
+ emit signals.</li>
     </ul>
 
 
@@ -237,8 +240,8 @@ selector.init({service='luasocket'})</pre>
     </dt>
     <dd>
     Creates a UDP socket. 
- Emits a <em>sktd.events.data, data</em> signal on incommig data, 
- and <em>sktd.events.data, nil, err</em> on errors.
+ Can be set up to use a handler function, write to a stream, or emit signals
+ (<em>sktd.events.data, data</em> signal on incommig data, and <em>sktd.events.data, nil, err</em> on errors).
 
     <h3>Parameters:</h3>
     <ul>
@@ -247,7 +250,11 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
        <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
-       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+       <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. 
+ The handler function must have a (sktd, data, err, part) signature. When a stream it will
+ be used to push data as it arrives. On socket closing, the stream will be closed with the error
+ message as provided by the socket. If the handler parameter is nil, the socket object will 
+ emit signals.</li>
     </ul>
 
 
@@ -264,8 +271,8 @@ selector.init({service='luasocket'})</pre>
     </dt>
     <dd>
     Opens a file. 
- Emits a <em>sktd.events.data, data</em> signal on incommig data, 
- and <em>sktd.events.data, nil, err</em> on errors.
+ Can be set up to use a handler function, write to a stream, or emit signals
+ (<em>sktd.events.data, data</em> signal on incommig data, and <em>sktd.events.data, nil, err</em> on errors).
 
     <h3>Parameters:</h3>
     <ul>
@@ -274,7 +281,11 @@ selector.init({service='luasocket'})</pre>
 </li>
        <li><code><em>flags</em></code>:  ATM as specified for nixio.open()</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
-       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+       <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. 
+ The handler function must have a (sktd, data, err, part) signature. When a stream it will
+ be used to push data as it arrives. On socket closing, the stream will be closed with the error
+ message as provided by the socket. If the handler parameter is nil, the socket object will 
+ emit signals.</li>
     </ul>
 
 
@@ -291,15 +302,19 @@ selector.init({service='luasocket'})</pre>
     </dt>
     <dd>
     Grab the output of a command. 
- Usefull for capturing the output of long running programs.
- Emits a <em>sktd.events.data, data</em> signal on incommig data, 
- and <em>sktd.events.data, nil, err</em> on errors.
+ Usefull for capturing the output of long running programs. <br/>
+ Can be set up to use a handler function, write to a stream, or emit signals
+ (<em>sktd.events.data, data</em> signal on incommig data, and <em>sktd.events.data, nil, err</em> on errors).
 
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>command</em></code>:  command whose ouput capture</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
-       <li><code><em>handler</em></code>:  optional handler function, must have a (sktd, data, err, part) signature</li>
+       <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. 
+ The handler function must have a (sktd, data, err, part) signature. When a stream it will
+ be used to push data as it arrives. On socket closing, the stream will be closed with the error
+ message as provided by the socket. If the handler parameter is nil, the socket object will 
+ emit signals.</li>
     </ul>
 
 

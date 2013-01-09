@@ -1,9 +1,8 @@
 --- Module suporting asynchronous access to sockets and files.
--- Selector integrates Lumen with a select/poll-like mechanism. 
--- Backends luasocket and nixio are supported.
--- Module's task will generate signals on data arrival on opened 
--- sockets/files. Also a @{stream} can be used to pipe data from 
--- sockets/files.
+-- Selector integrates Lumen with a select/poll-like mechanism.   
+-- Backends luasocket and nixio are supported.  
+-- The socket can be setup to react to data arrival by either calling a handler function,
+-- writing to a @{stream}, or emiting signals.
 -- @module selector
 -- @usage local selector = require 'selector'
 --selector.init({service='luasocket'})
@@ -22,63 +21,79 @@ M.init = function(conf)
 	native.init()
 	
 	--- Creates a TCP server socket.
-	-- Emits a _sktd.events.accepted, client\_sktd_ signal on new connections.
+	-- Emits a _sktd.events.accepted, client\_sktd, [stream]_ signal on new connections.
 	-- @function new_tcp_server
 	-- @param locaddr Local IP address or '*' (defaults to '*')
 	-- @param locport Local port (defaults to 0)
 	-- @param pattern Any of nixio or luasocket patterns.
-	-- @param handler optional handler function for new clients, 
-	-- must have a (sktd, data, err, part) signature
-	-- @param create_stream create a new stream object for new clients.
+	-- @param handler Optional,  a handler function or 'stream'. Will be used 
+	-- when creating new client sockets.  See @{new_tcp_client}. 
+	-- 'stream' mean a new stream will be created, and provided in 
+	-- the accepted signal.
 	-- @return a @{sktd} object
 	M.new_tcp_server = native.new_tcp_server
 
 	--- Creates a TCP client socket.
-	-- Emits a _sktd.events.data, data_ signal on incommig data, 
-	-- and _sktd.events.data, nil, err_ on errors.
+	-- Can be set up to use a handler function, write to a stream, or emit signals
+	-- (_sktd.events.data, data_ signal on incommig data, and _sktd.events.data, nil, err_ on errors).
 	-- @function new_tcp_client
 	-- @param address Remote IP address. 
 	-- @param port Remote port ()
 	-- @param locaddr Local IP address or '*' (defaults to '*')
 	-- @param locport Local port (defaults to 0)
 	-- @param pattern Any of nixio or luasocket patterns.
-	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
-	-- @param stream an optional @{stream} object to pipe data into.
+	-- @param handler Optional, either a handler function or a stream. 
+	-- The handler function must have a (sktd, data, err, part) signature. When a stream it will
+	-- be used to push data as it arrives. On socket closing, the stream will be closed with the error
+	-- message as provided by the socket. If the handler parameter is nil, the socket object will 
+	-- emit signals. 
 	-- @return a @{sktd} object
 	M.new_tcp_client = native.new_tcp_client
 	
 	--- Creates a UDP socket.
-	-- Emits a _sktd.events.data, data_ signal on incommig data, 
-	-- and _sktd.events.data, nil, err_ on errors.
+	-- Can be set up to use a handler function, write to a stream, or emit signals
+	-- (_sktd.events.data, data_ signal on incommig data, and _sktd.events.data, nil, err_ on errors).
 	-- @function new_udp
 	-- @param address Remote IP address. 
 	-- @param port Remote port ()
 	-- @param locaddr Local IP address or '*' (defaults to '*')
 	-- @param locport Local port (defaults to 0)
 	-- @param pattern Any of nixio or luasocket patterns.
-	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
+	-- @param handler Optional, either a handler function or a stream. 
+	-- The handler function must have a (sktd, data, err, part) signature. When a stream it will
+	-- be used to push data as it arrives. On socket closing, the stream will be closed with the error
+	-- message as provided by the socket. If the handler parameter is nil, the socket object will 
+	-- emit signals. 
 	-- @return a @{sktd} object
 	M.new_udp = native.new_udp
 	
 	--- Opens a file.
-	-- Emits a _sktd.events.data, data_ signal on incommig data, 
-	-- and _sktd.events.data, nil, err_ on errors.
+	-- Can be set up to use a handler function, write to a stream, or emit signals
+	-- (_sktd.events.data, data_ signal on incommig data, and _sktd.events.data, nil, err_ on errors).
 	-- @function new_fd
 	-- @param filename 
 	-- @param flags ATM as specified for nixio.open()
 	-- @param pattern Any of nixio or luasocket patterns.
-	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
+	-- @param handler Optional, either a handler function or a stream. 
+	-- The handler function must have a (sktd, data, err, part) signature. When a stream it will
+	-- be used to push data as it arrives. On socket closing, the stream will be closed with the error
+	-- message as provided by the socket. If the handler parameter is nil, the socket object will 
+	-- emit signals. 
 	-- @return a @{sktd} object
 	M.new_fd = native.new_fd
 	
 	--- Grab the output of a command.
-	-- Usefull for capturing the output of long running programs.
-	-- Emits a _sktd.events.data, data_ signal on incommig data, 
-	-- and _sktd.events.data, nil, err_ on errors.
+	-- Usefull for capturing the output of long running programs.  
+	-- Can be set up to use a handler function, write to a stream, or emit signals
+	-- (_sktd.events.data, data_ signal on incommig data, and _sktd.events.data, nil, err_ on errors).
 	-- @function grab_stdout
 	-- @param command command whose ouput capture
 	-- @param pattern Any of nixio or luasocket patterns.
-	-- @param handler optional handler function, must have a (sktd, data, err, part) signature
+	-- @param handler Optional, either a handler function or a stream. 
+	-- The handler function must have a (sktd, data, err, part) signature. When a stream it will
+	-- be used to push data as it arrives. On socket closing, the stream will be closed with the error
+	-- message as provided by the socket. If the handler parameter is nil, the socket object will 
+	-- emit signals. 
 	-- @return a @{sktd} object
 	M.grab_stdout = native.grab_stdout 
 	
