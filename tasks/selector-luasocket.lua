@@ -131,14 +131,17 @@ local step = function (timeout)
 						stream = sktd.create_stream and streams.new(), 
 					}
 					if sktd.handler=='stream' then
-						skt_table_client.handler = streams.new()
+						local s = streams.new()
+						skt_table_client.handler = s
+						local sktd_cli = init_sktd(skt_table_client)
+						register_client(sktd_cli)
+						sched.signal(sktd.events.accepted, sktd_cli, s)
 					else
 						skt_table_client.handler = sktd.handler
+						local sktd_cli = init_sktd(skt_table_client)
+						register_client(sktd_cli)
+						sched.signal(sktd.events.accepted, sktd_cli)
 					end
-					local sktd_cli = init_sktd(skt_table_client)
-					
-					register_client(sktd_cli)
-					sched.signal(sktd.events.accepted, sktd_cli)
 				else
 					sched.signal(sktd.events.accepted, nil, err)
 				end
