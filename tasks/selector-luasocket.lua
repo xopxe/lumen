@@ -47,6 +47,14 @@ local unregister = function (fd)
 		sktd.write_stream = nil
 		sktd.outstanding_data = nil
 	end
+	read_streams [sktd] = nil
+	if sktd.handler then 
+		sktd.handler(sktd, nil, 'closed', sktd.partial) 
+	elseif read_streams[sktd] then
+		read_streams[sktd]:write(nil, 'fd closed')
+	else
+		sched.signal(sktd.events.data, nil, err, sktd.partial) 
+	end
 	sktd.partial = nil
 	sktds[fd] = nil
 end
@@ -148,16 +156,10 @@ local step = function (timeout)
 				--print('&+', sktd, pattern)
 				if type(pattern) == "number" and pattern <= 0 then
 					local data,err,part = fd:receive(CHUNK_SIZE)
-					--print('&-',data,err,part, #part)
+					--print('&-',#(data or ''),#(part or ''), err)
+					data = data or part
 					if err=='closed' then
 						unregister(fd)
-						if sktd.handler then 
-							sktd.handler(sktd, nil, 'closed', part) 
-						elseif read_streams[sktd] then
-							read_streams[sktd]:write(nil, 'fd closed')
-						else
-							sched.signal(sktd.events.data, nil, err, part) --data is nil or part?
-						end
 					elseif data then
 						if sktd.handler then 
 							sktd.handler(sktd, data) 
@@ -181,13 +183,6 @@ local step = function (timeout)
 						end
 					elseif err=='closed' then 
 						unregister(fd)
-						if sktd.handler then 
-							sktd.handler(sktd, nil, 'closed', part) 
-						elseif read_streams[sktd] then
-							read_streams[sktd]:write(nil, 'fd closed')
-						else
-							sched.signal(sktd.events.data, nil, err, part) --data is nil or part?
-						end
 					end
 				end
 			end
@@ -211,7 +206,7 @@ local normalize_pattern = function(pattern)
 	end
 	if not pattern or pattern == '*a' 
 	or (tonumber(pattern) and tonumber(pattern)<=0) then
-		return '*a'
+		return  0 --'*a'
 	end
 	print ('Could not normalize the pattern:', pattern)
 end
