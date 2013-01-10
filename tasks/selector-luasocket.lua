@@ -14,8 +14,8 @@ local sktds = setmetatable({}, { __mode = 'kv' })
 
 local M = {}
 
--- output streams
-local read_streams = setmetatable({},  { __mode = 'k' })
+-- streams for incomming data
+local read_streams = setmetatable({}, { __mode = 'k' })
 
 ---------------------------------------
 -- replace sched's default get_time and idle with luasocket's
@@ -127,13 +127,12 @@ local step = function (timeout)
 						task=module_task,
 						events={data=client},
 						pattern=pattern,
-						handler = sktd.handler,
 						stream = sktd.create_stream and streams.new(), 
 					}
 					if sktd.handler=='stream' then
-						local s = streams.new()
-						skt_table_client.handler = s
 						local sktd_cli = init_sktd(skt_table_client)
+						local s = streams.new()
+						read_streams[sktd_cli] = s
 						register_client(sktd_cli)
 						sched.signal(sktd.events.accepted, sktd_cli, s)
 					else
@@ -146,7 +145,7 @@ local step = function (timeout)
 					sched.signal(sktd.events.accepted, nil, err)
 				end
 			else
-				--print('&+', skt, mode, partial[skt])
+				--print('&+', sktd, pattern)
 				if type(pattern) == "number" and pattern <= 0 then
 					local data,err,part = fd:receive(CHUNK_SIZE)
 					--print('&-',data,err,part, #part)
@@ -171,19 +170,24 @@ local step = function (timeout)
 				else
 					local data,err,part = fd:receive(pattern,sktd.partial)
 					sktd.partial=part
-					--print('&-',sktd.handler, data,err,part)
-					if sktd.handler then sktd.handler(sktd, data, err, part) end
-					if not data then
-						if err=='closed' then 
-							unregister(fd)
-							sched.signal(sktd.events.data, nil, 'fd closed', part) --data is nil or part?
-							if sktd.stream then sktd.stream:write(nil, err) end
-						elseif not part or part=='' then
-							sched.signal(sktd.events.data, nil, err)
-							if sktd.stream then sktd.stream:write(nil, err) end
+					--print('&-', #(data or ''), #(part or ''), data,err,part)
+					if data then
+						if sktd.handler then 
+							sktd.handler(sktd, data) 
+						elseif read_streams[sktd] then
+							read_streams[sktd]:write(data)
+						else
+							sched.signal(sktd.events.data, data) 
 						end
-					else
-						sched.signal(sktd.events.data, data)
+					elseif err=='closed' then 
+						unregister(fd)
+						if sktd.handler then 
+							sktd.handler(sktd, nil, 'closed', part) 
+						elseif read_streams[sktd] then
+							read_streams[sktd]:write(nil, 'fd closed')
+						else
+							sched.signal(sktd.events.data, nil, err, part) --data is nil or part?
+						end
 					end
 				end
 			end
