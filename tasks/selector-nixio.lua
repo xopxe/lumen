@@ -19,7 +19,7 @@ local CHUNK_SIZE = 1480 -- 65536 --8192
 local write_streams = setmetatable({}, weak_key)
 local outstanding_data = setmetatable({}, weak_key)
 
--- output streams
+-- streams for incomming data
 local read_streams = setmetatable({}, weak_key)
 
 
@@ -146,13 +146,17 @@ local register_server = function (sktd) --, block, backlog)
 			pattern=sktd.pattern,
 		}
 		if sktd.handler=='stream' then
-			skt_table_client.handler = streams.new()
+			local s = streams.new()
+			skt_table_client.handler = s
+			local insktd = init_sktd(skt_table_client)
+			register_client(insktd)
+			sched.signal(accepted_event, insktd, s)
 		else
 			skt_table_client.handler = sktd.handler
+			local insktd = init_sktd(skt_table_client)
+			register_client(insktd)
+			sched.signal(accepted_event, insktd)
 		end
-		register_client(skt_table_client)
-		local insktd = init_sktd(skt_table_client)
-		sched.signal(accepted_event, insktd)
 	end
 	local polle={
 		fd=sktd.fd,
