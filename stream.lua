@@ -16,30 +16,95 @@ local setmetatable, tostring = setmetatable, tostring
 local M = {}
 
 --- Read from a stream.
--- Will block if there is no data to read, until it appears. Also accessible as streamd:read()
+-- Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read()
 -- @param streamd the the stream descriptor to read from.
+-- @param len optional length of string to be returned.
 -- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if 
 -- stream is closed and empty (_err_ is the additinal error parameter provided on @{write}).
-M.read = function (streamd)
+M.read = function (streamd, len)
+	if len == 0 then return '' end
+	len = len or - 1
+	
+	local buff_data = streamd.buff_data
+	
 	if streamd.closed and #streamd.buff_data == 0 then
 		return nil, 'closed', streamd.closed
 	end
-	local emitter = sched.wait(streamd.waitd_data)
-	if not emitter then return nil, 'timeout' end
-	local s
-	local buff_data = streamd.buff_data
-	if #buff_data == 1 then 
-		--fast path
-		s = buff_data[1]
-		buff_data[1] = nil
-	else
-		--slow path
-		s = table.concat(buff_data)
-		streamd.buff_data = {}
+	
+	while streamd.len == 0 or (len>0 and streamd.len < len) do
+		local emitter = sched.wait(streamd.waitd_data)
+		if not emitter then return nil, 'timeout' end
 	end
-	streamd.len = 0
+	
+	if #buff_data > 1 then
+		--slow path
+		local s = table.concat(buff_data)
+		streamd.buff_data = {[1] = s}
+		buff_data = streamd.buff_data
+	end
+	
+	local s =  buff_data[1]
+	
+	if len>0 then
+		--cut len bytes
+		local rlen = #s-len
+		buff_data[1] = string.sub(-rlen)
+		s=string.sub(1, len)
+		streamd.len = rlen
+	else
+		--return everything
+		buff_data[1] = nil
+		streamd.len = 0
+	end
+	
 	sched.signal(streamd.pipe_enable_signal)
 	return s
+end
+
+--- Read a line from a stream.
+-- Will block if there is not a whole line to return, until it arrives. Also accessible as streamd:read_line()
+-- @param streamd the the stream descriptor to read from.
+-- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if 
+-- stream is closed and empty (_err_ is the additinal error parameter provided on @{write}). The trailing newline
+-- is not included in the retured string.
+M.read_line = function (streamd)
+	local buff_data = streamd.buff_data
+	if streamd.closed and #buff_data == 0 then
+		return nil, 'closed', streamd.closed
+	end
+	
+	local line_available, new_line_last
+	for i=1, #buff_data do
+		line_available, new_line_last = string.find (buff_data[i] , '\r?\n')
+		if line_available then break end
+	end
+	while not line_available do
+		local emitter = sched.wait(streamd.waitd_data)
+		if not emitter then return nil, 'timeout' end
+		line_available, new_line_last = string.find (buff_data[#buff_data] , '\r?\n') 
+	end
+
+	if #buff_data > 1 then 
+		--slow path
+		local s = table.concat(buff_data)
+		streamd.buff_data = {[1] = s}
+		buff_data = streamd.buff_data
+		line_available, new_line_last = string.find(s,  '\r?\n')  --TODO keep count of positions to avoid rescanning
+	end
+	
+	local s = buff_data[1]
+	local line = s:sub(1, line_available-1)
+	local remainder_length = #s - new_line_last
+	if remainder_length>0 then
+		local remainder = s:sub(-remainder_length)
+		buff_data[1] = remainder
+		streamd.len = remainder_length
+	else
+		buff_data[1] = nil
+		streamd.len = 0
+	end
+	sched.signal(streamd.pipe_enable_signal)
+	return line
 end
 
 --- Write to a stream.
@@ -77,8 +142,8 @@ M.set_timeout = function (streamd, read_timeout, write_timeout)
 	streamd.waitd_enable.timeout = write_timeout
 	
 	--force unlock so new timeouts get applied.
-	sched.signal(streamd.pipe_enable_signal)
-	sched.signal(streamd.pipe_data_signal)
+	if streamd.waitd_enable.buff:len() > 0  then sched.signal(streamd.pipe_enable_signal) end
+	if streamd.waitd_data.buff:len() > 0  then sched.signal(streamd.pipe_data_signal) end
 end
 
 local n_streams=0
@@ -91,7 +156,7 @@ local n_streams=0
 -- @return a stream descriptor
 M.new = function(size, read_timeout, write_timeout)
 	n_streams=n_streams+1
-	local pipename = 'pipe: #'..tostring(n_streams)
+	local pipename = 'stream: #'..tostring(n_streams)
 	local streamd = setmetatable({}, {__tostring=function() return pipename end, __index=M})
 	log('PIPES', 'INFO', 'pipe with name "%s" created', tostring(pipename))
 	streamd.size=size
