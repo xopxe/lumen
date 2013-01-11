@@ -320,12 +320,14 @@ M.init = function(conf)
 		return sktd
 	end
 	M.close = function(sktd)
-		unregister(sktd.fd)
-		sktd.fd:close()
+		local fd = sktd.fd
+		unregister(fd)
+		pcall(fd.close)
 	end
 	M.send_sync = function(sktd, data)
 		local written,_,_,writtenerr = sktd.fd:writeall(data)
-		return written==#data, 'unknown error', writtenerr
+		if written==#data then return true
+		else return nil, 'unknown error', writtenerr end
 	end
 	M.send = M.send_sync
 	M.send_async = function(sktd, data)
