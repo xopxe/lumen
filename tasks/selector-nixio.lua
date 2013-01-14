@@ -68,19 +68,40 @@ local unregister = function (fd)
 		end
 	end
 end
+local function handle_incomming(sktd, data)
+	if sktd.handler then 
+		local ok, errcall = pcall(sktd.handler, sktd, data) 
+		if not ok then 
+			print ('handler died', errcall)
+			sktd:close()
+		end
+	elseif read_streams[sktd] then
+		read_streams[sktd]:write(data)
+	else
+		sched.signal(sktd.events.data, data)
+	end
+end
+local function handle_incomming_error(sktd, err)
+	err = err or 'fd closed'
+	if sktd.handler then 
+		local ok, errcall = pcall(sktd.handler,sktd, nil, err) 
+		if not ok then 
+			print ('handler died', errcall)
+		end
+	elseif read_streams[sktd] then
+		read_streams[sktd]:write(nil, err)
+	else
+		sched.signal(sktd.events.data, nil, err)
+	end
+end
+
 local register_client = function (sktd)
 	local function client_handler(polle)
 		local data,code,msg=polle.it()
 		if data then
 			local block = polle.block
 			if not block or block=='line'  or block == #data then
-				if sktd.handler then 
-					sktd.handler(sktd, data) 
-				elseif read_streams[sktd] then
-					read_streams[sktd]:write(data)
-				else
-					sched.signal(sktd.events.data, data)
-				end
+				handle_incomming(sktd, data)
 				return
 			end
 			if type(block) == 'number' and block > #data then
@@ -88,13 +109,7 @@ local register_client = function (sktd)
 				data = polle.readbuff
 				if block==#data then
 					polle.readbuff = nil
-					if sktd.handler then 
-						sktd.handler(sktd, data) 
-					elseif read_streams[sktd] then
-						read_streams[sktd]:write(data)
-					else
-						sched.signal(sktd.events.data, data)
-					end
+					handle_incomming(sktd, data)
 				end
 			end
 		else
@@ -103,15 +118,8 @@ local register_client = function (sktd)
 			if (code==nil)
 			or (code and code~=11) then
 				--sktd:close()
-				unregister(sktd)
-				if sktd.handler then 
-					sktd.handler(sktd, nil, 'closed') 
-				elseif read_streams[sktd] then
-					read_streams[sktd]:write(nil, 'fd closed')
-				else
-					sched.signal(sktd.events.data, nil, 'closed')
-				end
 				sktd:close()
+				handle_incomming_error(sktd, code)
 			end
 		end
 	end
@@ -179,7 +187,8 @@ local function send_from_pipe (sktd)
 		if blocksize>#data-next_pos then blocksize=#data-blocksize end
 		local written, errwrite =skt:write(data, next_pos, blocksize )
 		if not written and errwrite~=11 then --error, is not EAGAIN
-			unregister(sktd.polle)
+			sktd:close()
+			handle_incomming_error(sktd, 'error writing:'..tostring(errwrite))
 			return
 		end
 		
@@ -201,7 +210,8 @@ local function send_from_pipe (sktd)
 			if blocksize>#data then blocksize=#data-blocksize end
 			local written, errwrite =skt:write(data, 0, blocksize )
 			if not written and errwrite~=11 then --not EAGAIN
-				unregister(sktd.polle)
+				sktd:close()
+				handle_incomming_error(sktd, 'error writing:'..tostring(errwrite))
 				return
 			end
 			
@@ -322,7 +332,7 @@ M.init = function(conf)
 	M.close = function(sktd)
 		local fd = sktd.fd
 		unregister(fd)
-		pcall(fd.close)
+		pcall(fd.close, fd)
 	end
 	M.send_sync = function(sktd, data)
 		local written,_,_,writtenerr = sktd.fd:writeall(data)

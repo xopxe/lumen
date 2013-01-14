@@ -10,7 +10,7 @@ local CHUNK_SIZE = 1480 --65536
 
 local recvt, sendt={}, {}
 
-local sktds = setmetatable({}, { __mode = 'kv' })
+local sktds = setmetatable({}, { __mode = 'k' })
 
 local M = {}
 
@@ -29,7 +29,9 @@ sched.idle = socket.sleep
 local module_task
 
 local unregister = function (fd)
+	print ('', 'unregister',fd)
 	local sktd = sktds[fd]
+	if not sktd then return end
 	for i=1, #recvt do
 		if recvt[i] == fd then
 			table.remove(recvt, i)
@@ -48,15 +50,35 @@ local unregister = function (fd)
 		sktd.outstanding_data = nil
 	end
 	read_streams [sktd] = nil
-	if sktd.handler then 
-		sktd.handler(sktd, nil, 'closed', sktd.partial) 
-	elseif read_streams[sktd] then
-		read_streams[sktd]:write(nil, 'fd closed')
-	else
-		sched.signal(sktd.events.data, nil, err, sktd.partial) 
-	end
 	sktd.partial = nil
 	sktds[fd] = nil
+end
+local function handle_incomming(sktd, data)
+	if sktd.handler then 
+		local ok, errcall = pcall(sktd.handler, sktd, data) 
+		if not ok then 
+			print ('', 'handler died', errcall)
+			sktd:close()
+		end
+	elseif read_streams[sktd] then
+		read_streams[sktd]:write(data)
+	else
+		sched.signal(sktd.events.data, data)
+	end
+end
+local function handle_incomming_error(sktd, err)
+	print ('', 'handle_incomming_error', sktd, err, sktd.fd)
+	err = err or 'fd closed'
+	if sktd.handler then 
+		local ok, errcall = pcall(sktd.handler,sktd, nil, err) 
+		if not ok then 
+			print ('', 'handler died', errcall)
+		end
+	elseif read_streams[sktd] then
+		read_streams[sktd]:write(nil, err)
+	else
+		sched.signal(sktd.events.data, nil, err)
+	end
 end
 local function send_from_pipe (fd)
 	local sktd = sktds[fd]
@@ -70,7 +92,8 @@ local function send_from_pipe (fd)
 			sktd.outstanding_data = nil
 			return
 		elseif err == 'closed' then 
-			unregister(fd)
+			sktd:close()
+			handle_incomming_error(sktd, 'error writing:'..tostring(err))
 			return
 		end
 		sktd.outstanding_data.last = last or lasterr
@@ -80,7 +103,8 @@ local function send_from_pipe (fd)
 			local data, serr = streamd:read()
 			local last , err, lasterr = fd:send(data, 1, CHUNK_SIZE)
 			if err == 'closed' then
-				unregister(fd)
+				sktd:close()
+				handle_incomming_error(sktd, 'error writing:'..tostring(err))
 				return
 			end
 			last = last or lasterr
@@ -104,6 +128,7 @@ local init_sktd = function(sktdesc)
 	return sktd
 end
 local register_server = function (sktd)
+	print ('', 'registeserver', sktd.fd)
 	sktd.isserver=true
 	sktd.fd:settimeout(0)
 	sktds[sktd.fd] = sktd
@@ -112,6 +137,7 @@ local register_server = function (sktd)
 	recvt[#recvt+1]=sktd.fd
 end
 local register_client = function (sktd)
+	print ('', 'registerclient', sktd.fd)
 	sktd.fd:settimeout(0)
 	sktds[sktd.fd] = sktd
 	recvt[#recvt+1]=sktd.fd
@@ -125,10 +151,13 @@ local step = function (timeout)
 			send_from_pipe(fd)
 		end
 		for _, fd in ipairs(recvt_ready) do
+			print ('-----',fd)
 			local sktd = sktds[fd]
+			--if sktd then 
 			local pattern=sktd.pattern
 			if sktd.isserver then 
 				local client, err=fd:accept()
+				print ('', 'newclient', client)
 				if client then
 					local skt_table_client = {
 						fd=client,
@@ -159,32 +188,23 @@ local step = function (timeout)
 					--print('&-',#(data or ''),#(part or ''), err)
 					data = data or part
 					if err=='closed' then
-						unregister(fd)
+						sktd:close()
+						handle_incomming_error(sktd, err)
 					elseif data then
-						if sktd.handler then 
-							sktd.handler(sktd, data) 
-						elseif read_streams[sktd] then
-							read_streams[sktd]:write(data)
-						else
-							sched.signal(sktd.events.data, data) 
-						end
+						handle_incomming(sktd, data)
 					end
 				else
 					local data,err,part = fd:receive(pattern,sktd.partial)
 					sktd.partial=part
 					--print('&-', #(data or ''), #(part or ''), data,err,part)
 					if data then
-						if sktd.handler then 
-							sktd.handler(sktd, data) 
-						elseif read_streams[sktd] then
-							read_streams[sktd]:write(data)
-						else
-							sched.signal(sktd.events.data, data) 
-						end
+						handle_incomming(sktd, data)
 					elseif err=='closed' then 
-						unregister(fd)
+						sktd:close()
+						handle_incomming_error(sktd, err)
 					end
 				end
+			--end
 			end
 		end
 	end
