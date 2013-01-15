@@ -33,7 +33,7 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
-<li><a href="#Tables">Tables</a></li>
+<li><a href="#Fields">Fields</a></li>
 </ul>
 
 
@@ -41,13 +41,13 @@
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
   <li><a href="../modules/debug.html">debug</a></li>
-  <li><a href="../modules/http-server.html">http-server</a></li>
+  <li><strong>http-server</strong></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/proxy.html">proxy</a></li>
   <li><a href="../modules/sched.html">sched</a></li>
   <li><a href="../modules/selector.html">selector</a></li>
-  <li><strong>shell</strong></li>
+  <li><a href="../modules/shell.html">shell</a></li>
   <li><a href="../modules/stream.html">stream</a></li>
 </ul>
 <h2>Topics</h2>
@@ -70,38 +70,29 @@
 
 <div id="content">
 
-<h1>Module <code>shell</code></h1>
+<h1>Module <code>http-server</code></h1>
 
-<p>Task providing an interactive shell.</p>
-<p> This is a interactive shell that allows a user to connect
- to the Lumen scheduler, and maintain a Lua session.
- To connect, use telnet to the service's ip and port.
- Besides running lua code, the user have some helper syntax:
- If a line starts with a "=", it is equivalent to a "return ..."
- If a line starts with a "&amp;", the following code will run in 
- a background task.
- If a line starts with a ":", it is equivalent to a "return ...",
- filtered trough a simple pretifier (usefull for checking tables).
- This module depends on the selector task, which must be started
- seperataly.</p>
-    <h3>Usage:</h3>
-    <ul>
-        <pre class="example">local server = require 'shell'
-server.init({ip='127.0.0.1', port=2012})</pre>
-    </ul>
+<p>Module providing a web server.</p>
+<p> This is a general purpose web server. It depends on the selector module
+ being up and running. <br/>
+ To use it, the programmer must register callbacks for method/url pattern pairs.</p>
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
-	<td class="summary">Start the server.</td>
+	<td class="name" nowrap><a href="#set_request_handler">set_request_handler&nbsp;(method, pattern, callback)</a></td>
+	<td class="summary">Register a new handler.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#serve_static_content">serve_static_content&nbsp;(webroot, fileroot)</a></td>
+	<td class="summary">Serve static files from a folder.</td>
 	</tr>
 </table>
-<h2><a href="#Tables">Tables</a></h2>
+<h2><a href="#Fields">Fields</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#shell_env">shell_env</a></td>
-	<td class="summary">The environment for the shell.</td>
+	<td class="name" nowrap><a href="#HTTP_TIMEOUT">HTTP_TIMEOUT</a></td>
+	<td class="summary">How long keep a session open.</td>
 	</tr>
 </table>
 
@@ -113,16 +104,38 @@ server.init({ip='127.0.0.1', port=2012})</pre>
     
     <dl class="function">
     <dt>
-    <a name = "init"></a>
-    <strong>init&nbsp;(conf)</strong>
+    <a name = "set_request_handler"></a>
+    <strong>set_request_handler&nbsp;(method, pattern, callback)</strong>
     </dt>
     <dd>
-    Start the server. 
+    Register a new handler. 
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>conf</em></code>:  the configuration table. The fields of interest are
- <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 2012)</li>
+       <li><code><em>method</em></code>:  the http method to be attendend, such as 'GET', 'POST' or '*'</li>
+       <li><code><em>pattern</em></code>:  if a url matches this, the handler is selected. When the pattern of several
+ handler overlap, the one deeper is selected (ie if there is '/' and '/docs', the later is selected)</li>
+       <li><code><em>callback</em></code>:  the callback function. Must have a <em>method, path, http_params, http_header</em> 
+ signature, where <em>http_params, http_header</em> are tables. If callback is nil, a handler with matching
+ method and pattern will  be removed.</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "serve_static_content"></a>
+    <strong>serve_static_content&nbsp;(webroot, fileroot)</strong>
+    </dt>
+    <dd>
+    Serve static files from a folder. 
+ This helper function calls <a href="../modules/http-server.html#set_request_handler">set_request_handler</a> with a handler for providing static content.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>webroot</em></code>:  the root of the url where the content will be served.</li>
+       <li><code><em>fileroot</em></code>:  the path to the root folder where the content to be served is found.</li>
     </ul>
 
 
@@ -130,25 +143,16 @@ server.init({ip='127.0.0.1', port=2012})</pre>
 
 </dd>
 </dl>
-    <h2><a name="Tables"></a>Tables</h2>
+    <h2><a name="Fields"></a>Fields</h2>
     
     <dl class="function">
     <dt>
-    <a name = "shell_env"></a>
-    <strong>shell_env</strong>
+    <a name = "HTTP_TIMEOUT"></a>
+    <strong>HTTP_TIMEOUT</strong>
     </dt>
     <dd>
-    The environment for the shell. 
- When starting a new shell session, it's environment will be 
- initialized from this table. 
- By default, it includes everything from _G plus the fields listed below.
- If you want something else, change this table.
+    How long keep a session open. 
 
-    <h3>Fields:</h3>
-    <ul>
-       <li><code><em>sched</em></code>:  A reference to the Lumen scheduler library</li>
-       <li><code><em>ps</em></code>:  A function that prints a human readable tasks list</li>
-    </ul>
 
 
 

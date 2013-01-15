@@ -29,7 +29,6 @@ sched.idle = socket.sleep
 local module_task
 
 local unregister = function (fd)
-	print ('', 'unregister',fd)
 	local sktd = sktds[fd]
 	if not sktd then return end
 	for i=1, #recvt do
@@ -57,7 +56,6 @@ local function handle_incomming(sktd, data)
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler, sktd, data) 
 		if not ok then 
-			print ('', 'handler died', errcall)
 			sktd:close()
 		end
 	elseif read_streams[sktd] then
@@ -67,13 +65,10 @@ local function handle_incomming(sktd, data)
 	end
 end
 local function handle_incomming_error(sktd, err)
-	print ('', 'handle_incomming_error', sktd, err, sktd.fd)
 	err = err or 'fd closed'
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler,sktd, nil, err) 
-		if not ok then 
-			print ('', 'handler died', errcall)
-		end
+
 	elseif read_streams[sktd] then
 		read_streams[sktd]:write(nil, err)
 	else
@@ -128,7 +123,6 @@ local init_sktd = function(sktdesc)
 	return sktd
 end
 local register_server = function (sktd)
-	print ('', 'registeserver', sktd.fd)
 	sktd.isserver=true
 	sktd.fd:settimeout(0)
 	sktds[sktd.fd] = sktd
@@ -137,7 +131,6 @@ local register_server = function (sktd)
 	recvt[#recvt+1]=sktd.fd
 end
 local register_client = function (sktd)
-	print ('', 'registerclient', sktd.fd)
 	sktd.fd:settimeout(0)
 	sktds[sktd.fd] = sktd
 	recvt[#recvt+1]=sktd.fd
@@ -151,13 +144,11 @@ local step = function (timeout)
 			send_from_pipe(fd)
 		end
 		for _, fd in ipairs(recvt_ready) do
-			print ('-----',fd)
 			local sktd = sktds[fd]
 			--if sktd then 
 			local pattern=sktd.pattern
 			if sktd.isserver then 
 				local client, err=fd:accept()
-				print ('', 'newclient', client)
 				if client then
 					local skt_table_client = {
 						fd=client,

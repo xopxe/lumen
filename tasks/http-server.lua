@@ -1,27 +1,34 @@
+--- Module providing a web server.
+-- This is a general purpose web server. It depends on the selector module
+-- being up and running.  
+-- To use it, the programmer must register callbacks for method/url pattern pairs.
+-- @module http-server 
+-- @alias M
+
 local log=require 'log'
 
 local sched = require 'sched'
 local selector = require 'tasks/selector'
-local http_util = require 'tasks/http_server/http_util'
+local http_util = require 'tasks/http-server/http-util'
 --local stream = require 'stream'
 
-local HTTP_TIMEOUT = 5
 
 local M = {}
 
-local function parse_params(s)
-	local params={}
-	for k,v in string.gmatch(s, '([%w%%%_%-]+)=?([%w%%%_%-]*)') do
-		--print('PARAM', k, v)
-		params[k]=v
-	end
-	return params
-end
+--- How long keep a session open.
+M.HTTP_TIMEOUT = 15 --how long keep connections open
 
 -- Derived from Orbit & Orbiter
 M.request_handlers = {}
 local request_handlers = M.request_handlers
 
+--- Register a new handler.
+-- @param method the http method to be attendend, such as 'GET', 'POST' or '*'
+-- @param pattern if a url matches this, the handler is selected. When the pattern of several
+-- handler overlap, the one deeper is selected (ie if there is '/' and '/docs', the later is selected)
+-- @param callback the callback function. Must have a _method, path, http\_params, http\_header_ 
+-- signature, where _http\_params, http\_header_ are tables. If callback is nil, a handler with matching
+-- method and pattern will  be removed.
 M.set_request_handler = function ( method, pattern, callback )
 	for i = 1,  #request_handlers do
 		local handler = request_handlers[i]
@@ -43,20 +50,35 @@ M.set_request_handler = function ( method, pattern, callback )
 	}
 end
 
-local function find_matching_handler(method, url)
-	local max_depth, best_handler = 0
-	for i = 1,  #request_handlers do
-		local handler = request_handlers[i]
-		if handler.method == '*' or handler.method == method then
-			if url:match(handler.pattern) and handler.depth>max_depth then
-				max_depth=handler.depth
-				best_handler=handler
+--- Serve static files from a folder.
+-- This helper function calls @{set_request_handler} with a handler for providing static content.
+-- @param webroot the root of the url where the content will be served. 
+-- @param fileroot the path to the root folder where the content to be served is found.
+M.serve_static_content = function (webroot, fileroot)
+	M.set_request_handler(
+		'GET', 
+		webroot,
+		function(method, path, http_params, http_header)
+			path = path:sub(#webroot)
+			if path:sub(-1) == '/' then path=path..'index.html' end
+			local file, err = io.open(fileroot..path, "r")
+			if file then 
+				local extension = path:match('%.(%a+)$') or 'other'
+			        local mime = http_util.mime_types[extension] or 'text/plain'
+				local content = assert(file:read('*all'))
+				local response = "HTTP/1.1 200/OK\r\nContent-Type:"..mime.."\r\nContent-Length: "..#content.."\r\n\r\n"..content..'\r\n'
+				return response
+			else
+				print ('Error opening file', err)
+				return nil, 404
 			end
 		end
-	end
-	if best_handler then return best_handler.callback end
+	)
 end
 
+-- Start the http server.
+-- @param conf a configuration table. Attributes of interest are _ip_ (defaults to '*')
+-- and _port_ (defaults to 8080).
 M.init = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
@@ -68,7 +90,29 @@ M.init = function(conf)
 		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
 		print('webserver accepting connections on', tcp_server:getsockname())
 		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli, instream)
-			instream:set_timeout(HTTP_TIMEOUT, -1)
+			local function find_matching_handler(method, url)
+				local max_depth, best_handler = 0
+				for i = 1,  #request_handlers do
+					local handler = request_handlers[i]
+					if handler.method == '*' or handler.method == method then
+						if url:match(handler.pattern) and handler.depth>max_depth then
+							max_depth=handler.depth
+							best_handler=handler
+						end
+					end
+				end
+				if best_handler then return best_handler.callback end
+			end
+			local function parse_params(s)
+				local params={}
+				for k,v in string.gmatch(s, '([%w%%%_%-]+)=?([%w%%%_%-]*)') do
+					--print('PARAM', k, v)
+					params[k]=v
+				end
+				return params
+			end
+			
+			instream:set_timeout(M.HTTP_TIMEOUT, -1)
 			print ("#", os.time(), sktd_cli )
 			while true do
 				--read first line
