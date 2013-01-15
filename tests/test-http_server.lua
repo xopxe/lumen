@@ -14,15 +14,13 @@ local sched = require "sched"
 --local selector = require "tasks/selector".init({service=service})
 require "tasks/selector".init({service=service})
 
-local httpserver = require "tasks/httpserver"
-local static_files = require 'tasks/httpserver/static_files'
+local http_server = require "tasks/http_server"
+local static_files = require 'tasks/http_server/static_files'
 
-static_files.serve_folder('/', '../tasks/httpserver/www')
+static_files.serve_folder('/', '../tasks/http_server/www')
 static_files.serve_folder('/docs/', '../docs')
 
-sched.run(function()
-	local conf = {ip='127.0.0.1', port='8080'}
-	httpserver.init(conf)
-end)
+local conf = {ip='127.0.0.1', port='8080'}
+http_server.init(conf)
 
 sched.go()

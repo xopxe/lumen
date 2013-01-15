@@ -1,7 +1,8 @@
 local log=require 'log'
 
 local sched = require 'sched'
-local selector = require "tasks/selector"
+local selector = require 'tasks/selector'
+local http_util = require 'tasks/http_server/http_util'
 --local stream = require 'stream'
 
 local HTTP_TIMEOUT = 5
@@ -16,14 +17,6 @@ local function parse_params(s)
 	end
 	return params
 end
-
-local page404="<html><head><title>404 Not Found</title></head><body><h3>404 Not Found</h3><hr><small>Lumen httpserver</small></body></html>"
-local http404="HTTP/1.1 404 Not Found\r\nContent-Type:text/html\r\nContent-Length: "..#page404.."\r\n\r\n" .. page404
-page404=nil
-
-local page500="<html><head><title>500 Internal Server Error</title></head><body><h3>500 Internal Server Error</h3><hr><small>Lumen httpserver</small></body></html>"
-local http500="HTTP/1.1 500Internal Server Error\r\nContent-Type:text/html\r\nContent-Length: "..#page500.."\r\n\r\n" .. page500
-page500=nil
 
 -- Derived from Orbit & Orbiter
 M.request_handlers = {}
@@ -54,17 +47,13 @@ local function find_matching_handler(method, url)
 	local max_depth, best_handler = 0
 	for i = 1,  #request_handlers do
 		local handler = request_handlers[i]
-		print ('xxxxx1',  handler.method,method)
 		if handler.method == '*' or handler.method == method then
-			print ('xxxxx2', url, handler.pattern, handler.depth)
 			if url:match(handler.pattern) and handler.depth>max_depth then
-				print ('xxxxx3',  handler.method,handler.depth, max_depth)
 				max_depth=handler.depth
 				best_handler=handler
 			end
 		end
 	end
-	print ('xxxxx4',  best_handler.pattern)
 	if best_handler then return best_handler.callback end
 end
 
@@ -117,12 +106,9 @@ M.init = function(conf)
 					--local page = '<http><head><title>Toribio</title></head><body><h1>Works!</h1></body></http>'
 					--response = "HTTP/1.1 200/OK\r\nContent-Type:text/html\r\nContent-Length: "..#page.."\r\n\r\n"..page..'\r\n'
 					response, err = callback(method, path, http_params, http_header)
-					if not response then 
-						if err==404 then response = http404
-						else response = http500 end
-					end
+					response = response or http_util.http_error[err or 500]
 				else
-					response = http404
+					response = http_util.http_error[404]
 				end
 				
 				print ('ANSW', sktd_cli:send_sync(response))
