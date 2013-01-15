@@ -10,14 +10,30 @@ M.mime_types = {
     other = 'text/plain',
 }
 
-local error_page = {
-	[404] = "<html><head><title>404 Not Found</title></head><body><h3>404 Not Found</h3><hr><small>Lumen http-server</small></body></html>",
-	[500] = "<html><head><title>500 Internal Server Error</title></head><body><h3>500 Internal Server Error</h3><hr><small>Lumen http-server</small></body></html>",
+local http_error_code ={
+	[200] = 'OK',
+	[404] = 'Not Found',
+	[500] = 'Internal Server Error',
 }
-M.http_error = {
-	[404] = "HTTP/1.1 404 Not Found\r\nContent-Type:text/html\r\nContent-Length: "..#error_page[404].."\r\n\r\n" .. error_page[404],
-	[500] = "HTTP/1.1 500 Internal Server Error\r\nContent-Type:text/html\r\nContent-Length: "..#error_page[500].."\r\n\r\n" .. error_page[500],
-}
-error_page = nil
+
+M.build_http = function(status, header, content)
+	local httpstatus = tostring(status).." "..http_error_code[status]
+	header = header or {}
+
+	if not content then 
+		content = "<html><head><title>"..httpstatus.."</title></head><body><h3>"..httpstatus.."</h3><hr><small>Lumen http-server</small></body></html>"
+		header["Content-Type"] = 'text/html'
+	end
+	header["Content-Length"] = #content
+	
+	for k, v in pairs(header) do
+		header[#header+1] = k..": "..v
+	end
+	
+	local header_string = table.concat(header, '\r\n')
+	
+	local http_string = "HTTP/1.1 "..httpstatus.."\r\n"..header_string.."\r\n\r\n" .. content
+	return http_string
+end
 
 return M

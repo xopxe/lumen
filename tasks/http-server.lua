@@ -28,7 +28,8 @@ local request_handlers = M.request_handlers
 -- handler overlap, the one deeper is selected (ie if there is '/' and '/docs', the later is selected)
 -- @param callback the callback function. Must have a _method, path, http\_params, http\_header_ 
 -- signature, where _http\_params, http\_header_ are tables. If callback is nil, a handler with matching
--- method and pattern will  be removed.
+-- method and pattern will  be removed. The callback must reurn a number 
+-- (an http error code), followed by an array with headers, and a string (the content).
 M.set_request_handler = function ( method, pattern, callback )
 	for i = 1,  #request_handlers do
 		local handler = request_handlers[i]
@@ -65,12 +66,15 @@ M.serve_static_content = function (webroot, fileroot)
 			if file then 
 				local extension = path:match('%.(%a+)$') or 'other'
 			        local mime = http_util.mime_types[extension] or 'text/plain'
-				local content = assert(file:read('*all'))
-				local response = "HTTP/1.1 200/OK\r\nContent-Type:"..mime.."\r\nContent-Length: "..#content.."\r\n\r\n"..content..'\r\n'
-				return response
+				local content = file:read('*all')
+				if content then 
+					return 200, {['Content-Type']=mime}, content
+				else
+					return 500
+				end
 			else
 				print ('Error opening file', err)
-				return nil, 404
+				return 404
 			end
 		end
 	)
@@ -131,7 +135,7 @@ M.init = function(conf)
 					--print ('HEADER', line, key, value)
 					http_header[key] = value
 				end
-				local content_length = http_header['Content%-Length'] or 0
+				local content_length = http_header['Content-Length'] or 0
 				
 				local data = instream:read(content_length)
 				if not data then sktd_cli:close(); return end
@@ -144,18 +148,17 @@ M.init = function(conf)
 					http_params=parse_params(params)
 				end
 				
-				local response, err
+				local code_out, header_out, response
 				local callback = find_matching_handler(method, path)
 				if callback then 
 					--local page = '<http><head><title>Toribio</title></head><body><h1>Works!</h1></body></http>'
 					--response = "HTTP/1.1 200/OK\r\nContent-Type:text/html\r\nContent-Length: "..#page.."\r\n\r\n"..page..'\r\n'
-					response, err = callback(method, path, http_params, http_header)
-					response = response or http_util.http_error[err or 500]
+					code_out, header_out, response = callback(method, path, http_params, http_header)
 				else
-					response = http_util.http_error[404]
+					code_out = 404
 				end
-				
-				print ('ANSW', sktd_cli:send_sync(response))
+				local out = http_util.build_http(code_out, header_out, response)
+				sktd_cli:send_sync(out)
 				
 				--sktd_cli:close()
 				

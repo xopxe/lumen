@@ -117,7 +117,8 @@
  handler overlap, the one deeper is selected (ie if there is '/' and '/docs', the later is selected)</li>
        <li><code><em>callback</em></code>:  the callback function. Must have a <em>method, path, http_params, http_header</em> 
  signature, where <em>http_params, http_header</em> are tables. If callback is nil, a handler with matching
- method and pattern will  be removed.</li>
+ method and pattern will  be removed. The callback must reurn a number 
+ (an http error code), followed by an array with headers, and a string (the content).</li>
     </ul>
 
 
