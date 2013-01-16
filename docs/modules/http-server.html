@@ -87,6 +87,10 @@
 	<td class="name" nowrap><a href="#serve_static_content">serve_static_content&nbsp;(webroot, fileroot)</a></td>
 	<td class="summary">Serve static files from a folder.</td>
 	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
+	<td class="summary">Start the http server.</td>
+	</tr>
 </table>
 <h2><a href="#Fields">Fields</a></h2>
 <table class="function_list">
@@ -137,6 +141,23 @@
     <ul>
        <li><code><em>webroot</em></code>:  the root of the url where the content will be served.</li>
        <li><code><em>fileroot</em></code>:  the path to the root folder where the content to be served is found.</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "init"></a>
+    <strong>init&nbsp;(conf)</strong>
+    </dt>
+    <dd>
+    Start the http server. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>conf</em></code>:  a configuration table. Attributes of interest are <em>ip</em> (defaults to '*')
+ and <em>port</em> (defaults to 8080).</li>
     </ul>
 
 

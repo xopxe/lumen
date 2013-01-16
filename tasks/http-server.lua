@@ -25,7 +25,7 @@ local request_handlers = M.request_handlers
 --- Register a new handler.
 -- @param method the http method to be attendend, such as 'GET', 'POST' or '*'
 -- @param pattern if a url matches this, the handler is selected. When the pattern of several
--- handler overlap, the one deeper is selected (ie if there is '/' and '/docs', the later is selected)
+-- handler overlap, the one deeper is selected (ie if there is '/' and '/docs/', the later is selected)
 -- @param callback the callback function. Must have a _method, path, http\_params, http\_header_ 
 -- signature, where _http\_params, http\_header_ are tables. If callback is nil, a handler with matching
 -- method and pattern will  be removed. The callback must reurn a number 
@@ -80,7 +80,7 @@ M.serve_static_content = function (webroot, fileroot)
 	)
 end
 
--- Start the http server.
+--- Start the http server.
 -- @param conf a configuration table. Attributes of interest are _ip_ (defaults to '*')
 -- and _port_ (defaults to 8080).
 M.init = function(conf)
@@ -124,14 +124,16 @@ M.init = function(conf)
 				if not request then sktd_cli:close(); return end
 				local method,path, params, version = 
 					string.match(request, '^([A-Z]+) ([%/%.%d%w%-_]+)[%?]?(%S*) HTTP/(.+)$')
-				print ('HTTP', method,path, params, version)
+				
+				print ('HTTP', method, path, params, version)
+				
 				local http_header  = {}
 				--read header
 				while true do
 					local line = instream:read_line()
 					if not line then sktd_cli:close(); return end
 					if line=='' then break end
-					local key, value=string.match(line, '^([^:]+): (.*)$')
+					local key, value=string.match(line, '^([^:]+):%s*(.*)$')
 					--print ('HEADER', line, key, value)
 					http_header[key] = value
 				end
@@ -149,14 +151,19 @@ M.init = function(conf)
 				end
 				
 				local code_out, header_out, response
-				local callback = find_matching_handler(method, path)
-				if callback then 
-					--local page = '<http><head><title>Toribio</title></head><body><h1>Works!</h1></body></http>'
-					--response = "HTTP/1.1 200/OK\r\nContent-Type:text/html\r\nContent-Length: "..#page.."\r\n\r\n"..page..'\r\n'
-					code_out, header_out, response = callback(method, path, http_params, http_header)
+				--print ('matching', path, path:match('/[^/%.]+$'))
+				if path:match('/[^/%.]+$') then 
+					--redirect to path..'/'
+					code_out, header_out = 301, {['Location']='http://'..http_header['Host']..path..'/'}
 				else
-					code_out = 404
+					local callback = find_matching_handler(method, path)
+					if callback then 
+						code_out, header_out, response = callback(method, path, http_params, http_header)
+					else
+						code_out = 404
+					end
 				end
+				
 				local out = http_util.build_http(code_out, header_out, response)
 				sktd_cli:send_sync(out)
 				
