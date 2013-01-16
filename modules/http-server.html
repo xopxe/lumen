@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>Lumen</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/debug.html">debug</a></li>
+  <li><strong>http-server</strong></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/stream.html">stream</a></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>http-server</code></h1>
+
+<p>Module providing a web server.</p>
+<p> This is a general purpose web server. It depends on the selector module
+ being up and running. <br/>
+ To use it, the programmer must register callbacks for method/url pattern pairs.</p>
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#set_request_handler">set_request_handler&nbsp;(method, pattern, callback)</a></td>
+	<td class="summary">Register a new handler.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#serve_static_content">serve_static_content&nbsp;(webroot, fileroot)</a></td>
+	<td class="summary">Serve static files from a folder.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
+	<td class="summary">Start the http server.</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#HTTP_TIMEOUT">HTTP_TIMEOUT</a></td>
+	<td class="summary">How long keep a session open.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "set_request_handler"></a>
+    <strong>set_request_handler&nbsp;(method, pattern, callback)</strong>
+    </dt>
+    <dd>
+    Register a new handler. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>method</em></code>:  the http method to be attendend, such as 'GET', 'POST' or '*'</li>
+       <li><code><em>pattern</em></code>:  if a url matches this, the handler is selected. When the pattern of several
+ handler overlap, the one deeper is selected (ie if there is '/' and '/docs', the later is selected)</li>
+       <li><code><em>callback</em></code>:  the callback function. Must have a <em>method, path, http_params, http_header</em> 
+ signature, where <em>http_params, http_header</em> are tables. If callback is nil, a handler with matching
+ method and pattern will  be removed. The callback must reurn a number 
+ (an http error code), followed by an array with headers, and a string (the content).</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "serve_static_content"></a>
+    <strong>serve_static_content&nbsp;(webroot, fileroot)</strong>
+    </dt>
+    <dd>
+    Serve static files from a folder. 
+ This helper function calls <a href="../modules/http-server.html#set_request_handler">set_request_handler</a> with a handler for providing static content.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>webroot</em></code>:  the root of the url where the content will be served.</li>
+       <li><code><em>fileroot</em></code>:  the path to the root folder where the content to be served is found.</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "init"></a>
+    <strong>init&nbsp;(conf)</strong>
+    </dt>
+    <dd>
+    Start the http server. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>conf</em></code>:  a configuration table. Attributes of interest are <em>ip</em> (defaults to '*')
+ and <em>port</em> (defaults to 8080).</li>
+    </ul>
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+    
+    <dl class="function">
+    <dt>
+    <a name = "HTTP_TIMEOUT"></a>
+    <strong>HTTP_TIMEOUT</strong>
+    </dt>
+    <dd>
+    How long keep a session open. 
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

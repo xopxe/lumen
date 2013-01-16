@@ -40,6 +40,7 @@
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
   <li><a href="../modules/debug.html">debug</a></li>
+  <li><a href="../modules/http-server.html">http-server</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/proxy.html">proxy</a></li>
@@ -55,6 +56,7 @@
 <h2>Examples</h2>
 <ul>
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
+  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
@@ -80,8 +82,12 @@
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#read">read&nbsp;(streamd)</a></td>
+	<td class="name" nowrap><a href="#read">read&nbsp;(streamd, len)</a></td>
 	<td class="summary">Read from a stream.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#read_line">read_line&nbsp;(streamd)</a></td>
+	<td class="summary">Read a line from a stream.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#write">write&nbsp;(streamd, s, err)</a></td>
@@ -106,11 +112,34 @@
     <dl class="function">
     <dt>
     <a name = "read"></a>
-    <strong>read&nbsp;(streamd)</strong>
+    <strong>read&nbsp;(streamd, len)</strong>
     </dt>
     <dd>
     Read from a stream. 
- Will block if there is no data to read, until it appears. Also accessible as streamd:read()
+ Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read()
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>streamd</em></code>:  the the stream descriptor to read from.</li>
+       <li><code><em>len</em></code>:  optional length of string to be returned.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a string if data is available, <em>nil,'timeout'</em> on timeout, <em>nil, 'closed', err</em> if 
+ stream is closed and empty (<em>err</em> is the additinal error parameter provided on <a href="../modules/stream.html#write">write</a>).
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "read_line"></a>
+    <strong>read_line&nbsp;(streamd)</strong>
+    </dt>
+    <dd>
+    Read a line from a stream. 
+ Will block if there is not a whole line to return, until it arrives. Also accessible as streamd:read_line()
 
     <h3>Parameters:</h3>
     <ul>
@@ -121,7 +150,8 @@
     <h3>Returns:</h3>
     <ol>
         a string if data is available, <em>nil,'timeout'</em> on timeout, <em>nil, 'closed', err</em> if 
- stream is closed and empty (<em>err</em> is the additinal error parameter provided on <a href="../modules/stream.html#write">write</a>).
+ stream is closed and empty (<em>err</em> is the additinal error parameter provided on <a href="../modules/stream.html#write">write</a>). The trailing newline
+ is not included in the retured string.
     </ol>
 
 
