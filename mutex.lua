@@ -8,7 +8,8 @@
 -- being locked contains a call that explicitly relinquish control, such as 
 -- sched.sleep(), sched.yield(), sched.signal() or sched.wait().
 -- @module mutex
--- @usage local mx = require 'mutex'()
+-- @usage local mutex = require 'mutex'
+--local mx = mutex.new()
 --
 --local function critical()
 --  mx.acquire()

@@ -82,7 +82,8 @@
  sched.sleep(), sched.yield(), sched.signal() or sched.wait().</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local mx = require 'mutex'()
+        <pre class="example">local mutex = require 'mutex'
+local mx = mutex.new()
 
 local function critical()
   mx.acquire()
