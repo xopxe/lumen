@@ -1,7 +1,8 @@
 --- Module providing a web server.
 -- This is a general purpose web server. It depends on the selector module
 -- being up and running.  
--- To use it, the programmer must register callbacks for method/url pattern pairs.
+-- To use it, the programmer must register callbacks for method/url pattern pairs.  
+-- Handlers for serving static files from disk is provided.
 -- @module http-server 
 -- @alias M
 
@@ -10,12 +11,12 @@ local log=require 'log'
 local sched = require 'sched'
 local selector = require 'tasks/selector'
 local http_util = require 'tasks/http-server/http-util'
---local stream = require 'stream'
+local stream = require 'stream'
 
 
 local M = {}
 
-local build_http = function(status, header)
+local build_http_header = function(status, header)
 	local httpstatus = tostring(status).." "..http_util.http_error_code[status]
 
 	local header_entries = {}
@@ -76,11 +77,12 @@ M.set_request_handler = function ( method, pattern, callback )
 	}
 end
 
---- Serve static files from a folder.
--- This helper function calls @{set_request_handler} with a handler for providing static content.
+--- Serve static files from a folder (using ram).
+-- This helper function calls @{set_request_handler} with a handler for providing static content.  
+-- The whole file will be read into RAM and server from there.
 -- @param webroot the root of the url where the content will be served. 
 -- @param fileroot the path to the root folder where the content to be served is found.
-M.serve_static_content = function (webroot, fileroot)
+M.serve_static_content_from_ram = function (webroot, fileroot)
 	M.set_request_handler(
 		'GET', 
 		webroot,
@@ -92,6 +94,7 @@ M.serve_static_content = function (webroot, fileroot)
 				local extension = path:match('%.(%a+)$') or 'other'
 			        local mime = http_util.mime_types[extension] or 'text/plain'
 				local content = file:read('*all')
+				file:close()
 				if content then 
 					return 200, {['Content-Type']=mime, ['Content-Length']=#content}, content
 				else
@@ -104,6 +107,44 @@ M.serve_static_content = function (webroot, fileroot)
 		end
 	)
 end
+
+--- Serve static files from a folder (using streams).
+-- This helper function calls @{set_request_handler} with a handler for providing static content.  
+-- The file will be served as it is read from disk, so there is no file size limitation.  
+-- Depends on nixio library.
+-- @param webroot the root of the url where the content will be served. 
+-- @param fileroot the path to the root folder where the content to be served is found.
+-- @param buffer_size the reccmended ammount of RAM to use as buffer (defauls to 100kb)
+M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
+	buffer_size = buffer_size or 100*1024
+	local nixio = require 'nixio'
+	M.set_request_handler(
+		'GET', 
+		webroot,
+		function(method, path, http_params, http_header)
+			path = path:sub(#webroot)
+			if path:sub(-1) == '/' then path=path..'index.html' end
+			local abspath=fileroot..path
+			
+			local stream_file = stream.new(buffer_size)
+			local sktd, err = selector.new_fd (abspath, {"rdonly"}, nil, stream_file)
+			if sktd then 
+				local extension = path:match('%.(%a+)$') or 'other'
+			        local mime = http_util.mime_types[extension] or 'text/plain'
+				local fsize  = nixio.fs.stat(abspath, 'size')
+				if fsize then 
+					return 200, {['Content-Type']=mime, ['Content-Length']=fsize}, stream_file
+				else
+					return 500
+				end
+			else
+				print ('Error opening file', err)
+				return 404
+			end
+		end
+	)
+end
+
 
 --- Start the http server.
 -- @param conf a configuration table. Attributes of interest are _ip_ (defaults to '*')
@@ -194,9 +235,17 @@ M.init = function(conf)
 					header_out, response = backup_response(code_out, header_out)
 				end
 				
-				local out_header = build_http(code_out, header_out)
-				sktd_cli:send_sync(out_header)
-				sktd_cli:send_sync(response)
+				local response_header = build_http_header(code_out, header_out)
+				sktd_cli:send_sync(response_header)
+				if type(response) == 'string' then
+					sktd_cli:send_sync(response)
+				else --stream
+					while true do
+						local s, err = response:read()
+						if not s then break end
+						sktd_cli:send_sync(s)
+					end
+				end
 				
 				--sktd_cli:close()
 				

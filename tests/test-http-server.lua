@@ -15,8 +15,8 @@ require "tasks/selector".init({service=service})
 
 local http_server = require "tasks/http-server"
 
-http_server.serve_static_content('/', '../tasks/http-server/www')
-http_server.serve_static_content('/docs/', '../docs')
+http_server.serve_static_content_from_ram('/', '../tasks/http-server/www')
+http_server.serve_static_content_from_stream('/docs/', '../docs')
 
 local conf = {ip='127.0.0.1', port='8080'}
 http_server.init(conf)

@@ -85,8 +85,8 @@
 
 <span class="keyword">local</span> http_server = <span class="global">require</span> <span class="string">"tasks/http-server"</span>
 
-http_server.serve_static_content(<span class="string">'/'</span>, <span class="string">'../tasks/http-server/www'</span>)
-http_server.serve_static_content(<span class="string">'/docs/'</span>, <span class="string">'../docs'</span>)
+http_server.serve_static_content_from_ram(<span class="string">'/'</span>, <span class="string">'../tasks/http-server/www'</span>)
+http_server.serve_static_content_from_stream(<span class="string">'/docs/'</span>, <span class="string">'../docs'</span>)
 
 <span class="keyword">local</span> conf = {ip=<span class="string">'127.0.0.1'</span>, port=<span class="string">'8080'</span>}
 http_server.init(conf)
