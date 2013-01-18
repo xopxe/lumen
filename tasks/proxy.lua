@@ -1,9 +1,10 @@
 --- Proxy service for signals.
 -- This module allows to wait on and receive signals emitted in a remote
--- Lumen instance, trough a socket.
--- Signals are serialized using bencode, and thus bencode's restrictions 
--- on what can be passed trough apply: strings, numbers, lists (pure arrays) and
--- tables with strings as  keys.
+-- Lumen instance, trough a socket.  
+-- Signals are serialized using bencode or json, and restrictions apply
+-- on what can be passed trough depending on the encoder selected. For
+-- example, under bencode strings, numbers, lists (pure arrays) and tables 
+-- with strings as  keys are supported.
 -- This module depends on the selector task, which must be started
 -- seperataly.
 -- @usage  local proxy = require 'proxy'
@@ -28,13 +29,12 @@ local events_catalog = require 'catalog'.get_catalog('events')
 local tasks_catalog = require 'catalog'.get_catalog('tasks')
 local log=require 'log'
 
-
-require 'lib/bencode'
-local bencode = bencode
+local encode_f
+local decode_f
 
 local M = {}
 
-local function vararg_to_bencodeable(...)
+local function vararg_to_encodeable(...)
 	local n=select('#',...) 
 	local b = {n=n}
 	for i=1, n do
@@ -43,7 +43,7 @@ local function vararg_to_bencodeable(...)
 	return b
 end
 
-local function bencodeable_to_vararg(b)
+local function encodeable_to_vararg(b)
 	for i=1, b.n do
 		b[i] = b[tostring(i)]
 	end
@@ -72,7 +72,7 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 	waitd_table.timeout = nil
 	
 	local incomming_signal = {}
-	local encoded = bencode.encode(waitd_table)
+	local encoded = encode_f(waitd_table)
 	--print ('>>>', encoded)
 	
 	local function get_incomming_handler()
@@ -81,10 +81,10 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 			if not data then return false end
 			buff = buff .. data
 			--print ('incomming', buff)
-			local decoded, index, e = bencode.decode(buff)
+			local decoded, index, e = decode_f(buff)
 			if decoded then 
 				buff = buff:sub(index)
-				sched.signal(incomming_signal, bencodeable_to_vararg(decoded)) 
+				sched.signal(incomming_signal, encodeable_to_vararg(decoded)) 
 			else
 				log('PROXY', 'ERROR', 'failed to bdecode buff  with length %s with error "%s"', tostring(#buff), tostring(index).." "..tostring(e))
 			end
@@ -106,10 +106,18 @@ end
 --- Starts the proxy.
 -- This starts the task that will accept incomming wait requests.
 -- @param conf the configuration table. The fields of interest are
--- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 1985)
+-- _ip_  of the service (defaults to '*'), _port_ of the service (defaults to 1985) and
+-- _encoder_ to use: 'bencode' (default) or 'json'
 M.init = function(conf)
 	local ip = conf.ip or '*'
 	local port = conf.port or 1985
+	local encoder = conf.encoder or 'bencode'
+
+	log('PROXY', 'INFO', 'encoding set trough "%s"', tostring(encoder))
+	if encoder =='json' then encoder = 'dkjson' end
+	local encoder_lib = require ('lib/'..encoder)
+	encode_f = encoder_lib.encode
+	decode_f = encoder_lib.decode
 
 	local meta_name_default = {__index=function() return '*' end}
 	local task_to_name = setmetatable({}, meta_name_default)
@@ -120,7 +128,7 @@ M.init = function(conf)
 		return function(sktd, encoded, err)
 			if encoded then 
 				buff=buff .. encoded
-				local rwaitd, index = bencode.decode(buff)
+				local rwaitd, index = decode_f(buff)
 				
 				if rwaitd then
 					buff = buff:sub(index)
@@ -164,19 +172,20 @@ M.init = function(conf)
 							--print ('caught', ...)
 							local emname = event_to_name[em] 
 							local evname = event_to_name[ev] 
-							local bencodeable = vararg_to_bencodeable(emname, evname, ...)
-							local encodedout, encodeerr = bencode.encode(bencodeable)
+							local encodeable = vararg_to_encodeable(emname, evname, ...)
+							local encodedout, encodeerr = encode_f(encodeable)
 							if encoded then 
 								sktd:send_sync(encodedout) 
 							else
-								log('PROXY', 'ERROR', 'failed to bencode event "%s" with error "%s"', 
+								log('PROXY', 'ERROR', 'failed to encode event "%s" with error "%s"', 
 									tostring(evname), tostring(encodeerr))
 							end
 						end)
 					end)
 				end
 			else
-				log('PROXY', 'ERROR', 'socket handler called with error "%s"', tostring(err))
+				log('PROXY', 'WARNING', 'socket handler called with error "%s"', tostring(err))
+				return
 			end
 			return true
 		end

@@ -14,7 +14,7 @@ sched.run(function()
 	--tasks:register('main', sched.running_task)
 	
 	---[[
-	proxy.init({ip='*', port=2001})
+	proxy.init({ip='*', port=2001, encoder='bencode'})
 	local w = proxy.new_remote_waitd('127.0.0.1', 2002, {
 		emitter={'*'},
 		events={'AAA'},

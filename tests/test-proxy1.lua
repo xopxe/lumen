@@ -11,9 +11,8 @@ local proxy = require 'tasks/proxy'
 local catalog_events = require 'catalog'.get_catalog('events')
 --require "log".setlevel('INFO')
 
-
 sched.run(function()
-	proxy.init({ip='*', port=2002})
+	proxy.init({ip='*', port=2002, encoder='bencode'})
 	sched.run(function()
 		local e = {aaa=1}
 		catalog_events:register('AAA',e)
