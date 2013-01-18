@@ -19,14 +19,13 @@ local M = {}
 -- Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read()
 -- @param streamd the the stream descriptor to read from.
 -- @param len optional length of string to be returned.
--- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if 
+-- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
 -- stream is closed and empty (_err_ is the additinal error parameter provided on @{write}).
 M.read = function (streamd, len)
 	if len == 0 then return '' end
 	len = len or - 1
 	
 	local buff_data = streamd.buff_data
-	
 	if streamd.closed and #streamd.buff_data == 0 then
 		return nil, 'closed', streamd.closed
 	end
@@ -34,6 +33,9 @@ M.read = function (streamd, len)
 	while streamd.len == 0 or (len>0 and streamd.len < len) do
 		local emitter = sched.wait(streamd.waitd_data)
 		if not emitter then return nil, 'timeout' end
+		if streamd.closed and #streamd.buff_data == 0 then
+			return nil, 'closed', streamd.closed
+		end
 	end
 	
 	if #buff_data > 1 then
@@ -81,10 +83,13 @@ M.read_line = function (streamd)
 	while not line_available do
 		local emitter = sched.wait(streamd.waitd_data)
 		if not emitter then return nil, 'timeout' end
-		line_available, new_line_last = string.find (buff_data[#buff_data] , '\r?\n') 
+		if streamd.closed and #streamd.buff_data == 0 then
+			return nil, 'closed', streamd.closed
+		end
+		line_available, new_line_last = string.find (buff_data[#buff_data] , '\r?\n')
 	end
 
-	if #buff_data > 1 then 
+	if #buff_data > 1 then
 		--slow path
 		local s = table.concat(buff_data)
 		streamd.buff_data = {[1] = s}
@@ -117,6 +122,7 @@ end
 M.write = function (streamd, s, err)
 	if not s then --closing stream
 		streamd.closed=err or true
+		sched.signal(streamd.pipe_data_signal)
 		return true
 	end
 	if streamd.closed then --closing stream
@@ -128,7 +134,7 @@ M.write = function (streamd, s, err)
 	end
 	streamd.buff_data[#streamd.buff_data+1] = s
 	streamd.len = streamd.len + #s
-	sched.signal(streamd.pipe_data_signal) 
+	sched.signal(streamd.pipe_data_signal)
 	return true
 end
 
