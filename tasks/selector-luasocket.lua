@@ -56,6 +56,9 @@ local function handle_incomming(sktd, data)
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler, sktd, data) 
 		if not ok then 
+			print ('handler died', errcall)
+			sktd:close()
+		elseif not errcall then 
 			sktd:close()
 		end
 	elseif read_streams[sktd] then

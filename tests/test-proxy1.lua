@@ -9,7 +9,7 @@ local sched = require "sched"
 local selector = require 'tasks/selector'.init({service='nixio'})
 local proxy = require 'tasks/proxy'
 local catalog_events = require 'catalog'.get_catalog('events')
-require "log".setlevel('INFO')
+--require "log".setlevel('INFO')
 
 
 sched.run(function()

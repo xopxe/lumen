@@ -74,6 +74,8 @@ local function handle_incomming(sktd, data)
 		if not ok then 
 			print ('handler died', errcall)
 			sktd:close()
+		elseif not errcall then 
+			sktd:close()
 		end
 	elseif read_streams[sktd] then
 		read_streams[sktd]:write(data)
@@ -110,6 +112,7 @@ local register_client = function (sktd)
 				if block==#data then
 					polle.readbuff = nil
 					handle_incomming(sktd, data)
+					return
 				end
 			end
 		else
@@ -120,6 +123,7 @@ local register_client = function (sktd)
 				--sktd:close()
 				sktd:close()
 				handle_incomming_error(sktd, code)
+				return
 			end
 		end
 	end

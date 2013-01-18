@@ -221,11 +221,13 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>locaddr</em></code>:  Local IP address or '<em>' (defaults to '</em>')</li>
        <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
-       <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. 
- The handler function must have a (sktd, data, err, part) signature. When a stream it will
- be used to push data as it arrives. On socket closing, the stream will be closed with the error
- message as provided by the socket. If the handler parameter is nil, the socket object will 
- emit signals.</li>
+       <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. <br/>
+ The handler function must have a (sktd, data, err, part) signature.
+ The handler must return true to keep the socket open, otherwised the socket will b e closed
+ as soon as it returns (or errors). <br/>
+ When a stream it will be used to push data as it arrives. On socket closing, the stream 
+ will be closed with the error message as provided by the socket. <br/>
+ If the handler parameter is nil, the socket object will emit signals.</li>
     </ul>
 
 
@@ -253,10 +255,12 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>locport</em></code>:  Local port (defaults to 0)</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. 
- The handler function must have a (sktd, data, err, part) signature. When a stream it will
- be used to push data as it arrives. On socket closing, the stream will be closed with the error
- message as provided by the socket. If the handler parameter is nil, the socket object will 
- emit signals.</li>
+ The handler function must have a (sktd, data, err, part) signature.
+ The handler must return true to keep the socket open, otherwised the socket will b e closed
+ as soon as it returns (or errors). <br/>
+ When a stream it will be used to push data as it arrives. On socket closing, the stream 
+ will be closed with the error message as provided by the socket. <br/>
+ If the handler parameter is nil, the socket object will emit signals.</li>
     </ul>
 
 
@@ -284,10 +288,12 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>flags</em></code>:  ATM as specified for nixio.open()</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. 
- The handler function must have a (sktd, data, err, part) signature. When a stream it will
- be used to push data as it arrives. On socket closing, the stream will be closed with the error
- message as provided by the socket. If the handler parameter is nil, the socket object will 
- emit signals.</li>
+ The handler function must have a (sktd, data, err, part) signature.
+ The handler must return true to keep the socket open, otherwised the socket will b e closed
+ as soon as it returns (or errors). <br/>
+ When a stream it will be used to push data as it arrives. On socket closing, the stream 
+ will be closed with the error message as provided by the socket. <br/>
+ If the handler parameter is nil, the socket object will emit signals.</li>
     </ul>
 
 
@@ -313,10 +319,12 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>command</em></code>:  command whose ouput capture</li>
        <li><code><em>pattern</em></code>:  Any of nixio or luasocket patterns.</li>
        <li><code><em>handler</em></code>:  Optional, either a handler function or a stream. 
- The handler function must have a (sktd, data, err, part) signature. When a stream it will
- be used to push data as it arrives. On socket closing, the stream will be closed with the error
- message as provided by the socket. If the handler parameter is nil, the socket object will 
- emit signals.</li>
+ The handler function must have a (sktd, data, err, part) signature.
+ The handler must return true to keep the socket open, otherwised the socket will b e closed
+ as soon as it returns (or errors). <br/>
+ When a stream it will be used to push data as it arrives. On socket closing, the stream 
+ will be closed with the error message as provided by the socket. <br/>
+ If the handler parameter is nil, the socket object will emit signals.</li>
     </ul>
 
 
@@ -478,7 +486,7 @@ selector.init({service='luasocket'})</pre>
     </dt>
     <dd>
     Suggested max buffer size for asynchronous sending. 
- Must be set before fist async send. Defaults to 1mb.
+ Must be set before first call to async send. Defaults to 1mb.
 
 
 

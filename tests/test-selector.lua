@@ -42,6 +42,7 @@ local tcp_server = selector.new_tcp_server("127.0.0.1", 8888,
 	'line', --10,
 	function(sktd, data, err)
 		print ('!T', sktd, data, err or '')
+		return true
 	end
 )
 sched.sigrun({emitter=selector.task, events = '*'}, function(...)
@@ -78,6 +79,7 @@ local tcp_server = selector.new_tcp_server("127.0.0.1",8888,500, function(sktd, 
 	print ('-----', data_read, total, #(part or ''), err or '', data:sub(1,3),data:sub(-3))
 	assert(total <= 100500)
 	--sktd:close()
+	return true
 end)
 local tcp_client = selector.new_tcp_client("127.0.0.1", 8888, nil, nil, 10000)
 sched.run(function()

@@ -42,11 +42,13 @@ M.init = function(conf)
 	-- @param locaddr Local IP address or '*' (defaults to '*')
 	-- @param locport Local port (defaults to 0)
 	-- @param pattern Any of nixio or luasocket patterns.
-	-- @param handler Optional, either a handler function or a stream. 
-	-- The handler function must have a (sktd, data, err, part) signature. When a stream it will
-	-- be used to push data as it arrives. On socket closing, the stream will be closed with the error
-	-- message as provided by the socket. If the handler parameter is nil, the socket object will 
-	-- emit signals. 
+	-- @param handler Optional, either a handler function or a stream.  
+	-- The handler function must have a (sktd, data, err, part) signature.
+	-- The handler must return true to keep the socket open, otherwised the socket will b e closed
+	-- as soon as it returns (or errors).  
+	-- When a stream it will be used to push data as it arrives. On socket closing, the stream 
+	-- will be closed with the error message as provided by the socket.  
+	-- If the handler parameter is nil, the socket object will emit signals. 
 	-- @return a @{sktd} object
 	M.new_tcp_client = native.new_tcp_client
 	
@@ -60,10 +62,12 @@ M.init = function(conf)
 	-- @param locport Local port (defaults to 0)
 	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler Optional, either a handler function or a stream. 
-	-- The handler function must have a (sktd, data, err, part) signature. When a stream it will
-	-- be used to push data as it arrives. On socket closing, the stream will be closed with the error
-	-- message as provided by the socket. If the handler parameter is nil, the socket object will 
-	-- emit signals. 
+	-- The handler function must have a (sktd, data, err, part) signature.
+	-- The handler must return true to keep the socket open, otherwised the socket will b e closed
+	-- as soon as it returns (or errors).  
+	-- When a stream it will be used to push data as it arrives. On socket closing, the stream 
+	-- will be closed with the error message as provided by the socket.  
+	-- If the handler parameter is nil, the socket object will emit signals.  
 	-- @return a @{sktd} object
 	M.new_udp = native.new_udp
 	
@@ -75,10 +79,12 @@ M.init = function(conf)
 	-- @param flags ATM as specified for nixio.open()
 	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler Optional, either a handler function or a stream. 
-	-- The handler function must have a (sktd, data, err, part) signature. When a stream it will
-	-- be used to push data as it arrives. On socket closing, the stream will be closed with the error
-	-- message as provided by the socket. If the handler parameter is nil, the socket object will 
-	-- emit signals. 
+	-- The handler function must have a (sktd, data, err, part) signature.
+	-- The handler must return true to keep the socket open, otherwised the socket will b e closed
+	-- as soon as it returns (or errors).  
+	-- When a stream it will be used to push data as it arrives. On socket closing, the stream 
+	-- will be closed with the error message as provided by the socket.  
+	-- If the handler parameter is nil, the socket object will emit signals. 
 	-- @return a @{sktd} object
 	M.new_fd = native.new_fd
 	
@@ -90,10 +96,12 @@ M.init = function(conf)
 	-- @param command command whose ouput capture
 	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler Optional, either a handler function or a stream. 
-	-- The handler function must have a (sktd, data, err, part) signature. When a stream it will
-	-- be used to push data as it arrives. On socket closing, the stream will be closed with the error
-	-- message as provided by the socket. If the handler parameter is nil, the socket object will 
-	-- emit signals. 
+	-- The handler function must have a (sktd, data, err, part) signature.
+	-- The handler must return true to keep the socket open, otherwised the socket will b e closed
+	-- as soon as it returns (or errors).  
+	-- When a stream it will be used to push data as it arrives. On socket closing, the stream 
+	-- will be closed with the error message as provided by the socket.  
+	-- If the handler parameter is nil, the socket object will emit signals. 
 	-- @return a @{sktd} object
 	M.grab_stdout = native.grab_stdout 
 	
@@ -136,7 +144,7 @@ M.init = function(conf)
 	M.task = native.task
 
 	--- Suggested max buffer size for asynchronous sending.
-	-- Must be set before fist async send. Defaults to 1mb.
+	-- Must be set before first call to async send. Defaults to 1mb.
 	M.ASYNC_SEND_BUFFER=1024^2 --1mb
 
 	require 'catalog'.get_catalog('tasks'):register('selector', M.task)

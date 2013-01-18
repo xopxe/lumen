@@ -8,7 +8,7 @@ package.path = package.path .. ";;;../?.lua"
 local sched = require "sched"
 local selector = require 'tasks/selector'.init({service='nixio'})
 local proxy = require 'tasks/proxy'
-require "log".setlevel('INFO')
+--require "log".setlevel('INFO')
 
 sched.run(function()
 	--tasks:register('main', sched.running_task)

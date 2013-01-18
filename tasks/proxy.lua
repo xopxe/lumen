@@ -78,7 +78,7 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 	local function get_incomming_handler()
 		local buff = ''
 		return function(sktd, data, err) 
-			if not data then sched.running_task:kill() end
+			if not data then return false end
 			buff = buff .. data
 			--print ('incomming', buff)
 			local decoded, index, e = bencode.decode(buff)
@@ -88,6 +88,7 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 			else
 				log('PROXY', 'ERROR', 'failed to bdecode buff  with length %s with error "%s"', tostring(#buff), tostring(index).." "..tostring(e))
 			end
+			return true
 		end
 	end
 
@@ -126,6 +127,8 @@ M.init = function(conf)
 					
 					sched.run( function()
 						local name_timeout = rwaitd.name_timeout
+						
+						-- recover all request all emitters 
 						local remitter, emitter = rwaitd.emitter, {}
 						for i=1, #remitter do
 							local emname = remitter[i]
@@ -141,6 +144,7 @@ M.init = function(conf)
 						end
 						rwaitd.emitter = emitter
 						
+						-- recover all request all events 
 						local revents, events = rwaitd.events, {}
 						for i=1, #revents do
 							local evname = revents[i]
@@ -174,6 +178,7 @@ M.init = function(conf)
 			else
 				log('PROXY', 'ERROR', 'socket handler called with error "%s"', tostring(err))
 			end
+			return true
 		end
 	end
 	
