@@ -118,7 +118,7 @@
     <ul>
        <li><code><em>method</em></code>:  the http method to be attendend, such as 'GET', 'POST' or '*'</li>
        <li><code><em>pattern</em></code>:  if a url matches this, the handler is selected. When the pattern of several
- handler overlap, the one deeper is selected (ie if there is '/' and '/docs', the later is selected)</li>
+ handler overlap, the one deeper is selected (ie if there is '/' and '/docs/', the later is selected)</li>
        <li><code><em>callback</em></code>:  the callback function. Must have a <em>method, path, http_params, http_header</em> 
  signature, where <em>http_params, http_header</em> are tables. If callback is nil, a handler with matching
  method and pattern will  be removed. The callback must reurn a number 

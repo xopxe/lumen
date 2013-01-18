@@ -15,6 +15,31 @@ local http_util = require 'tasks/http-server/http-util'
 
 local M = {}
 
+local build_http = function(status, header)
+	local httpstatus = tostring(status).." "..http_util.http_error_code[status]
+
+	local header_entries = {}
+	for k, v in pairs(header or {}) do
+		header_entries[#header_entries+1] = k..": "..v
+	end
+	
+	local header_string = table.concat(header_entries, '\r\n')
+	
+	local http_string = "HTTP/1.1 "..httpstatus.."\r\n"..header_string.."\r\n\r\n"
+	return http_string
+end
+
+local function backup_response(code_out, header_out)
+	local httpstatus = tostring(code_out).." "..http_util.http_error_code[code_out]
+	header_out = header_out or {}
+	
+	local response = "<html><head><title>"..httpstatus.."</title></head><body><h3>"..httpstatus.."</h3><hr><small>Lumen http-server</small></body></html>"
+	header_out["Content-Type"] = 'text/html'
+	header_out["Content-Length"] = #response
+	
+	return header_out, response
+end
+
 --- How long keep a session open.
 M.HTTP_TIMEOUT = 15 --how long keep connections open
 
@@ -68,7 +93,7 @@ M.serve_static_content = function (webroot, fileroot)
 			        local mime = http_util.mime_types[extension] or 'text/plain'
 				local content = file:read('*all')
 				if content then 
-					return 200, {['Content-Type']=mime}, content
+					return 200, {['Content-Type']=mime, ['Content-Length']=#content}, content
 				else
 					return 500
 				end
@@ -164,8 +189,14 @@ M.init = function(conf)
 					end
 				end
 				
-				local out = http_util.build_http(code_out, header_out, response)
-				sktd_cli:send_sync(out)
+				-- we got no content to return, probably code_out<>200
+				if not response then 
+					header_out, response = backup_response(code_out, header_out)
+				end
+				
+				local out_header = build_http(code_out, header_out)
+				sktd_cli:send_sync(out_header)
+				sktd_cli:send_sync(response)
 				
 				--sktd_cli:close()
 				
