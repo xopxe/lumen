@@ -164,7 +164,7 @@ M.new = function(size, read_timeout, write_timeout)
 	n_streams=n_streams+1
 	local pipename = 'stream: #'..tostring(n_streams)
 	local streamd = setmetatable({}, {__tostring=function() return pipename end, __index=M})
-	log('PIPES', 'INFO', 'pipe with name "%s" created', tostring(pipename))
+	log('STREAM', 'DETAIL', 'stream with name "%s" created', tostring(pipename))
 	streamd.size=size
 	streamd.pipe_enable_signal = {} --singleton event for pipe control
 	streamd.pipe_data_signal = {} --singleton event for pipe data

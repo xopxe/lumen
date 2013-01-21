@@ -96,7 +96,7 @@ local to_buffer = function (waitd, emitter, event, ...)
 			if overpopulation<0 then
 				buff:pushright(table.pack(emitter, event, ...))
 			else
-				log('SCHED', 'DETAIL', 'buffer from waitd  %s is dropping', tostring(waitd))
+				log('SCHED', 'DEBUG', 'buffer from waitd  %s is dropping', tostring(waitd))
 				waitd.dropped = true
 				if waitd.buff_mode == 'drop_first' then
 					for _ = 0, overpopulation do
@@ -182,7 +182,7 @@ step_task = function(taskd, ...)
 				taskd.status='dead'
 				sched_tasks[taskd]=nil
 				if ok then 
-					log('SCHED', 'INFO', '%s returning %d parameters', tostring(taskd), select('#',...))
+					log('SCHED', 'DETAIL', '%s returning %d parameters', tostring(taskd), select('#',...))
 					emit_signal(taskd, event_die, true, ...)
 				else
 					log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
@@ -312,7 +312,7 @@ M.new_task = function ( f )
 		__tostring=function() return task_name end,
 	})
 	sched_tasks[taskd] = true
-	log('SCHED', 'INFO', 'created %s from %s', tostring(taskd), tostring(f))
+	log('SCHED', 'DETAIL', 'created %s from %s', tostring(taskd), tostring(f))
 	--step_task(taskd, ...)
 	return taskd
 end
@@ -323,7 +323,7 @@ local function get_sigrun_wrapper(waitd, f)
 			f(M.wait(waitd))
 		end
 	end
-	log('SCHED', 'INFO', 'sigrun wrapper %s created from %s and waitd %s', 
+	log('SCHED', 'DETAIL', 'sigrun wrapper %s created from %s and waitd %s', 
 		tostring(wrapper), tostring(f), tostring(waitd))
 	return wrapper
 end
@@ -343,7 +343,7 @@ local function get_sigrunonce_wrapper(waitd, f)
 	local wrapper = function()
 		f(M.wait(waitd))
 	end
-	log('SCHED', 'INFO', 'sigrun wrapper %s created from %s and waitd %s', 
+	log('SCHED', 'DETAIL', 'sigrun wrapper %s created from %s and waitd %s', 
 		tostring(wrapper), tostring(f), tostring(waitd))
 	return wrapper
 end
@@ -414,7 +414,7 @@ end
 -- @return the modified taskd.
 M.attach = function (taskd, taskd_child)
 	taskd.attached[taskd_child] = true
-	log('SCHED', 'INFO', '%s is attached to %s', tostring(taskd_child), tostring(taskd))
+	log('SCHED', 'DETAIL', '%s is attached to %s', tostring(taskd_child), tostring(taskd))
 	return taskd
 end
 
@@ -434,7 +434,7 @@ end
 -- invoked as taskd:kill().
 -- @param taskd task to terminate (see @{taskd}).
 M.kill = function ( taskd )
-	log('SCHED', 'INFO', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
+	log('SCHED', 'DETAIL', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
 	taskd.status = 'dead'
 	sched_tasks[taskd] = nil
 	
@@ -449,7 +449,7 @@ end
 -- @param event event of the signal. Can be of any type.
 -- @param ... further parameters to be sent with the signal.
 M.signal = function ( event, ... )
-	log('SCHED', 'DETAIL', '%s emitting event %s with %d parameters', 
+	log('SCHED', 'DEBUG', '%s emitting event %s with %d parameters', 
 		tostring(M.running_task), tostring(event), select('#', ...))
 	emit_signal( M.running_task, event, ... )
 end
@@ -541,7 +541,7 @@ M.wait = function ( waitd )
 	--in case passed a non created waitd
 	waitd=M.new_waitd(waitd)
 	
-	log('SCHED', 'DETAIL', '%s is waiting on waitd %s', tostring(M.running_task), tostring(waitd))
+	log('SCHED', 'DEBUG', '%s is waiting on waitd %s', tostring(M.running_task), tostring(waitd))
 	
 	--if there are buffered signals, service the first
 	local buff = waitd.buff
@@ -589,9 +589,9 @@ end
 -- @param pause mode, true to pause, false to unpause
 -- @return the modified taskd on success or _nil, errormessage_ on failure.
 M.set_pause = function(taskd, pause)
-	log('SCHED', 'INFO', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
+	log('SCHED', 'DEBUG', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
 	if taskd.status=='dead' then
-		log('SCHED', 'ERROR', '%s toggling pause on dead %s', tostring(M.running_task), tostring(taskd))
+		log('SCHED', 'WARNING', '%s toggling pause on dead %s', tostring(M.running_task), tostring(taskd))
 		return nil, 'task is dead'
 	end
 	if pause then
@@ -691,12 +691,14 @@ end
 -- Will run until there is no more activity, i.e. there's no active task,
 -- and none of the waiting tasks has a timeout set.
 M.go = function ()
+	log('SCHED', 'INFO', 'Started.')
 	repeat
 		local idle_time = M.step()
 		if idle_time and idle_time>0 then
 			M.idle( idle_time )
 		end
 	until not idle_time
+	log('SCHED', 'INFO', 'Finished.')
 end
 
 --- Task dying event.

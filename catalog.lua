@@ -49,7 +49,7 @@ M.register = function ( catalogd, name, object )
 	if catalogd[name] and catalogd[name] ~= object then
 		return nil, 'used'
 	end
-	log('CATALOG', 'INFO', '%s registered in catalog %s as "%s"', 
+	log('CATALOG', 'DETAIL', '%s registered in catalog %s as "%s"', 
 		tostring(object), tostring(catalogd), tostring(name))
 	catalogd[name] = object
 	sched.signal(get_register_event(catalogd, name))
@@ -64,11 +64,11 @@ end
 -- @return the object if successful; on timeout expiration returns nil, 'timeout'.
 M.waitfor = function ( catalogd, name, timeout )
 	local object = catalogd[name]
-	log('CATALOG', 'INFO', 'catalog %s queried for name "%s", found %s', tostring(catalogd), tostring(name), tostring(object))
+	log('CATALOG', 'DEBUG', 'catalog %s queried for name "%s", found %s', tostring(catalogd), tostring(name), tostring(object))
 	if object then
 		return object
 	else
-		local emitter, event = sched.wait({
+		local _, event = sched.wait({
 			emitter='*', 
 			timeout=timeout, 
 			events={get_register_event(catalogd, name)}
@@ -89,11 +89,11 @@ end
 M.namefor = function ( catalogd, object )
 	for k, v in pairs(catalogd) do 
 		if v==object then 
-			log('CATALOG', 'INFO', 'catalog queried for object %s, found name "%s"', tostring(object), tostring(k))
+			log('CATALOG', 'DEBUG', 'catalog queried for object %s, found name "%s"', tostring(object), tostring(k))
 			return k 
 		end
 	end
-	log('CATALOG', 'INFO', 'catalog queried for object %s, name not found.', tostring(object))
+	log('CATALOG', 'DEBUG', 'catalog queried for object %s, name not found.', tostring(object))
 end
 
 --- Retrieve a catalog.

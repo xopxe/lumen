@@ -184,7 +184,7 @@ M.init = function(conf)
 					end)
 				end
 			else
-				log('PROXY', 'WARNING', 'socket handler called with error "%s"', tostring(err))
+				log('PROXY', 'DEBUG', 'socket handler called with error "%s"', tostring(err))
 				return
 			end
 			return true

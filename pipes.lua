@@ -63,7 +63,7 @@ M.new = function(size, timeout)
 	n_pipes=n_pipes+1
 	local pipename = 'pipe: #'..tostring(n_pipes)
 	local piped = setmetatable({}, {__tostring=function() return pipename end})
-	log('PIPES', 'INFO', 'pipe with name "%s" created', tostring(pipename))
+	log('PIPES', 'DETAIL', 'pipe with name "%s" created', tostring(pipename))
 	piped.size=size
 	piped.pipe_enable_signal = {} --singleton event for pipe control
 	piped.pipe_data_signal = {} --singleton event for pipe data

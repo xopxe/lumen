@@ -153,13 +153,14 @@ M.init = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
 	local port = conf.port or 8080
-		
+	
 	local tcp_server = selector.new_tcp_server(ip, port, 0, 'stream')
 	
 	local servertask = sched.new_task( function()
 		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
-		print('webserver accepting connections on', tcp_server:getsockname())
+		log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
 		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli, instream)
+			log('HTTP', 'DETAIL', 'http-server accepted connections from %s:%s', sktd_cli:getpeername())
 			local function find_matching_handler(method, url)
 				local max_depth, best_handler = 0
 				for i = 1,  #request_handlers do
@@ -191,6 +192,7 @@ M.init = function(conf)
 				local method,path, params, version = 
 					string.match(request, '^([A-Z]+) ([%/%.%d%w%-_]+)[%?]?(%S*) HTTP/(.+)$')
 				
+				log('HTTP', 'DEBUG', 'incommig request %s %s %s %s', method, path, params, version)
 				print ('HTTP', method, path, params, version)
 				
 				local http_header  = {}

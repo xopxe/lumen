@@ -201,13 +201,13 @@ M.init = function(conf)
 		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
 			print ("#", os.time(), sktd_cli )
 			if sktd_cli then
-				log('SHELL', 'INFO', 'connection accepted from %s %s', sktd_cli:getpeername())
+				log('SHELL', 'DETAIL', 'connection accepted from %s %s', sktd_cli:getpeername())
 				local shell = new_shell() 
 				print_from_pipe(shell.pipe_out, sktd_cli)
 				local waitd_skt = {emitter=selector.task, events={sktd_cli.events.data}}
 				sched.sigrun(waitd_skt, function(_,  _, data, err )
 					if not data then 
-						log('SHELL', 'INFO', 'connection closed from %s %s', sktd_cli:getpeername())
+						log('SHELL', 'DETAIL', 'connection closed from %s %s', sktd_cli:getpeername())
 						return nil, err 
 					end
 					shell.pipe_in:write('line', data)

@@ -71,7 +71,7 @@ M.acquire = function(mutexd)
 		sched.wait(get_waitd_lock (mutexd.locker))
 	end
 	mutexd.locker = sched.running_task
-	log('MUTEX', 'DETAIL', '%s locked %s', tostring(mutexd.locker), tostring(mutexd))
+	log('MUTEX', 'DEBUG', '%s locked %s', tostring(mutexd.locker), tostring(mutexd))
 end
 
 --- Releases a lock.
@@ -83,7 +83,7 @@ M.release = function(mutexd)
 	if sched.running_task~=mutexd.locker then
 		error('Attempt to release a non-acquired lock')
 	end
-	log('MUTEX', 'DETAIL', '%s released %s', tostring(mutexd.locker), tostring(mutexd))
+	log('MUTEX', 'DEBUG', '%s released %s', tostring(mutexd.locker), tostring(mutexd))
 	mutexd.locker = nil
 	sched.signal(event_release)
 end
@@ -101,7 +101,7 @@ M.synchronize = function (mutexd, f)
 		mutexd:release()
 		return unpack(ret,1, ret.n)
 	end
-	log('MUTEX', 'INFO', '%s synchronized on mutex %s as %s'
+	log('MUTEX', 'DETAIL', '%s synchronized on mutex %s as %s'
 		, tostring(f), tostring(mutexd), tostring(wrapper))
 	return wrapper
 end
