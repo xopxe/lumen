@@ -226,6 +226,7 @@ local function send_from_pipe (sktd)
 		else
 			--emptied the outgoing pipe, stop selecting to write
 			sktd.polle.events=nixio.poll_flags("in", "pri")
+			sched.signal(sktd.events.async_finished)
 		end
 	end
 end
@@ -277,7 +278,7 @@ M.init = function(conf)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'stream'))
-		sktd.events = {data=sktd.fd}
+		sktd.events = {data=sktd.fd, async_finished={}}
 		sktd.fd:connect(address, port)
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
@@ -288,7 +289,7 @@ M.init = function(conf)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
 		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'dgram'))
-		sktd.events = {data=sktd.fd}
+		sktd.events = {data=sktd.fd, async_finished={}}
 		if address and port then sktd.fd:connect(address, port) end
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler
@@ -301,7 +302,7 @@ M.init = function(conf)
 		sktd.flags = flags  or {}
 		sktd.fd, err = nixio.open(filename, nixio.open_flags(unpack(flags)))
 		if not sktd.fd then return nil, err end
-		sktd.events = {data=sktd.fd}
+		sktd.events = {data=sktd.fd, async_finished={}}
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler
 		sktd.stream = stream
@@ -339,9 +340,18 @@ M.init = function(conf)
 		pcall(fd.close, fd)
 	end
 	M.send_sync = function(sktd, data)
-		local written,_,_,writtenerr = sktd.fd:writeall(data)
-		if written==#data then return true
-		else return nil, 'unknown error', writtenerr end
+		local start, len, err,done=0,0,nil, nil
+		while true do
+			len, err=sktd.fd:send(data,start)
+			start=start+len
+			done = start==#data
+			if done or err then
+				break
+			else
+				sched.yield()
+			end
+		end
+		return done, err, start
 	end
 	M.send = M.send_sync
 	M.send_async = function(sktd, data)

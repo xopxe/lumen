@@ -357,6 +357,7 @@ selector.init({service='luasocket'})</pre>
     </dt>
     <dd>
     Synchronous data send. 
+ The task calling this function will block until all data is sent.
 
     <h3>Parameters:</h3>
     <ul>
@@ -391,6 +392,9 @@ selector.init({service='luasocket'})</pre>
     </dt>
     <dd>
     Asynchronous data send. 
+ This call return immediatelly. The data transmission will continue in background. Aditional calls
+ will queue data. When all data queued for asynchronous transmission is sent, 
+ a sktd.events.async_finished signal is emitted.
 
     <h3>Parameters:</h3>
     <ul>

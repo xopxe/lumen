@@ -111,6 +111,7 @@ M.init = function(conf)
 	M.close = native.close
 	
 	--- Synchronous data send.
+	-- The task calling this function will block until all data is sent.
 	-- @function send_sync
 	-- @param sktd a @{sktd} object
 	-- @param data data to send
@@ -123,6 +124,9 @@ M.init = function(conf)
 	M.send = native.send
 	
 	--- Asynchronous data send.
+	-- This call return immediatelly. The data transmission will continue in background. Aditional calls
+	-- will queue data. When all data queued for asynchronous transmission is sent, 
+	-- a sktd.events.async\_finished signal is emitted.
 	-- @function send_async
 	-- @param sktd a @{sktd} object
 	-- @param data data to send

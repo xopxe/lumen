@@ -118,6 +118,7 @@ local function send_from_pipe (fd)
 					break
 				end
 			end
+			sched.signal(sktd.events.async_finished)
 		end
 	end
 end
@@ -241,7 +242,7 @@ M.init = function()
 		--address, port, locaddr, locport, pattern)
 		local sktd=init_sktd()
 		sktd.fd=assert(socket.connect(address, port, locaddr, locport))
-		sktd.events = {data=sktd.fd}
+		sktd.events = {data=sktd.fd, async_finished={}}
 		sktd.task=module_task
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
@@ -252,7 +253,7 @@ M.init = function()
 	--address, port, locaddr, locport, count)
 		local sktd=init_sktd()
 		sktd.fd=socket.udp()
-		sktd.events = {data=sktd.fd}
+		sktd.events = {data=sktd.fd, async_finished={}}
 		sktd.task=module_task
 		sktd.pattern=pattern 
 		sktd.fd:setsockname(locaddr or '*', locport or 0)
@@ -266,11 +267,16 @@ M.init = function()
 		sktd.fd:close()
 	end
 	M.send_sync = function(sktd, data)
-		local start, err,done=0,nil
-		repeat
+		local start, err,done=0, nil, nil
+		while true do
 			start, err=sktd.fd:send(data,start+1)
-			done = start==#data 
-		until done or err
+			done = start==#data
+			if done or err then
+				break
+			else
+				sched.yield()
+			end
+		end
 		return done, err, start
 	end
 	M.send = M.send_sync
