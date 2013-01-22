@@ -23,7 +23,7 @@ local M = {}
 -- stream is closed and empty (_err_ is the additinal error parameter provided on @{write}).
 M.read = function (streamd, len)
 	if len == 0 then return '' end
-	len = len or - 1
+	len = len or -1
 	
 	local buff_data = streamd.buff_data
 	if streamd.closed and #streamd.buff_data == 0 then
@@ -53,13 +53,16 @@ M.read = function (streamd, len)
 		buff_data[1] = string.sub(-rlen)
 		s=string.sub(1, len)
 		streamd.len = rlen
+		if not streamd.size or streamd.len <= streamd.size then 
+			sched.signal(streamd.pipe_enable_signal) -- unlock writers
+		end
 	else
 		--return everything
 		buff_data[1] = nil
 		streamd.len = 0
+		sched.signal(streamd.pipe_enable_signal) -- unlock writers
 	end
 	
-	sched.signal(streamd.pipe_enable_signal)
 	return s
 end
 
@@ -104,11 +107,15 @@ M.read_line = function (streamd)
 		local remainder = s:sub(-remainder_length)
 		buff_data[1] = remainder
 		streamd.len = remainder_length
+		if not streamd.size or streamd.len <= streamd.size then 
+			sched.signal(streamd.pipe_enable_signal) -- unlock writers
+		end
 	else
 		buff_data[1] = nil
 		streamd.len = 0
+		sched.signal(streamd.pipe_enable_signal) -- unlock writers
 	end
-	sched.signal(streamd.pipe_enable_signal)
+	
 	return line
 end
 
@@ -134,7 +141,7 @@ M.write = function (streamd, s, err)
 	end
 	streamd.buff_data[#streamd.buff_data+1] = s
 	streamd.len = streamd.len + #s
-	sched.signal(streamd.pipe_data_signal)
+	sched.signal(streamd.pipe_data_signal) -- unlock readers
 	return true
 end
 
