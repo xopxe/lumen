@@ -73,10 +73,11 @@
 
 <p>Proxy service for signals.</p>
 <p> This module allows to wait on and receive signals emitted in a remote
- Lumen instance, trough a socket.
- Signals are serialized using bencode, and thus bencode's restrictions 
- on what can be passed trough apply: strings, numbers, lists (pure arrays) and
- tables with strings as  keys.
+ Lumen instance, trough a socket. <br/>
+ Signals are serialized using bencode or json, and restrictions apply
+ on what can be passed trough depending on the encoder selected. For
+ example, under bencode strings, numbers, lists (pure arrays) and tables 
+ with strings as  keys are supported.
  This module depends on the selector task, which must be started
  seperataly.</p>
     <h3>Usage:</h3>
@@ -159,7 +160,8 @@
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>conf</em></code>:  the configuration table. The fields of interest are
- <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 1985)</li>
+ <em>ip</em>  of the service (defaults to '*'), <em>port</em> of the service (defaults to 1985) and
+ <em>encoder</em> to use: 'bencode' (default) or 'json'</li>
     </ul>
 
 

@@ -75,7 +75,8 @@
 <p>Module providing a web server.</p>
 <p> This is a general purpose web server. It depends on the selector module
  being up and running. <br/>
- To use it, the programmer must register callbacks for method/url pattern pairs.</p>
+ To use it, the programmer must register callbacks for method/url pattern pairs. <br/>
+ Handlers for serving static files from disk is provided.</p>
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
@@ -84,8 +85,12 @@
 	<td class="summary">Register a new handler.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#serve_static_content">serve_static_content&nbsp;(webroot, fileroot)</a></td>
-	<td class="summary">Serve static files from a folder.</td>
+	<td class="name" nowrap><a href="#serve_static_content_from_ram">serve_static_content_from_ram&nbsp;(webroot, fileroot)</a></td>
+	<td class="summary">Serve static files from a folder (using ram).</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#serve_static_content_from_stream">serve_static_content_from_stream&nbsp;(webroot, fileroot, buffer_size)</a></td>
+	<td class="summary">Serve static files from a folder (using streams).</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
@@ -118,7 +123,7 @@
     <ul>
        <li><code><em>method</em></code>:  the http method to be attendend, such as 'GET', 'POST' or '*'</li>
        <li><code><em>pattern</em></code>:  if a url matches this, the handler is selected. When the pattern of several
- handler overlap, the one deeper is selected (ie if there is '/' and '/docs', the later is selected)</li>
+ handler overlap, the one deeper is selected (ie if there is '/' and '/docs/', the later is selected)</li>
        <li><code><em>callback</em></code>:  the callback function. Must have a <em>method, path, http_params, http_header</em> 
  signature, where <em>http_params, http_header</em> are tables. If callback is nil, a handler with matching
  method and pattern will  be removed. The callback must reurn a number 
@@ -130,17 +135,39 @@
 
 </dd>
     <dt>
-    <a name = "serve_static_content"></a>
-    <strong>serve_static_content&nbsp;(webroot, fileroot)</strong>
+    <a name = "serve_static_content_from_ram"></a>
+    <strong>serve_static_content_from_ram&nbsp;(webroot, fileroot)</strong>
     </dt>
     <dd>
-    Serve static files from a folder. 
- This helper function calls <a href="../modules/http-server.html#set_request_handler">set_request_handler</a> with a handler for providing static content.
+    Serve static files from a folder (using ram). 
+ This helper function calls <a href="../modules/http-server.html#set_request_handler">set_request_handler</a> with a handler for providing static content. <br/>
+ The whole file will be read into RAM and server from there.
 
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>webroot</em></code>:  the root of the url where the content will be served.</li>
        <li><code><em>fileroot</em></code>:  the path to the root folder where the content to be served is found.</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "serve_static_content_from_stream"></a>
+    <strong>serve_static_content_from_stream&nbsp;(webroot, fileroot, buffer_size)</strong>
+    </dt>
+    <dd>
+    Serve static files from a folder (using streams). 
+ This helper function calls <a href="../modules/http-server.html#set_request_handler">set_request_handler</a> with a handler for providing static content. <br/>
+ The file will be served as it is read from disk, so there is no file size limitation. <br/>
+ Depends on nixio library.
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>webroot</em></code>:  the root of the url where the content will be served.</li>
+       <li><code><em>fileroot</em></code>:  the path to the root folder where the content to be served is found.</li>
+       <li><code><em>buffer_size</em></code>:  the reccmended ammount of RAM to use as buffer (defauls to 100kb)</li>
     </ul>
 
 
