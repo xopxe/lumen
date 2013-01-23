@@ -16,8 +16,16 @@ local stream = require 'stream'
 
 local M = {}
 
-local build_http_header = function(status, header)
+local build_http_header = function(status, header, response)
 	local httpstatus = tostring(status).." "..http_util.http_error_code[status]
+	header = header or {}
+	
+	if not header["Content-Length"] and type (response) == "string" then 
+		header["Content-Length"] = #response
+	end
+	if not header["Content-Type"] then
+		header["Content-Type"] = 'text/plain'
+	end
 
 	local header_entries = {}
 	for k, v in pairs(header or {}) do
@@ -237,7 +245,7 @@ M.init = function(conf)
 					header_out, response = backup_response(code_out, header_out)
 				end
 				
-				local response_header = build_http_header(code_out, header_out)
+				local response_header = build_http_header(code_out, header_out, response)
 				sktd_cli:send_sync(response_header)
 				if type(response) == 'string' then
 					sktd_cli:send_sync(response)
