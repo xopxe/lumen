@@ -245,11 +245,16 @@ M.init = function(conf)
 					header_out, response = backup_response(code_out, header_out)
 				end
 				
+				local need_flush
+				
 				local response_header = build_http_header(code_out, header_out, response)
 				sktd_cli:send_sync(response_header)
 				if type(response) == 'string' then
 					sktd_cli:send_sync(response)
 				else --stream
+					if not header_out["Content-Length"] then
+						need_flush = true
+					end
 					while true do
 						local s, err = response:read()
 						if not s then break end
@@ -259,7 +264,7 @@ M.init = function(conf)
 				
 				--sktd_cli:close()
 				
-				if version == '1.0' then 
+				if version == '1.0' or need_flush then 
 					sktd_cli:close()
 					return
 				end
