@@ -2,9 +2,6 @@
 
 * rethink waitd structure (why "emitter" and "events"?)
 
-* Proxy task, to route signals trough a socket between Lumen
-  instances.
-
 * Integrate RNR and LuPA (somehow)
 
 * Add telnet support to shell
