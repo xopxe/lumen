@@ -97,7 +97,9 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 		function(method, path, http_params, http_header)
 			path = path:sub(#webroot)
 			if path:sub(-1) == '/' then path=path..'index.html' end
-			local file, err = io.open(fileroot..path, "r")
+			local abspath=fileroot..path
+						
+			local file, err = io.open(abspath, "r")
 			if file then 
 				local extension = path:match('%.(%a+)$') or 'other'
 			        local mime = http_util.mime_types[extension] or 'text/plain'
@@ -109,7 +111,7 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 					return 500
 				end
 			else
-				print ('Error opening file', err)
+				log('HTTP', 'WARN', 'Error opening file %s', err)
 				return 404
 			end
 		end
@@ -146,7 +148,7 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 					return 500
 				end
 			else
-				print ('Error opening file', err)
+				log('HTTP', 'WARN', 'Error opening file %s', err)
 				return 404
 			end
 		end
@@ -168,7 +170,7 @@ M.init = function(conf)
 		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
 		log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
 		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli, instream)
-			log('HTTP', 'DETAIL', 'http-server accepted connections from %s:%s', sktd_cli:getpeername())
+			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', sktd_cli:getpeername())
 			local function find_matching_handler(method, url)
 				local max_depth, best_handler = 0
 				for i = 1,  #request_handlers do
@@ -192,18 +194,17 @@ M.init = function(conf)
 			end
 			
 			instream:set_timeout(M.HTTP_TIMEOUT, -1)
-			print ("#", os.time(), sktd_cli )
 			while true do
 				--read first line
 				local request = instream:read_line()
 				if not request then sktd_cli:close(); return end
-				local method,path, params, version = 
+				local http_req_method,http_req_path, http_req_params, http_req_version = 
 					string.match(request, '^([A-Z]+) ([%/%.%d%w%-_]+)[%?]?(%S*) HTTP/(.+)$')
 				
-				log('HTTP', 'DEBUG', 'incommig request %s %s %s %s', method, path, params, version)
-				print ('HTTP', method, path, params, version)
+				log('HTTP', 'DEBUG', 'incommig request %s %s %s %s', 
+					http_req_method, http_req_path, http_req_params, http_req_version)
 				
-				local http_header  = {}
+				local http_req_header  = {}
 				--read header
 				while true do
 					local line = instream:read_line()
@@ -211,60 +212,59 @@ M.init = function(conf)
 					if line=='' then break end
 					local key, value=string.match(line, '^([^:]+):%s*(.*)$')
 					--print ('HEADER', line, key, value)
-					http_header[key] = value
+					http_req_header[key] = value
 				end
-				local content_length = http_header['Content-Length'] or 0
-				
-				local data = instream:read(content_length)
-				if not data then sktd_cli:close(); return end
+
 				--print ('DATA', #data,  data)
 				
 				local http_params
-				if method=='POST' then 
+				if http_req_method=='POST' then 
+					local req_content_length = http_req_header['Content-Length'] or 0
+					local data = instream:read(req_content_length)
+					if not data then sktd_cli:close(); return end
 					http_params=parse_params(data)
 				else
-					http_params=parse_params(params)
+					http_params=parse_params(http_req_params)
 				end
 				
-				local code_out, header_out, response
+				local http_out_code, http_out_header, response
 				--print ('matching', path, path:match('/[^/%.]+$'))
-				if path:match('/[^/%.]+$') then 
+				if http_req_path:match('/[^/%.]+$') then 
 					--redirect to path..'/'
-					code_out, header_out = 301, {['Location']='http://'..http_header['Host']..path..'/'}
+					http_out_code, http_out_header = 301, {['Location']='http://'..http_req_header['Host']..http_req_path..'/'}
 				else
-					local callback = find_matching_handler(method, path)
+					local callback = find_matching_handler(http_req_method, http_req_path)
 					if callback then 
-						code_out, header_out, response = callback(method, path, http_params, http_header)
+						http_out_code, http_out_header, response = callback(http_req_method, http_req_path, http_params, http_req_header)
 					else
-						code_out = 404
+						http_out_code = 404
 					end
 				end
 				
 				-- we got no content to return, probably code_out<>200
 				if not response then 
-					header_out, response = backup_response(code_out, header_out)
+					http_out_header, response = backup_response(http_out_code, http_out_header)
 				end
 				
 				local need_flush
 				
-				local response_header = build_http_header(code_out, header_out, response)
+				local response_header = build_http_header(http_out_code, http_out_header, response)
 				sktd_cli:send_sync(response_header)
 				if type(response) == 'string' then
 					sktd_cli:send_sync(response)
 				else --stream
-					if not header_out["Content-Length"] then
+					if not http_out_header["Content-Length"] then
 						need_flush = true
 					end
 					while true do
+						--TODO share streams?
 						local s, err = response:read()
 						if not s then break end
 						sktd_cli:send_sync(s)
 					end
 				end
 				
-				--sktd_cli:close()
-				
-				if version == '1.0' or need_flush then 
+				if http_req_version == '1.0' or need_flush then 
 					sktd_cli:close()
 					return
 				end
