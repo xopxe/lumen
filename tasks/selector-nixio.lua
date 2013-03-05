@@ -342,7 +342,7 @@ M.init = function(conf)
 	M.send_sync = function(sktd, data)
 		local start, len, err,done=0,0,nil, nil
 		while true do
-			len, err=sktd.fd:send(data,start)
+			len, err=sktd.fd:write(data,start)
 			start=start+len
 			done = start==#data
 			if done or err then
