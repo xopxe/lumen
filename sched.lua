@@ -186,7 +186,7 @@ step_task = function(taskd, ...)
 					emit_signal(taskd, event_die, true, ...)
 				else
 					log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
-						, tostring(taskd), select('#',...), (...))
+						, tostring(taskd), select('#',...), tostring(...))
 					emit_signal(taskd, event_die, nil, ...)
 				end
 				for child, _ in pairs(taskd.attached) do
