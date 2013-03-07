@@ -72,6 +72,11 @@ may have to resort to mutexes when your critical piece of code relinquish
 control explicitly, for example with a call to sleep, emitting a signal or blocking 
 waiting for a signal.
 
+## Goodies
+
+There are a few other useful modules, like an integrated remote Lua shell and a lightweigth 
+HTTP server. 
+
 ## How to try it out?
 
 There several test programs in the tests/ folder. This example has a 
