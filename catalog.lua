@@ -2,8 +2,9 @@
 -- The catalog is used to give objects well known names for sharing purposes. 
 -- It also allows synchronization, by blocking the requester until the object
 -- is made available. Catalogs themselves are made available under a Well Known
--- name. Typical catalogs are "tasks", "events", "mutexes" and "pipes".
--- The catalog does not check for multiple names per object.
+-- Name. Typical catalogs are "tasks", "events", "mutexes" and "pipes".  
+-- A name is associated to a single object, and an object has a single name.
+-- Catalogs can be strong or weak, ie, they can keep objects from being garbage collected, or not.
 -- @module catalog
 -- @usage local tasks = require 'catalog'.get_catalog('tasks')
 --...
@@ -13,11 +14,10 @@
 -- @alias M
 
 local sched = require 'sched'
-local log=require 'log'
+local log = require 'log'
 
 --get locals for some useful things
-local next,  setmetatable, tostring, getmetatable
-	= next,  setmetatable, tostring, getmetatable
+local next,  setmetatable, tostring = next,  setmetatable, tostring
 
 local M = {}
 
@@ -32,7 +32,7 @@ local function get_register_event (catalogd, name)
 		return register_events[catalogd][name]
 	else
 		local register_event = setmetatable({}, {
-			__tostring=function() return 'signal: register$'..tostring(getmetatable(catalogd).name)..'/'..tostring(name) end,
+			__tostring=function() return 'signal: register$'..tostring(catalogd.name)..'/'..tostring(name) end,
 		})
 		register_events[catalogd] = register_events[catalogd] or {}
 		register_events[catalogd][name] = register_event
@@ -40,19 +40,44 @@ local function get_register_event (catalogd, name)
 	end
 end
 
---- Register a name to a object.
+--- Give a name to an object.
 -- @param catalogd the catalog to use.
--- @param name a name for the object
+-- @param name a name for the object.
 -- @param object the object to name.
--- @return true is successful; nil, 'used' if the name is already used by another object.
-M.register = function ( catalogd, name, object )
-	if catalogd[name] and catalogd[name] ~= object then
+-- @param force forces the renaming of the object if already present.
+-- @return _true_ is successful; _nil, 'used'_ if the name is already used by another object; _nil, 'present'_ if the object 
+-- is already in the catalog under a different name, and forcing is not enabled.
+M.register = function ( catalogd, name, object, force )
+	local direct = catalogd.direct
+	if direct[name] and direct[name] ~= object then
 		return nil, 'used'
+	end
+	local reverse = catalogd.reverse
+	if not force and reverse[object] and reverse[object]~= name then
+		return nil, 'present'
 	end
 	log('CATALOG', 'DETAIL', '%s registered in catalog %s as "%s"', 
 		tostring(object), tostring(catalogd), tostring(name))
-	catalogd[name] = object
+	direct[name] = object
+	reverse[object] = name
+	
 	sched.signal(get_register_event(catalogd, name))
+	return true
+end
+
+--- Removes an entry from the catalog.
+-- @param catalogd the catalog to use.
+-- @param name a name for the object.
+-- @return _true_ on success, or _nil, 'missing'_ if the name was not registered previously.
+M.unregister = function ( catalogd, name )
+	local object = catalogd.direct[name]
+	if not object then
+		return nil, 'missing'
+	end
+	log('CATALOG', 'DETAIL', '%s unregistered in catalog %s as "%s"', 
+		tostring(object), tostring(catalogd), tostring(name))
+	catalogd.direct[name] = nil
+	catalogd.reverse[object] = nil
 	return true
 end
 
@@ -63,8 +88,8 @@ end
 -- @param timeout time to wait. nil or negative waits for ever.
 -- @return the object if successful; on timeout expiration returns nil, 'timeout'.
 M.waitfor = function ( catalogd, name, timeout )
-	local object = catalogd[name]
-	log('CATALOG', 'DEBUG', 'catalog %s queried for name "%s", found %s', tostring(catalogd), tostring(name), tostring(object))
+	local object = catalogd.direct[name]
+	log('CATALOG', 'DEBUG', 'catalog %s queried for name "%s", found %s', tostring(catalogd.name), tostring(name), tostring(object))
 	if object then
 		return object
 	else
@@ -74,7 +99,7 @@ M.waitfor = function ( catalogd, name, timeout )
 			events={get_register_event(catalogd, name)}
 		})
 		if event then
-			return catalogd[name]
+			return catalogd.direct[name]
 		else
 			return nil, 'timeout'
 		end
@@ -82,28 +107,32 @@ M.waitfor = function ( catalogd, name, timeout )
 end
 
 --- Find the name of a given object.
--- This does a linear search trough the catalog.
 -- @param catalogd the catalog to use.
 -- @param object the object to lookup.
 -- @return the object if successful; If the object has not been given a name, returns nil.
 M.namefor = function ( catalogd, object )
-	for k, v in pairs(catalogd) do 
-		if v==object then 
-			log('CATALOG', 'DEBUG', 'catalog queried for object %s, found name "%s"', tostring(object), tostring(k))
-			return k 
-		end
-	end
-	log('CATALOG', 'DEBUG', 'catalog queried for object %s, name not found.', tostring(object))
+	local name = catalogd.reverse[object]
+	log('CATALOG', 'DEBUG', 'catalog queried for object %s, found name "%s"', tostring(object), tostring(name))
+	return name 
 end
 
 --- Retrieve a catalog.
--- Catalogs are created on demand
+-- Catalogs are created on demand.
 -- @param name the name of the catalog.
-M.get_catalog = function (name)
+-- @param strong if true catalog will hold a reference to the object and avoid it from being garbage collected.
+-- @return a catalog object.
+M.get_catalog = function (name, strong)
 	if catalogs[name] then 
 		return catalogs[name] 
 	else
-		local catalogd = setmetatable({}, { __mode = 'kv', __index=M, name=name})
+		local catalogd = setmetatable(
+			{ direct = {}, reverse = {}, name=name}, 
+			{__index=M}
+		)
+		if not strong then 
+			setmetatable( catalogd.direct,{__mode = 'kv'} )
+			setmetatable( catalogd.reverse,{__mode = 'kv'} )
+		end
 		catalogs[name] = catalogd
 		return catalogd
 	end
@@ -112,13 +141,13 @@ end
 
 --- Iterator for registered objects.
 -- @param catalogd the catalog to use.
--- @return iterator
+-- @return Iterator function
 -- @usage local tasks = require 'catalog'.get_catalog('tasks')
 --for name, task in tasks:iterator() do
 --	print(name, task)
 --end
 M.iterator = function (catalogd)
-	return function (_, v) return next(catalogd, v) end
+	return function (_, v) return next(catalogd.direct, v) end
 end
 
 return M
