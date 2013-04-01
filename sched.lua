@@ -608,14 +608,20 @@ end
 --- Idle function.
 -- Function called by the scheduler when there is
 -- nothing else to do (e.g., all tasks are waiting for a signal).
--- This function should idle up to t time units. Replace with
+-- This function should idle up to t time units (notice that an empty
+-- function satisifies this, tough results in busy waits). Replace with
 -- whatever your app uses. LuaSocket's sleep works just fine.
 -- It is allowed to idle for less than t; the empty function will
 -- result in a busy wait. Defaults to execution of Linux's "sleep" command.
 -- @param t time to idle
 M.idle = function (t)
 	--print("Idling", t)
-	if os.execute('sleep '..t) ~= 0 then os.exit() end
+	local ret = os.execute('sleep '..t) 
+	if _VERSION =='Lua 5.1' and ret ~= 0 
+	or _VERSION =='Lua 5.2' and ret ~= true then 
+		print ('Idle sleeping cancelled')
+		os.exit() 
+	end
 end
 
 --- Function used by the scheduler to get current time.
