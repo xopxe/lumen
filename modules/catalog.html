@@ -75,8 +75,9 @@
 <p> The catalog is used to give objects well known names for sharing purposes. 
  It also allows synchronization, by blocking the requester until the object
  is made available. Catalogs themselves are made available under a Well Known
- name. Typical catalogs are "tasks", "events", "mutexes" and "pipes".
- The catalog does not check for multiple names per object.</p>
+ Name. Typical catalogs are "tasks", "events", "mutexes" and "pipes". <br/>
+ A name is associated to a single object, and an object has a single name.
+ Catalogs can be strong or weak, ie, they can keep objects from being garbage collected, or not.</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local tasks = require 'catalog'.get_catalog('tasks')
@@ -89,8 +90,12 @@ local a_task=tasks:waitfor('a task')</pre>
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#register">register&nbsp;(catalogd, name, object)</a></td>
-	<td class="summary">Register a name to a object.</td>
+	<td class="name" nowrap><a href="#register">register&nbsp;(catalogd, name, object, force)</a></td>
+	<td class="summary">Give a name to an object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#unregister">unregister&nbsp;(catalogd, name)</a></td>
+	<td class="summary">Removes an entry from the catalog.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#waitfor">waitfor&nbsp;(catalogd, name, timeout)</a></td>
@@ -101,7 +106,7 @@ local a_task=tasks:waitfor('a task')</pre>
 	<td class="summary">Find the name of a given object.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#get_catalog">get_catalog&nbsp;(name)</a></td>
+	<td class="name" nowrap><a href="#get_catalog">get_catalog&nbsp;(name, strong)</a></td>
 	<td class="summary">Retrieve a catalog.</td>
 	</tr>
 	<tr>
@@ -119,22 +124,45 @@ local a_task=tasks:waitfor('a task')</pre>
     <dl class="function">
     <dt>
     <a name = "register"></a>
-    <strong>register&nbsp;(catalogd, name, object)</strong>
+    <strong>register&nbsp;(catalogd, name, object, force)</strong>
     </dt>
     <dd>
-    Register a name to a object. 
+    Give a name to an object. 
 
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>catalogd</em></code>:  the catalog to use.</li>
-       <li><code><em>name</em></code>:  a name for the object</li>
+       <li><code><em>name</em></code>:  a name for the object.</li>
        <li><code><em>object</em></code>:  the object to name.</li>
+       <li><code><em>force</em></code>:  forces the renaming of the object if already present.</li>
     </ul>
 
 
     <h3>Returns:</h3>
     <ol>
-        true is successful; nil, 'used' if the name is already used by another object.
+        <em>true</em> is successful; <em>nil, 'used'</em> if the name is already used by another object; <em>nil, 'present'</em> if the object 
+ is already in the catalog under a different name, and forcing is not enabled.
+    </ol>
+
+
+</dd>
+    <dt>
+    <a name = "unregister"></a>
+    <strong>unregister&nbsp;(catalogd, name)</strong>
+    </dt>
+    <dd>
+    Removes an entry from the catalog. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>catalogd</em></code>:  the catalog to use.</li>
+       <li><code><em>name</em></code>:  a name for the object.</li>
+    </ul>
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <em>true</em> on success, or <em>nil, 'missing'</em> if the name was not registered previously.
     </ol>
 
 
@@ -168,7 +196,6 @@ local a_task=tasks:waitfor('a task')</pre>
     </dt>
     <dd>
     Find the name of a given object. 
- This does a linear search trough the catalog.
 
     <h3>Parameters:</h3>
     <ul>
@@ -186,18 +213,23 @@ local a_task=tasks:waitfor('a task')</pre>
 </dd>
     <dt>
     <a name = "get_catalog"></a>
-    <strong>get_catalog&nbsp;(name)</strong>
+    <strong>get_catalog&nbsp;(name, strong)</strong>
     </dt>
     <dd>
     Retrieve a catalog. 
- Catalogs are created on demand
+ Catalogs are created on demand.
 
     <h3>Parameters:</h3>
     <ul>
        <li><code><em>name</em></code>:  the name of the catalog.</li>
+       <li><code><em>strong</em></code>:  if true catalog will hold a reference to the object and avoid it from being garbage collected.</li>
     </ul>
 
 
+    <h3>Returns:</h3>
+    <ol>
+        a catalog object.
+    </ol>
 
 
 </dd>
@@ -223,7 +255,7 @@ end</pre>
 
     <h3>Returns:</h3>
     <ol>
-        iterator
+        Iterator function
     </ol>
 
 
