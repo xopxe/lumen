@@ -49,7 +49,7 @@ M.init = function(conf)
 	-- When a stream it will be used to push data as it arrives. On socket closing, the stream 
 	-- will be closed with the error message as provided by the socket.  
 	-- If the handler parameter is nil, the socket object will emit signals. 
-	-- @return a @{sktd} object
+	-- @return a @{sktd} object on success, _nil, err_ on fauilure
 	M.new_tcp_client = native.new_tcp_client
 	
 	--- Creates a UDP socket.

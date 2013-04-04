@@ -267,7 +267,7 @@ M.init = function(conf)
 		--address, port, pattern, backlog)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
-		sktd.fd = assert(nixio.bind(locaddr, locport, 'inet', 'stream'))
+		sktd.fd = nixio.bind(locaddr, locport, 'inet', 'stream')
 		sktd.events = {accepted=sktd.fd }
 		sktd.handler = handler
 		sktd.pattern = normalize_pattern(pattern)
@@ -277,9 +277,10 @@ M.init = function(conf)
 	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
-		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'stream'))
+		sktd.fd = nixio.bind(locaddr, locport or 0, 'inet', 'stream')
+		local ok, _, errmsg = sktd.fd:connect(address, port)
+		if not ok then return nil, errmsg end
 		sktd.events = {data=sktd.fd, async_finished={}}
-		sktd.fd:connect(address, port)
 		sktd.pattern=normalize_pattern(pattern)
 		sktd.handler = handler
 		register_client(sktd)
@@ -288,7 +289,7 @@ M.init = function(conf)
 	M.new_udp = function( address, port, locaddr, locport, pattern, handler)
 		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
-		sktd.fd = assert(nixio.bind(locaddr, locport or 0, 'inet', 'dgram'))
+		sktd.fd = nixio.bind(locaddr, locport or 0, 'inet', 'dgram')
 		sktd.events = {data=sktd.fd, async_finished={}}
 		if address and port then sktd.fd:connect(address, port) end
 		sktd.pattern =  normalize_pattern(pattern)
@@ -299,9 +300,9 @@ M.init = function(conf)
 	M.new_fd = function ( filename, flags, pattern, handler, stream )
 		local sktd=init_sktd()
 		local err
+		sktd.fd, err, errmsg = nixio.open(filename, nixio.open_flags(unpack(flags)))
+		if not sktd.fd then return nil, errmsg end
 		sktd.flags = flags  or {}
-		sktd.fd, err = nixio.open(filename, nixio.open_flags(unpack(flags)))
-		if not sktd.fd then return nil, err end
 		sktd.events = {data=sktd.fd, async_finished={}}
 		sktd.pattern =  normalize_pattern(pattern)
 		sktd.handler = handler
@@ -342,7 +343,7 @@ M.init = function(conf)
 	M.send_sync = function(sktd, data)
 		local start, len, err,done=0,0,nil, nil
 		while true do
-			len, err=sktd.fd:write(data,start)
+			len, err, errmsg=sktd.fd:write(data,start)
 			start=start+(len or 0)
 			done = start==#data
 			if done or err then
@@ -351,7 +352,7 @@ M.init = function(conf)
 				sched.yield()
 			end
 		end
-		return done, err, start
+		return done, errmsg, start
 	end
 	M.send = M.send_sync
 	M.send_async = function(sktd, data)
