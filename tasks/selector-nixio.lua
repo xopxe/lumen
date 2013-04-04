@@ -343,7 +343,7 @@ M.init = function(conf)
 		local start, len, err,done=0,0,nil, nil
 		while true do
 			len, err=sktd.fd:write(data,start)
-			start=start+len
+			start=start+(len or 0)
 			done = start==#data
 			if done or err then
 				break
