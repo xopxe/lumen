@@ -99,32 +99,27 @@ end
 
 local register_client = function (sktd)
 	local function client_handler(polle)
-		local data,code,msg=polle.it()
-		if data then
-			local block = polle.block
-			if not block or block=='line'  or block == #data then
-				handle_incomming(sktd, data)
-				return
-			end
-			if type(block) == 'number' and block > #data then
-				polle.readbuff = (polle.readbuff or '') .. data
-				data = polle.readbuff
-				if block==#data then
-					polle.readbuff = nil
+		local data, code, msg
+		repeat
+			data,code,msg=polle.it()
+			if data then
+				local block = polle.block
+				if not block or block=='line'  or block == #data then
 					handle_incomming(sktd, data)
-					return
+				elseif type(block) == 'number' and block > #data then
+					polle.readbuff = (polle.readbuff or '') .. data
+					data = polle.readbuff
+					if block==#data then
+						polle.readbuff = nil
+						handle_incomming(sktd, data)
+					end
 				end
 			end
-		else
-			--11: 'Resource temporarily unavailable'
-			--print('!!!!!',data,code,msg)
-			if (code==nil)
-			or (code and code~=11) then
-				--sktd:close()
-				sktd:close()
-				handle_incomming_error(sktd, code)
-				return
-			end
+		until not data
+		if code~=11 then
+			sktd:close()
+			handle_incomming_error(sktd, code)
+			return
 		end
 	end
 	local polle={
