@@ -13,7 +13,6 @@ local selector = require 'tasks/selector'
 local http_util = require 'tasks/http-server/http-util'
 local stream = require 'stream'
 
-
 local M = {}
 
 local build_http_header = function(status, header, response)
@@ -27,14 +26,12 @@ local build_http_header = function(status, header, response)
 		header["Content-Type"] = 'text/plain'
 	end
 
-	local header_entries = {}
+	local header_entries = {"HTTP/1.1 "..httpstatus}
 	for k, v in pairs(header or {}) do
 		header_entries[#header_entries+1] = k..": "..v
 	end
-	
-	local header_string = table.concat(header_entries, '\r\n')
-	
-	local http_string = "HTTP/1.1 "..httpstatus.."\r\n"..header_string.."\r\n\r\n"
+	header_entries[#header_entries+1] = "\r\n"
+	local http_string = table.concat(header_entries, '\r\n')
 	return http_string
 end
 
@@ -193,19 +190,8 @@ M.init = function(conf)
 				return params
 			end
 			
-			instream:set_timeout(M.HTTP_TIMEOUT, -1)
-			while true do
-				--read first line
-				local request = instream:read_line()
-				if not request then sktd_cli:close(); return end
-				local http_req_method,http_req_path, http_req_params, http_req_version = 
-					string.match(request, '^([A-Z]+) ([%/%.%d%w%-_]+)[%?]?(%S*) HTTP/(.+)$')
-				
-				log('HTTP', 'DEBUG', 'incommig request %s %s %s %s', 
-					http_req_method, http_req_path, http_req_params, http_req_version)
-				
+			local read_incomming_header = function()
 				local http_req_header  = {}
-				--read header
 				while true do
 					local line = instream:read_line()
 					if not line then sktd_cli:close(); return end
@@ -214,19 +200,34 @@ M.init = function(conf)
 					--print ('HEADER', line, key, value)
 					http_req_header[key] = value
 				end
-
-				--print ('DATA', #data,  data)
+				return http_req_header
+			end
+			
+			instream:set_timeout(M.HTTP_TIMEOUT, -1)
+			while true do
+				-- read first line ------------------------------------------------------
+				local request = instream:read_line()
+				if not request then sktd_cli:close(); return end
+				local http_req_method,http_req_path, http_req_params, http_req_version = 
+					string.match(request, '^([A-Z]+) ([%/%.%d%w%-_]+)[%?]?(%S*) HTTP/(.+)$')
 				
+				log('HTTP', 'DEBUG', 'incommig request %s %s %s %s', 
+					http_req_method, http_req_path, http_req_params, http_req_version)
+				
+				-- read header ---------------------------------------------------------
+				local http_req_header  = read_incomming_header()
+				
+				-- read body ------------------------------------------------------------
 				local http_params
 				if http_req_method=='POST' then 
-					local req_content_length = http_req_header['Content-Length'] or 0
-					local data = instream:read(req_content_length)
+					local data = instream:read( http_req_header['Content-Length'] or 0 )
 					if not data then sktd_cli:close(); return end
 					http_params=parse_params(data)
 				else
 					http_params=parse_params(http_req_params)
 				end
 				
+				-- prepare response ------------------------------------------------------------
 				local http_out_code, http_out_header, response
 				--print ('matching', path, path:match('/[^/%.]+$'))
 				if http_req_path:match('/[^/%.]+$') then 
@@ -246,6 +247,8 @@ M.init = function(conf)
 					http_out_header, response = backup_response(http_out_code, http_out_header)
 				end
 				
+				-- write response ------------------------------------------------------------
+
 				local need_flush
 				
 				local response_header = build_http_header(http_out_code, http_out_header, response)
@@ -258,13 +261,14 @@ M.init = function(conf)
 					end
 					while true do
 						--TODO share streams?
-						local s, err = response:read()
+						local s, _ = response:read()
 						if not s then break end
 						sktd_cli:send_sync(s)
 					end
 				end
 				
-				if http_req_version == '1.0' or need_flush then 
+				if (http_req_version== '1.0' and http_req_header['Connection']~='Keep-Alive')
+				or need_flush then 
 					sktd_cli:close()
 					return
 				end
