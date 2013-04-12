@@ -14,8 +14,10 @@ M.mime_types = {
 }
 
 M.http_error_code ={
+	[101] = 'Switching Protocols',
 	[200] = 'OK',
-	[301] = 'Moved Permanently', 
+	[301] = 'Moved Permanently',
+	[400] = 'Bad Request', 
 	[404] = 'Not Found',
 	[500] = 'Internal Server Error',
 }

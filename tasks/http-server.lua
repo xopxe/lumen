@@ -46,12 +46,28 @@ local function backup_response(code_out, header_out)
 	return header_out, response
 end
 
+
 --- How long keep a session open.
 M.HTTP_TIMEOUT = 15 --how long keep connections open
 
 -- Derived from Orbit & Orbiter
 M.request_handlers = {}
 local request_handlers = M.request_handlers
+
+M.websocket_protocols = {}
+local websocket_protocols = M.websocket_protocols
+
+
+local handle_websocket_request = function (sktd, req_headers)
+	local handshake = require 'tasks/http-server/websocket/handshake'
+	print ('!!!!1', handshake, handshake.accept_upgrade)
+	local http_out_code, http_out_header, protocol = handshake.accept_upgrade(req_headers, websocket_protocols)
+	print ('!!!!2', http_out_code, protocol )
+	
+	local response_header = build_http_header(http_out_code, http_out_header, nil)
+	print ('>>>', response_header)
+	sktd:send_sync(response_header)
+end
 
 --- Register a new handler.
 -- @param method the http method to be attendend, such as 'GET', 'POST' or '*'
@@ -79,6 +95,24 @@ M.set_request_handler = function ( method, pattern, callback )
 		pattern=pattern, 
 		callback=callback,
 		depth=depth,
+	}
+end
+
+M.set_websocket_protocol = function ( protocol, callback )
+	for i = 1,  #websocket_protocols do
+		local handler = websocket_protocols[i]
+		if protocol == handler.protocol then
+			if callback then 
+				handler.callback = callback
+			else
+				table.remove(websocket_protocols, i)
+			end
+			return
+		end
+	end
+	websocket_protocols[#websocket_protocols+1] = {
+		protocol=protocol, 
+		callback=callback,
 	}
 end
 
@@ -152,7 +186,6 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 	)
 end
 
-
 --- Start the http server.
 -- @param conf a configuration table. Attributes of interest are _ip_ (defaults to '*')
 -- and _port_ (defaults to 8080).
@@ -197,7 +230,7 @@ M.init = function(conf)
 					if not line then sktd_cli:close(); return end
 					if line=='' then break end
 					local key, value=string.match(line, '^([^:]+):%s*(.*)$')
-					--print ('HEADER', line, key, value)
+					print ('HEADER', key, value)
 					http_req_header[key] = value
 				end
 				return http_req_header
@@ -216,6 +249,17 @@ M.init = function(conf)
 				
 				-- read header ---------------------------------------------------------
 				local http_req_header  = read_incomming_header()
+				
+				-- handle websockets ----------------------------------------------
+				if conf.ws_enable 
+				and http_req_header['Connection']=='Upgrade' 
+				and http_req_header['Upgrade']=='websocket' then
+					log('HTTP', 'DEBUG', 'Incoming websocket request')
+					handle_websocket_request(sktd_cli,http_req_header) 
+					-- this should return only when finished
+					return
+				end
+				
 				
 				-- read body ------------------------------------------------------------
 				local http_params
@@ -248,7 +292,7 @@ M.init = function(conf)
 				end
 				
 				-- write response ------------------------------------------------------------
-
+				log('HTTP', 'DEBUG', 'sending response %s', tostring(http_out_code))
 				local need_flush
 				
 				local response_header = build_http_header(http_out_code, http_out_header, response)
