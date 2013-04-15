@@ -50,8 +50,12 @@ M.read = function (streamd, len)
 	if len>0 then
 		--cut len bytes
 		local rlen = #s-len
-		buff_data[1] = string.sub(-rlen)
-		s=string.sub(1, len)
+		if rlen>0 then 
+			buff_data[1] = s:sub(-rlen) 
+		else
+			buff_data[1] = nil
+		end
+		s=s:sub(1, len)
 		streamd.len = rlen
 		if not streamd.size or streamd.len <= streamd.size then 
 			sched.signal(streamd.pipe_enable_signal) -- unlock writers
