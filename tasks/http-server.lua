@@ -56,17 +56,38 @@ local request_handlers = M.request_handlers
 
 M.websocket_protocols = {}
 local websocket_protocols = M.websocket_protocols
+local websocket_clients = setmetatable({}, {__mode='k'})
 
 
 local handle_websocket_request = function (sktd, req_headers)
 	local handshake = require 'tasks/http-server/websocket/handshake'
-	print ('!!!!1', handshake, handshake.accept_upgrade)
-	local http_out_code, http_out_header, protocol = handshake.accept_upgrade(req_headers, websocket_protocols)
-	print ('!!!!2', http_out_code, protocol )
+	local sync = require 'tasks/http-server/websocket/sync'
+	--print ('!!!!1', handshake, handshake.accept_upgrade)
+	local http_out_code, http_out_header, ws_protocol = handshake.accept_upgrade(req_headers, websocket_protocols)
+	--print ('!!!!2', http_out_code, (ws_protocol or {}).protocol )
 	
 	local response_header = build_http_header(http_out_code, http_out_header, nil)
-	print ('>>>', response_header)
+	--print ('>>>', response_header)
 	sktd:send_sync(response_header)
+	sktd.stream:set_timeout(-1, -1)
+	sktd.state = 'OPEN'
+	sktd.is_server = true
+		
+	sktd.on_close = function(self)
+		websocket_clients[ws_protocol][self] = nil
+	end
+	sktd.broadcast = function(_,...)
+		for client in pairs(websocket_clients[ws_protocol.protocol]) do
+			client:send(...)
+		end
+	end
+	
+	local ws = sync.extend(sktd)
+	if ws_protocol then
+		websocket_clients[ws_protocol.protocol][sktd] = true
+		ws_protocol.callback(ws)
+	end
+	
 end
 
 --- Register a new handler.
@@ -75,7 +96,7 @@ end
 -- handler overlap, the one deeper is selected (ie if there is '/' and '/docs/', the later is selected)
 -- @param callback the callback function. Must have a _method, path, http\_params, http\_header_ 
 -- signature, where _http\_params, http\_header_ are tables. If callback is nil, a handler with matching
--- method and pattern will  be removed. The callback must reurn a number 
+-- method and pattern will  be removed. The callback must return a number 
 -- (an http error code), followed by an array with headers, and a string (the content).
 M.set_request_handler = function ( method, pattern, callback )
 	for i = 1,  #request_handlers do
@@ -110,6 +131,7 @@ M.set_websocket_protocol = function ( protocol, callback )
 			return
 		end
 	end
+	websocket_clients[protocol] = websocket_clients[protocol] or {}
 	websocket_protocols[#websocket_protocols+1] = {
 		protocol=protocol, 
 		callback=callback,
@@ -199,7 +221,8 @@ M.init = function(conf)
 	local servertask = sched.new_task( function()
 		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
 		log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
-		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli, instream)
+		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
+			local instream = sktd_cli.stream
 			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', sktd_cli:getpeername())
 			local function find_matching_handler(method, url)
 				local max_depth, best_handler = 0
@@ -230,7 +253,7 @@ M.init = function(conf)
 					if not line then sktd_cli:close(); return end
 					if line=='' then break end
 					local key, value=string.match(line, '^([^:]+):%s*(.*)$')
-					print ('HEADER', key, value)
+					--print ('HEADER', key, value)
 					http_req_header[key] = value
 				end
 				return http_req_header

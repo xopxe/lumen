@@ -143,7 +143,6 @@ local register_client = function (sktd)
 	pollt[#pollt+1]=polle
 end
 local register_server = function (sktd) --, block, backlog)
-	local accepted_event = sktd.events.accepted
 	local function accept_handler(polle)
 		local skt, host, port = polle.fd:accept()
 		local skt_table_client = {
@@ -152,18 +151,16 @@ local register_server = function (sktd) --, block, backlog)
 			events={data=skt},
 			pattern=sktd.pattern,
 		}
+		local insktd = init_sktd(skt_table_client)
 		if sktd.handler=='stream' then
 			local s = streams.new()
 			skt_table_client.handler = s
-			local insktd = init_sktd(skt_table_client)
-			register_client(insktd)
-			sched.signal(accepted_event, insktd, s)
+			insktd.stream = s
 		else
 			skt_table_client.handler = sktd.handler
-			local insktd = init_sktd(skt_table_client)
-			register_client(insktd)
-			sched.signal(accepted_event, insktd)
 		end
+		sched.signal(sktd.events.accepted, insktd)
+		register_client(insktd)
 	end
 	local polle={
 		fd=sktd.fd,

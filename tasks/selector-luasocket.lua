@@ -159,20 +159,17 @@ local step = function (timeout)
 						task=module_task,
 						events={data=client},
 						pattern=pattern,
-						stream = sktd.create_stream and streams.new(), 
 					}
+					local insktd = init_sktd(skt_table_client)
 					if sktd.handler=='stream' then
-						local sktd_cli = init_sktd(skt_table_client)
 						local s = streams.new()
-						read_streams[sktd_cli] = s
-						register_client(sktd_cli)
-						sched.signal(sktd.events.accepted, sktd_cli, s)
+						read_streams[insktd] = s
+						insktd.stream = s
 					else
 						skt_table_client.handler = sktd.handler
-						local sktd_cli = init_sktd(skt_table_client)
-						register_client(sktd_cli)
-						sched.signal(sktd.events.accepted, sktd_cli)
 					end
+					sched.signal(sktd.events.accepted, insktd)
+					register_client(insktd)
 				else
 					sched.signal(sktd.events.accepted, nil, err)
 				end

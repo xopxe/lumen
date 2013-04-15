@@ -24,9 +24,48 @@ end
 
 sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
 
-http_server.set_websocket_protocol('dumb-increment-protocol', function(...)
-	print ('WS', ...)
+http_server.set_websocket_protocol('dumb-increment-protocol', function(ws,...)
+	local i = 0
+	
+	sched.run(function()
+		while true do
+			local message,opcode = assert(ws:receive())
+			if not message then
+				ws:close()
+				return
+			end
+			if opcode == ws.TEXT then
+				if message:match('reset') then
+					i = 0
+				end
+			end
+		end
+	end)
+	
+	sched.run(function()
+		while true do
+			i=i+1
+			assert(ws:send(i))
+			sched.sleep(1)
+		end
+	end)
 end)
+
+http_server.set_websocket_protocol('lws-mirror-protocol', function(ws,...)
+	sched.run(function()
+		while true do
+			local message,opcode = assert(ws:receive())
+			if not message then
+				ws:close()
+				return
+			end
+			if opcode == ws.TEXT then
+				ws:broadcast(message)
+			end
+		end
+	end)
+end)
+
 
 local conf = {
 	ip='127.0.0.1', 
