@@ -10,7 +10,7 @@ local receive = function(self)
 	if self.state ~= 'OPEN' and self.state ~= 'CLOSING' then
 		return nil, 'failed', 'bad state: '..tostring(self.state)
 	end
-	local stream = assert(self.stream)
+	local stream = assert(self.sktd.stream)
 	local first_opcode
 	local frames
 	local bytes = 3
@@ -70,7 +70,7 @@ local send = function(self,data,opcode)
 		return nil,'not open'
 	end
 	local encoded = frame.encode(tostring(data),opcode or self.TEXT,not self.is_server)
-	local ok,err = self:sock_send_sync(encoded)
+	local ok,err = self.sktd:send_sync(encoded)
 	if not ok then
 		return nil, 'failed', err
 	end
@@ -85,7 +85,7 @@ local close = function(self,code,reason)
 	self:send(msg,self.CLOSE)
 	self.state = 'CLOSING'
 	local rmsg,opcode = self:receive()
-	self:sock_close()
+	self.sktd:close()
 	if self.on_close then
 		self:on_close()
 	end
@@ -116,7 +116,7 @@ local connect = function(self,ws_url,ws_protocol)
     origin = origin,
     uri = uri
   }
-  local ok,err = self:sock_send_sync(req)
+  local ok,err = self.sktd:send_sync(req)
   if not ok then
     return nil, 'handshake failed', err
   end
@@ -139,30 +139,28 @@ local connect = function(self,ws_url,ws_protocol)
   return true
 end
 
-local extend = function(sktd)
+local create_ws = function(sktd)
 	assert(sktd.stream)
 	assert(sktd.send_sync)
 	assert(sktd.close)
-	sktd.sock_send = sktd.send
-	sktd.sock_send_sync = sktd.send_sync
-	sktd.sock_send_async = sktd.send_async
-	sktd.sock_close = sktd.close
-	sktd.receive = receive
-	sktd.send = send
-	sktd.send_sync, sktd.send_async = nil, nil
-	sktd.close = close
-	sktd.connect = connect
 	
-	sktd.CONTINUATION = 0
-	sktd.TEXT = 1
-	sktd.BINARY = 2
-	sktd.CLOSE = 8
-	sktd.PING = 9
-	sktd.PONG = 10
-	
- 	return sktd
+	local ws = {
+		sktd = sktd,
+		receive = receive,
+		send = send,
+		close = close,
+		connect = connect,
+		
+		CONTINUATION = 0,
+		TEXT = 1,
+		BINARY = 2,
+		CLOSE = 8,
+		PING = 9,
+		PONG = 10,
+	}
+ 	return ws
 end
 
 return {
-	extend = extend
+	create_ws = create_ws
 }

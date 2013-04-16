@@ -35,7 +35,7 @@ local handle_websocket_request = function (sktd, req_headers)
 	sktd.stream:set_timeout(-1, -1)
 	sktd:send_sync(response_header)
 	
-	local ws = sync.extend(sktd)
+	local ws = sync.create_ws(sktd)
 	ws.state = 'OPEN'
 	ws.is_server = true
 	ws.on_close = function(self)
