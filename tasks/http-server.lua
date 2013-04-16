@@ -15,26 +15,6 @@ local stream = require 'stream'
 
 local M = {}
 
-local build_http_header = function(status, header, response)
-	local httpstatus = tostring(status).." "..http_util.http_error_code[status]
-	header = header or {}
-	
-	if not header["Content-Length"] and type (response) == "string" then 
-		header["Content-Length"] = #response
-	end
-	if not header["Content-Type"] then
-		header["Content-Type"] = 'text/plain'
-	end
-
-	local header_entries = {"HTTP/1.1 "..httpstatus}
-	for k, v in pairs(header or {}) do
-		header_entries[#header_entries+1] = k..": "..v
-	end
-	header_entries[#header_entries+1] = "\r\n"
-	local http_string = table.concat(header_entries, '\r\n')
-	return http_string
-end
-
 local function backup_response(code_out, header_out)
 	local httpstatus = tostring(code_out).." "..http_util.http_error_code[code_out]
 	header_out = header_out or {}
@@ -53,42 +33,6 @@ M.HTTP_TIMEOUT = 15 --how long keep connections open
 -- Derived from Orbit & Orbiter
 M.request_handlers = {}
 local request_handlers = M.request_handlers
-
-M.websocket_protocols = {}
-local websocket_protocols = M.websocket_protocols
-local websocket_clients = setmetatable({}, {__mode='k'})
-
-
-local handle_websocket_request = function (sktd, req_headers)
-	local handshake = require 'tasks/http-server/websocket/handshake'
-	local sync = require 'tasks/http-server/websocket/sync'
-	--print ('!!!!1', handshake, handshake.accept_upgrade)
-	local http_out_code, http_out_header, ws_protocol = handshake.accept_upgrade(req_headers, websocket_protocols)
-	--print ('!!!!2', http_out_code, (ws_protocol or {}).protocol )
-	
-	local response_header = build_http_header(http_out_code, http_out_header, nil)
-	--print ('>>>', response_header)
-	sktd:send_sync(response_header)
-	sktd.stream:set_timeout(-1, -1)
-	sktd.state = 'OPEN'
-	sktd.is_server = true
-		
-	sktd.on_close = function(self)
-		websocket_clients[ws_protocol][self] = nil
-	end
-	sktd.broadcast = function(_,...)
-		for client in pairs(websocket_clients[ws_protocol.protocol]) do
-			client:send(...)
-		end
-	end
-	
-	local ws = sync.extend(sktd)
-	if ws_protocol then
-		websocket_clients[ws_protocol.protocol][sktd] = true
-		ws_protocol.callback(ws)
-	end
-	
-end
 
 --- Register a new handler.
 -- @param method the http method to be attendend, such as 'GET', 'POST' or '*'
@@ -119,24 +63,11 @@ M.set_request_handler = function ( method, pattern, callback )
 	}
 end
 
-M.set_websocket_protocol = function ( protocol, callback )
-	for i = 1,  #websocket_protocols do
-		local handler = websocket_protocols[i]
-		if protocol == handler.protocol then
-			if callback then 
-				handler.callback = callback
-			else
-				table.remove(websocket_protocols, i)
-			end
-			return
-		end
-	end
-	websocket_clients[protocol] = websocket_clients[protocol] or {}
-	websocket_protocols[#websocket_protocols+1] = {
-		protocol=protocol, 
-		callback=callback,
-	}
-end
+local websocket = require 'tasks/http-server/websocket'
+
+--- Add a websocket protocol.
+M.set_websocket_protocol = websocket.set_websocket_protocol
+
 
 --- Serve static files from a folder (using ram).
 -- This helper function calls @{set_request_handler} with a handler for providing static content.  
@@ -274,11 +205,11 @@ M.init = function(conf)
 				local http_req_header  = read_incomming_header()
 				
 				-- handle websockets ----------------------------------------------
-				if conf.ws_enable 
+				if conf.ws_enable
 				and http_req_header['Connection']=='Upgrade' 
 				and http_req_header['Upgrade']=='websocket' then
-					log('HTTP', 'DEBUG', 'Incoming websocket request')
-					handle_websocket_request(sktd_cli,http_req_header) 
+					log('HTTP', 'DEBUG', 'incoming websocket request')
+					websocket.handle_websocket_request(sktd_cli,http_req_header) 
 					-- this should return only when finished
 					return
 				end
@@ -318,7 +249,7 @@ M.init = function(conf)
 				log('HTTP', 'DEBUG', 'sending response %s', tostring(http_out_code))
 				local need_flush
 				
-				local response_header = build_http_header(http_out_code, http_out_header, response)
+				local response_header = http_util.build_http_header(http_out_code, http_out_header, response)
 				sktd_cli:send_sync(response_header)
 				if type(response) == 'string' then
 					sktd_cli:send_sync(response)

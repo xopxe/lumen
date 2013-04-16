@@ -5,6 +5,7 @@
 package.path = package.path .. ";;;../?.lua"
 
 require "log".setlevel('ALL', 'HTTP')
+--require "log".setlevel('ALL')
 
 require "strict"
 
@@ -27,7 +28,7 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
 http_server.set_websocket_protocol('dumb-increment-protocol', function(ws,...)
 	local i = 0
 	
-	sched.run(function()
+	print('A1', sched.run(function()
 		while true do
 			local message,opcode = assert(ws:receive())
 			if not message then
@@ -40,19 +41,22 @@ http_server.set_websocket_protocol('dumb-increment-protocol', function(ws,...)
 				end
 			end
 		end
-	end)
+	end))
 	
-	sched.run(function()
+	print('A2',sched.run(function()
 		while true do
 			i=i+1
-			assert(ws:send(i))
-			sched.sleep(1)
+			if not ws:send(i) then
+				ws:close()
+				return
+			end
+			sched.sleep(0.5)
 		end
-	end)
+	end))
 end)
 
 http_server.set_websocket_protocol('lws-mirror-protocol', function(ws,...)
-	sched.run(function()
+	print('B', sched.run(function()
 		while true do
 			local message,opcode = assert(ws:receive())
 			if not message then
@@ -63,7 +67,7 @@ http_server.set_websocket_protocol('lws-mirror-protocol', function(ws,...)
 				ws:broadcast(message)
 			end
 		end
-	end)
+	end))
 end)
 
 

@@ -26,14 +26,14 @@ M.read = function (streamd, len)
 	len = len or -1
 	
 	local buff_data = streamd.buff_data
-	if streamd.closed and #streamd.buff_data == 0 then
+	if streamd.closed and (streamd.len<len or streamd.len==0) then
 		return nil, 'closed', streamd.closed
 	end
 	
 	while streamd.len == 0 or (len>0 and streamd.len < len) do
 		local emitter = sched.wait(streamd.waitd_data)
 		if not emitter then return nil, 'timeout' end
-		if streamd.closed and #streamd.buff_data == 0 then
+		if streamd.closed and (streamd.len<len or streamd.len==0) then --and #streamd.buff_data == 0 then
 			return nil, 'closed', streamd.closed
 		end
 	end
@@ -78,22 +78,23 @@ end
 -- is not included in the retured string.
 M.read_line = function (streamd)
 	local buff_data = streamd.buff_data
-	if streamd.closed and #buff_data == 0 then
-		return nil, 'closed', streamd.closed
-	end
-	
+
 	local line_available, new_line_last
 	for i=1, #buff_data do
 		line_available, new_line_last = string.find (buff_data[i] , '\r?\n')
 		if line_available then break end
 	end
+	if streamd.closed and not line_available then
+		return nil, 'closed', streamd.closed
+	end
+
 	while not line_available do
 		local emitter = sched.wait(streamd.waitd_data)
 		if not emitter then return nil, 'timeout' end
-		if streamd.closed and #streamd.buff_data == 0 then
+		line_available, new_line_last = string.find (buff_data[#buff_data] , '\r?\n')
+		if streamd.closed and not line_available then
 			return nil, 'closed', streamd.closed
 		end
-		line_available, new_line_last = string.find (buff_data[#buff_data] , '\r?\n')
 	end
 
 	if #buff_data > 1 then

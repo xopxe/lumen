@@ -75,27 +75,22 @@ local accept_upgrade = function(request,protocols)
 	local prot
 	if headers['Sec-WebSocket-Protocol'] then
 		for protocol in headers['Sec-WebSocket-Protocol']:gmatch('([^,%s]+)%s?,?') do
-			for _,supported in ipairs(protocols) do
-				if supported.protocol == protocol then
-					prot = supported
-					break
-				end
-			end
-			if prot then
+			if protocols[protocol] then
+				prot = protocol
 				break
 			end
 		end
 	end
 	local out_header = {
-	['Upgrade'] = 'websocket',
-	['Connection'] = headers['Connection'],
-	['Sec-WebSocket-Accept'] = sec_websocket_accept(headers['Sec-WebSocket-Key']),
+		['Upgrade'] = 'websocket',
+		['Connection'] = headers['Connection'],
+		['Sec-WebSocket-Accept'] = sec_websocket_accept(headers['Sec-WebSocket-Key']),
 	}
 	if prot then 
-		out_header['Sec-WebSocket-Protocol'] = prot.protocol
+		out_header['Sec-WebSocket-Protocol'] = prot
 	end
-
-  return 101, out_header, prot
+	
+	return 101, out_header, prot
 end
 
 return {
