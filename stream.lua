@@ -91,7 +91,7 @@ M.read_line = function (streamd)
 	while not line_available do
 		local emitter = sched.wait(streamd.waitd_data)
 		if not emitter then return nil, 'timeout' end
-		line_available, new_line_last = string.find (buff_data[#buff_data] , '\r?\n')
+		line_available, new_line_last = string.find (buff_data[#buff_data] or '', '\r?\n')
 		if streamd.closed and not line_available then
 			return nil, 'closed', streamd.closed
 		end
