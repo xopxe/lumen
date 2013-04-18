@@ -157,7 +157,7 @@ M.new_shell = function()
 		local args = table.pack(...)
 		local t= {}
 		for k = 1, args.n do t[#t+1] =tostring(args[k]) end
-		shell.pipe_out:write(nil, table.concat(t, '\t')..'\r\n')
+		shell.pipe_out:write(nil, table.concat(t, '\t')) --..'\r\n')
 	end
 	
 	shell.env.ps = function()

@@ -7,7 +7,7 @@ package.path = package.path .. ";;;../?.lua"
 require "log".setlevel('ALL', 'HTTP')
 --require "log".setlevel('ALL')
 
-require "strict"
+--require "strict"
 
 local service = _G.arg [1] or 'luasocket'
 
@@ -25,51 +25,42 @@ end
 
 sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
 
-http_server.set_websocket_protocol('dumb-increment-protocol', function(ws,...)
-	local i = 0
-	
-	print('A1', sched.run(function()
+http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
+	local shell = require 'tasks/shell' 
+	local sh = shell.new_shell()
+	print('x1', sched.run(function()
 		while true do
-			local message,opcode = assert(ws:receive())
+			local message,opcode = ws:receive()
 			if not message then
 				ws:close()
 				return
 			end
 			if opcode == ws.TEXT then
-				if message:match('reset') then
-					i = 0
-				end
+				print ('+', message)
+				--assert(ws:send(tostring(message)..'\r\n'))
+				sh.pipe_in:write('line', message)
+				--if message:match('reset') then
+				--	i = 0
+				--end
 			end
 		end
 	end))
-	
-	print('A2',sched.run(function()
-		while true do
-			i=i+1
-			if not ws:send(i) then
-				ws:close()
-				return
-			end
-			sched.sleep(0.5)
-		end
-	end))
-end)
 
-http_server.set_websocket_protocol('lws-mirror-protocol', function(ws,...)
-	print('B', sched.run(function()
+	---[[
+	print('x2',sched.run(function()
 		while true do
-			local message,opcode = assert(ws:receive())
-			if not message then
-				ws:close()
-				return
+			local _, prompt, out = sh.pipe_out:read()
+			print ('-', prompt, out)
+			if out then 
+				assert(ws:send(tostring(out)..'\r\n'))
 			end
-			if opcode == ws.TEXT then
-				ws:broadcast(message)
+			if prompt then
+				assert(ws:send(prompt))
 			end
 		end
 	end))
+	--]]
 end)
-
 
 local conf = {
 	ip='127.0.0.1', 

@@ -131,9 +131,9 @@ local connect = function(self,ws_url,ws_protocol)
   local response = table.concat(resp,'\r\n')
   local headers = handshake.http_headers(response)
   local expected_accept = handshake.sec_websocket_accept(key)
-  if headers['Sec-WebSocket-Accept'] ~= expected_accept then
+  if headers['sec-websocket-accept'] ~= expected_accept then
     local msg = 'Invalid Sec-Websocket-Accept (expected %s got %s)'
-    return nil, 'handshake failed', msg:format(expected_accept,headers['Sec-WebSocket-Accept'] or 'nil')
+    return nil, 'handshake failed', msg:format(expected_accept,headers['sec-websocket-accept'] or 'nil')
   end
   self.state = 'OPEN'
   return true

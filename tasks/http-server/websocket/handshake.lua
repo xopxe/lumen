@@ -45,18 +45,18 @@ local upgrade_request = function(req)
 	local format = string.format
 	local lines = {
 		format('GET %s HTTP/1.1',req.uri or ''),
-		format('Host: %s',req.host),
-		'Upgrade: websocket',
-		'Connection: Upgrade',
-		format('Sec-WebSocket-Key: %s',req.key),
-		format('Sec-WebSocket-Protocol: %s',table.concat(req.protocols,', ')),
-		'Sec-WebSocket-Version: 13',
+		format('host: %s',req.host),
+		'upgrade: websocket',
+		'connection: Upgrade',
+		format('sec-websocket-key: %s',req.key),
+		format('sec-websocket-protocol: %s',table.concat(req.protocols,', ')),
+		'sec-websocket-version: 13',
 	}
 	if req.origin then
-		tinsert(lines,string.format('Origin: %s',req.origin))
+		tinsert(lines,string.format('origin: %s',req.origin))
 	end
 	if req.port and req.port ~= 80 then
-		lines[2] = format('Host: %s:%d',req.host,req.port)
+		lines[2] = format('host: %s:%d',req.host,req.port)
 	end
 	tinsert(lines,'\r\n')
 	return table.concat(lines,'\r\n')
@@ -65,16 +65,16 @@ end
 local accept_upgrade = function(request,protocols)
 	local headers = request --http_headers(request)
 
-	if headers['Upgrade'] ~= 'websocket' or
-	not headers['Connection'] or
-	not headers['Connection']:match('Upgrade') or
-		headers['Sec-WebSocket-Key'] == nil or
-		headers['Sec-WebSocket-Version'] ~= '13' then
+	if headers['upgrade'] ~= 'websocket' or
+	not headers['connection'] or
+	not headers['connection']:match('Upgrade') or
+		headers['sec-websocket-key'] == nil or
+		headers['sec-websocket-version'] ~= '13' then
 		return 400, nil, nil --'HTTP/1.1 400 Bad Request\r\n\r\n'
 	end
 	local prot
-	if headers['Sec-WebSocket-Protocol'] then
-		for protocol in headers['Sec-WebSocket-Protocol']:gmatch('([^,%s]+)%s?,?') do
+	if headers['sec-websocket-protocol'] then
+		for protocol in headers['sec-websocket-protocol']:gmatch('([^,%s]+)%s?,?') do
 			if protocols[protocol] then
 				prot = protocol
 				break
@@ -82,12 +82,12 @@ local accept_upgrade = function(request,protocols)
 		end
 	end
 	local out_header = {
-		['Upgrade'] = 'websocket',
-		['Connection'] = headers['Connection'],
-		['Sec-WebSocket-Accept'] = sec_websocket_accept(headers['Sec-WebSocket-Key']),
+		['upgrade'] = 'websocket',
+		['connection'] = headers['connection'],
+		['sec-websocket-accept'] = sec_websocket_accept(headers['sec-websocket-key']),
 	}
 	if prot then 
-		out_header['Sec-WebSocket-Protocol'] = prot
+		out_header['sec-websocket-protocol'] = prot
 	end
 	
 	return 101, out_header, prot

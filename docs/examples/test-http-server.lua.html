@@ -74,7 +74,8 @@
 <span class="comment">--look for packages one folder up.
 </span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
 
-<span class="comment">--require "log".setlevel('INFO')
+<span class="global">require</span> <span class="string">"log"</span>.setlevel(<span class="string">'ALL'</span>, <span class="string">'HTTP'</span>)
+<span class="comment">--require "log".setlevel('ALL')
 </span>
 <span class="global">require</span> <span class="string">"strict"</span>
 
@@ -92,7 +93,59 @@ http_server.serve_static_content_from_ram(<span class="string">'/'</span>, <span
 	http_server.serve_static_content_from_ram(<span class="string">'/docs/'</span>, <span class="string">'../docs'</span>)
 <span class="keyword">end</span>
 
-<span class="keyword">local</span> conf = {ip=<span class="string">'127.0.0.1'</span>, port=<span class="string">'8080'</span>}
+sched.sigrun({emitter=<span class="string">'*'</span>, events={sched.EVENT_DIE}}, <span class="global">print</span>)
+
+http_server.set_websocket_protocol(<span class="string">'dumb-increment-protocol'</span>, <span class="keyword">function</span>(ws)
+	<span class="keyword">local</span> i = <span class="number">0</span>
+	
+	<span class="global">print</span>(<span class="string">'A1'</span>, sched.run(<span class="keyword">function</span>()
+		<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+			<span class="keyword">local</span> message,opcode = ws:receive()
+			<span class="keyword">if</span> <span class="keyword">not</span> message <span class="keyword">then</span>
+				ws:close()
+				<span class="keyword">return</span>
+			<span class="keyword">end</span>
+			<span class="keyword">if</span> opcode == ws.TEXT <span class="keyword">then</span>
+				<span class="keyword">if</span> message:match(<span class="string">'reset'</span>) <span class="keyword">then</span>
+					i = <span class="number">0</span>
+				<span class="keyword">end</span>
+			<span class="keyword">end</span>
+		<span class="keyword">end</span>
+	<span class="keyword">end</span>))
+	
+	<span class="global">print</span>(<span class="string">'A2'</span>,sched.run(<span class="keyword">function</span>()
+		<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+			i=i+<span class="number">1</span>
+			<span class="keyword">if</span> <span class="keyword">not</span> ws:send(i) <span class="keyword">then</span>
+				ws:close()
+				<span class="keyword">return</span>
+			<span class="keyword">end</span>
+			sched.sleep(<span class="number">0.5</span>)
+		<span class="keyword">end</span>
+	<span class="keyword">end</span>))
+<span class="keyword">end</span>)
+
+http_server.set_websocket_protocol(<span class="string">'lws-mirror-protocol'</span>, <span class="keyword">function</span>(ws)
+	<span class="global">print</span>(<span class="string">'B'</span>, sched.run(<span class="keyword">function</span>()
+		<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+			<span class="keyword">local</span> message,opcode = ws:receive()
+			<span class="keyword">if</span> <span class="keyword">not</span> message <span class="keyword">then</span>
+				ws:close()
+				<span class="keyword">return</span>
+			<span class="keyword">end</span>
+			<span class="keyword">if</span> opcode == ws.TEXT <span class="keyword">then</span>
+				ws:broadcast(message)
+			<span class="keyword">end</span>
+		<span class="keyword">end</span>
+	<span class="keyword">end</span>))
+<span class="keyword">end</span>)
+
+
+<span class="keyword">local</span> conf = {
+	ip=<span class="string">'127.0.0.1'</span>, 
+	port=<span class="number">12345</span>,
+	ws_enable = <span class="keyword">true</span>,
+}
 http_server.init(conf)
 
 <span class="global">print</span> (<span class="string">'http server listening on'</span>, conf.ip, conf.port)

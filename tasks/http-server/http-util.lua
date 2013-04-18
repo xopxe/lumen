@@ -27,11 +27,11 @@ M.build_http_header = function(status, header, response)
 	local httpstatus = tostring(status).." "..http_error_code[status]
 	header = header or {}
 	
-	if not header["Content-Length"] and type (response) == "string" then 
-		header["Content-Length"] = #response
+	if not header["content-length"] and type (response) == "string" then 
+		header["content-length"] = #response
 	end
-	if not header["Content-Type"] then
-		header["Content-Type"] = 'text/plain'
+	if not header["content-type"] then
+		header["content-type"] = 'text/plain'
 	end
 
 	local header_entries = {"HTTP/1.1 "..httpstatus}

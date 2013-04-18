@@ -20,8 +20,8 @@ local function backup_response(code_out, header_out)
 	header_out = header_out or {}
 	
 	local response = "<html><head><title>"..httpstatus.."</title></head><body><h3>"..httpstatus.."</h3><hr><small>Lumen http-server</small></body></html>"
-	header_out["Content-Type"] = 'text/html'
-	header_out["Content-Length"] = #response
+	header_out["content-type"] = 'text/html'
+	header_out["content-length"] = #response
 	
 	return header_out, response
 end
@@ -65,7 +65,14 @@ end
 
 local websocket = require 'tasks/http-server/websocket'
 
---- Add a websocket protocol.
+--- Register a websocket protocol.
+-- @function set_websocket_protocol
+-- @param protocol the protocol name
+-- @param handler a handler function. This function will be called when a new connection requesting
+-- the protocol arrives. It will be pased a websocket object. If the handler parameter is nil, the protocol will be 
+-- removed.
+-- @param keep_clients when handler is nil, or changing an already present protocol, wether to kill the 
+-- already running connections or leave them.
 M.set_websocket_protocol = websocket.set_websocket_protocol
 
 
@@ -82,7 +89,7 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 			path = path:sub(#webroot)
 			if path:sub(-1) == '/' then path=path..'index.html' end
 			local abspath=fileroot..path
-						
+			
 			local file, err = io.open(abspath, "r")
 			if file then 
 				local extension = path:match('%.(%a+)$') or 'other'
@@ -90,7 +97,7 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 				local content = file:read('*all')
 				file:close()
 				if content then 
-					return 200, {['Content-Type']=mime, ['Content-Length']=#content}, content
+					return 200, {['content-type']=mime, ['content-length']=#content}, content
 				else
 					return 500
 				end
@@ -185,7 +192,7 @@ M.init = function(conf)
 					if line=='' then break end
 					local key, value=string.match(line, '^([^:]+):%s*(.*)$')
 					--print ('HEADER', key, value)
-					http_req_header[key] = value
+					if key and value then http_req_header[key:lower()] = value end
 				end
 				return http_req_header
 			end
@@ -206,8 +213,8 @@ M.init = function(conf)
 				
 				-- handle websockets ----------------------------------------------
 				if conf.ws_enable
-				and http_req_header['Connection']=='Upgrade' 
-				and http_req_header['Upgrade']=='websocket' then
+				and http_req_header['connection']=='Upgrade' 
+				and http_req_header['upgrade']=='websocket' then
 					log('HTTP', 'DEBUG', 'incoming websocket request')
 					websocket.handle_websocket_request(sktd_cli,http_req_header) 
 					-- this should return only when finished
@@ -218,7 +225,7 @@ M.init = function(conf)
 				-- read body ------------------------------------------------------------
 				local http_params
 				if http_req_method=='POST' then 
-					local data = instream:read( http_req_header['Content-Length'] or 0 )
+					local data = instream:read( http_req_header['content-length'] or 0 )
 					if not data then sktd_cli:close(); return end
 					http_params=parse_params(data)
 				else
@@ -230,7 +237,7 @@ M.init = function(conf)
 				--print ('matching', path, path:match('/[^/%.]+$'))
 				if http_req_path:match('/[^/%.]+$') then 
 					--redirect to path..'/'
-					http_out_code, http_out_header = 301, {['Location']='http://'..http_req_header['Host']..http_req_path..'/'}
+					http_out_code, http_out_header = 301, {['location']='http://'..http_req_header['host']..http_req_path..'/'}
 				else
 					local callback = find_matching_handler(http_req_method, http_req_path)
 					if callback then 
@@ -254,7 +261,7 @@ M.init = function(conf)
 				if type(response) == 'string' then
 					sktd_cli:send_sync(response)
 				else --stream
-					if not http_out_header["Content-Length"] then
+					if not http_out_header["content-length"] then
 						need_flush = true
 					end
 					while true do
@@ -265,7 +272,7 @@ M.init = function(conf)
 					end
 				end
 				
-				if (http_req_version== '1.0' and http_req_header['Connection']~='Keep-Alive')
+				if (http_req_version== '1.0' and http_req_header['connection']~='Keep-Alive')
 				or need_flush then 
 					sktd_cli:close()
 					return

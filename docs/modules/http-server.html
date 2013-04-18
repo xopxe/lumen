@@ -85,6 +85,10 @@
 	<td class="summary">Register a new handler.</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#set_websocket_protocol">set_websocket_protocol&nbsp;(protocol, handler, keep_clients)</a></td>
+	<td class="summary">Register a websocket protocol.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#serve_static_content_from_ram">serve_static_content_from_ram&nbsp;(webroot, fileroot)</a></td>
 	<td class="summary">Serve static files from a folder (using ram).</td>
 	</tr>
@@ -126,8 +130,29 @@
  handler overlap, the one deeper is selected (ie if there is '/' and '/docs/', the later is selected)</li>
        <li><code><em>callback</em></code>:  the callback function. Must have a <em>method, path, http_params, http_header</em> 
  signature, where <em>http_params, http_header</em> are tables. If callback is nil, a handler with matching
- method and pattern will  be removed. The callback must reurn a number 
+ method and pattern will  be removed. The callback must return a number 
  (an http error code), followed by an array with headers, and a string (the content).</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "set_websocket_protocol"></a>
+    <strong>set_websocket_protocol&nbsp;(protocol, handler, keep_clients)</strong>
+    </dt>
+    <dd>
+    Register a websocket protocol. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>protocol</em></code>:  the protocol name</li>
+       <li><code><em>handler</em></code>:  a handler function. This function will be called when a new connection requesting
+ the protocol arrives. It will be pased a websocket object. If the handler parameter is nil, the protocol will be 
+ removed.</li>
+       <li><code><em>keep_clients</em></code>:  when handler is nil, or changing an already present protocol, wether to kill the 
+ already running connections or leave them.</li>
     </ul>
 
 
