@@ -177,7 +177,7 @@ M.new_shell = function()
 		shell.env.print(table.concat(out, '\r\n')) 
 	end
 	
-	shell.task=sched.new_task(function()
+	shell.task=sched.run(function()
 		shell.pipe_out:write(shell.prompt_ready, shell.banner)
 		while true do
 			local _, command, data = shell.pipe_in:read()
@@ -186,7 +186,7 @@ M.new_shell = function()
 				shell:handle_shellbuffer()
 			end
 		end
-	end):set_as_attached():run()
+	end)
 	return shell
 end
 
