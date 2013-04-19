@@ -36,12 +36,7 @@ http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
 				return
 			end
 			if opcode == ws.TEXT then
-				print ('+', message)
-				--assert(ws:send(tostring(message)..'\r\n'))
 				sh.pipe_in:write('line', message)
-				--if message:match('reset') then
-				--	i = 0
-				--end
 			end
 		end
 	end))
@@ -50,7 +45,6 @@ http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
 	print('x2',sched.run(function()
 		while true do
 			local _, prompt, out = sh.pipe_out:read()
-			print ('-', prompt, out)
 			if out then 
 				assert(ws:send(tostring(out)..'\r\n'))
 			end

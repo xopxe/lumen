@@ -134,7 +134,7 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 			        local mime = http_util.mime_types[extension] or 'text/plain'
 				local fsize  = nixio.fs.stat(abspath, 'size')
 				if fsize then 
-					return 200, {['Content-Type']=mime, ['Content-Length']=fsize}, stream_file
+					return 200, {['content-type']=mime, ['content-length']=fsize}, stream_file
 				else
 					return 500
 				end
@@ -201,6 +201,7 @@ M.init = function(conf)
 			while true do
 				-- read first line ------------------------------------------------------
 				local request = instream:read_line()
+				print('*******',request)
 				if not request then sktd_cli:close(); return end
 				local http_req_method,http_req_path, http_req_params, http_req_version = 
 					string.match(request, '^([A-Z]+) ([%/%.%d%w%-_]+)[%?]?(%S*) HTTP/(.+)$')
@@ -272,6 +273,7 @@ M.init = function(conf)
 					end
 				end
 				
+				--need_flush=true
 				if (http_req_version== '1.0' and http_req_header['connection']~='Keep-Alive')
 				or need_flush then 
 					sktd_cli:close()
