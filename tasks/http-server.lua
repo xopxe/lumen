@@ -148,18 +148,21 @@ end
 
 --- Start the http server.
 -- @param conf a configuration table. Attributes of interest are _ip_ (defaults to '*')
--- and _port_ (defaults to 8080).
+-- and _port_ (defaults to 8080). Also, kill_on_close parameter indicates whether current connections should be
+-- terminated if the server task is closed.
 M.init = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
 	local port = conf.port or 8080
+	local attached = conf.kill_on_close
 	
 	local tcp_server = selector.new_tcp_server(ip, port, 0, 'stream')
-	
-	local servertask = sched.new_task( function()
-		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
-		log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
-		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
+
+	local waitd_accept=sched.new_waitd({emitter=selector.task, events={tcp_server.events.accepted}, buff_len=10})
+	log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
+	M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
+		-- run the connection in a separated task
+		sched.run(function()
 			local instream = sktd_cli.stream
 			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', sktd_cli:getpeername())
 			local function find_matching_handler(method, url)
@@ -201,7 +204,6 @@ M.init = function(conf)
 			while true do
 				-- read first line ------------------------------------------------------
 				local request = instream:read_line()
-				print('*******',request)
 				if not request then sktd_cli:close(); return end
 				local http_req_method,http_req_path, http_req_params, http_req_version = 
 					string.match(request, '^([A-Z]+) ([%/%.%d%w%-_]+)[%?]?(%S*) HTTP/(.+)$')
@@ -221,7 +223,6 @@ M.init = function(conf)
 					-- this should return only when finished
 					return
 				end
-				
 				
 				-- read body ------------------------------------------------------------
 				local http_params
@@ -273,17 +274,14 @@ M.init = function(conf)
 					end
 				end
 				
-				--need_flush=true
 				if (http_req_version== '1.0' and http_req_header['connection']~='Keep-Alive')
 				or need_flush then 
 					sktd_cli:close()
 					return
 				end
 			end
-		end)
+		end, attached)
 	end)
-	M.task = servertask
-	servertask:run()
 end
 
 return M

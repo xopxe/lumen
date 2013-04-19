@@ -28,7 +28,7 @@ sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
 http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
 	local shell = require 'tasks/shell' 
 	local sh = shell.new_shell()
-	print('x1', sched.run(function()
+	sched.run(function()
 		while true do
 			local message,opcode = ws:receive()
 			if not message then
@@ -39,10 +39,9 @@ http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
 				sh.pipe_in:write('line', message)
 			end
 		end
-	end))
-
-	---[[
-	print('x2',sched.run(function()
+	end)
+	
+	sched.run(function()
 		while true do
 			local _, prompt, out = sh.pipe_out:read()
 			if out then 
@@ -52,8 +51,7 @@ http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
 				assert(ws:send(prompt))
 			end
 		end
-	end))
-	--]]
+	end)
 end)
 
 local conf = {
