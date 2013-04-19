@@ -98,11 +98,11 @@ end
 
 local register_client = function (sktd)
 	local function client_handler(polle)
-		local data, code, msg
+		local ok, data, code, msg
 		repeat
 			--if polle.do_not_read then code=999; break end
-			data,code,msg=polle.it()
-			if data then
+			ok,data,code,msg=pcall(polle.it)
+			if ok and data then
 				local block = polle.block
 				if not block or block=='line'  or block == #data then
 					handle_incomming(sktd, data)
@@ -115,7 +115,7 @@ local register_client = function (sktd)
 					end
 				end
 			end
-		until not data
+		until not ok or not data
 		if code~=11 then
 			sktd:close()
 			handle_incomming_error(sktd, code)
@@ -154,10 +154,10 @@ local register_server = function (sktd) --, block, backlog)
 		local insktd = init_sktd(skt_table_client)
 		if sktd.handler=='stream' then
 			local s = streams.new()
-			skt_table_client.handler = s
+			insktd.handler = s
 			insktd.stream = s
 		else
-			skt_table_client.handler = sktd.handler
+			insktd.handler = sktd.handler
 		end
 		sched.signal(sktd.events.accepted, insktd)
 		register_client(insktd)
