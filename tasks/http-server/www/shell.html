@@ -23,17 +23,15 @@ function get_appropriate_ws_url()
 	 */
 
 	if (u.substring(0, 5) == "https") {
-		return "wss://localhost:12345";
-/*
+		//return "wss://localhost:12345";
 		u = u.replace('https://','');
 		u = u.substring(0, u.indexOf('/'));
-		return "wss://" + u;*/
+		return "wss://" + u;
 	} else {
-		return "ws://localhost:12345";
-/*		u = u.replace('http://','');
+		//return "ws://localhost:12345";
+		u = u.replace('http://','');
 		u = u.substring(0, u.indexOf('/'));
-//alert(u)
-		return "ws://" + u;*/
+		return "ws://" + u;
 	}
 }
 
@@ -58,7 +56,7 @@ document.getElementById("wslsh_status").textContent = get_appropriate_ws_url();
 	try {
 		socket_lsh.onopen = function() {
 			document.getElementById("wslsh_statustd").style.backgroundColor = "#40ff40";
-			document.getElementById("wslsh_status").textContent = " websocket connection opened ";
+			document.getElementById("wslsh_status").textContent = " shell connection opened ";
 		} 
 
 		socket_lsh.onmessage =function got_packet(msg) {
@@ -70,7 +68,7 @@ document.getElementById("wslsh_status").textContent = get_appropriate_ws_url();
 
 		socket_lsh.onclose = function(){
 			document.getElementById("wslsh_statustd").style.backgroundColor = "#ff4040";
-			document.getElementById("wslsh_status").textContent = " websocket connection CLOSED ";
+			document.getElementById("wslsh_status").textContent = " shell connection CLOSED ";
 		}
 		socket_lsh.onerror = function(error){
 			console.log('Error detected: ' + error);
@@ -89,11 +87,9 @@ function checkSubmit(e)
 }
 
 function shellsend() {
-//alert(socket_lsh.readyState)
 	var shellout = document.getElementById("shellout");
 	var shellin = document.getElementById( "shellin");
 	var command = shellin.value;
-	//document.getElementById("wslsh_status").textContent = command;
 	shellout.value += (command+'\r\n');
 	socket_lsh.send(command);
 	shellin.value = '';
