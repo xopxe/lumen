@@ -99,6 +99,10 @@
 	<td class="name" nowrap><a href="#serve_static_content_from_stream">serve_static_content_from_stream&nbsp;(webroot, fileroot, buffer_size)</a></td>
 	<td class="summary">Serve static files from a folder (using streams).</td>
 	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
+	<td class="summary">Start the http server.</td>
+	</tr>
 </table>
 <h2><a href="#Tables">Tables</a></h2>
 <table class="function_list">
@@ -200,6 +204,22 @@
        <li><code><em>webroot</em></code>:  the root of the url where the content will be served.</li>
        <li><code><em>fileroot</em></code>:  the path to the root folder where the content to be served is found.</li>
        <li><code><em>buffer_size</em></code>:  the reccmended ammount of RAM to use as buffer (defauls to 100kb)</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "init"></a>
+    <strong>init&nbsp;(conf)</strong>
+    </dt>
+    <dd>
+    Start the http server. 
+
+    <h3>Parameters:</h3>
+    <ul>
+       <li><code><em>conf</em></code>:  the configuration table (see <a href="../modules/http-server.html#conf">conf</a>).</li>
     </ul>
 
 

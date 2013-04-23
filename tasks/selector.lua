@@ -10,9 +10,8 @@
 
 local M = {}
 
---- Start the task.
--- @param conf the configuration table. The fields of interest is
--- _service_ , the backend to use (defaults to 'luasocket')
+--- Start the service.
+-- @param conf the configuration table (see @{conf}).
 M.init = function(conf)
 	conf=conf or {}
 	M.service=conf.service or 'luasocket'
@@ -161,12 +160,16 @@ M.init = function(conf)
 	return M
 end
 
-------
--- Socket/File descriptor.
+--- Socket/File descriptor.
 -- Provides OO-styled access to methods, such as sktd:send(data) and sktd:close()
 -- @field task task that will emit signal related to this object
 -- @field stream If asigned a @{stream} object, will write data into it (in addittion to signals)
 -- @table sktd
+
+--- Configuration Table.
+-- This table is populated by toribio from the configuration file.
+-- @table conf
+-- @field service backend to use: 'nixio' or 'luasocket' (default)
 
 
 return M

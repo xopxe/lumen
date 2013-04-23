@@ -16,7 +16,7 @@ local setmetatable, tostring = setmetatable, tostring
 local M = {}
 
 --- Read from a stream.
--- Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read()
+-- Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read([len])
 -- @param streamd the the stream descriptor to read from.
 -- @param len optional length of string to be returned.
 -- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if

@@ -152,10 +152,6 @@ end
 
 --- Start the http server.
 -- @param conf the configuration table (see @{conf}).
-
--- @param conf a configuration table. Attributes of interest are _ip_ (defaults to '*')
--- and _port_ (defaults to 8080). Also, kill_on_close parameter indicates whether current connections should be
--- terminated if the server task is closed.
 M.init = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'

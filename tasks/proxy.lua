@@ -105,15 +105,12 @@ end
 
 --- Starts the proxy.
 -- This starts the task that will accept incomming wait requests.
--- @param conf the configuration table. The fields of interest are
--- _ip_  of the service (defaults to '*'), _port_ of the service (defaults to 1985) and
--- _encoder_ to use: 'bencode' (default) or 'json'
+-- @param conf the configuration table (see @{conf})
 M.init = function(conf)
 	local ip = conf.ip or '*'
 	local port = conf.port or 1985
-	local encoder = conf.encoder or 'bencode'
+	local encoder = conf.encoder or 'json'
 
-	log('PROXY', 'INFO', 'encoding set trough "%s"', tostring(encoder))
 	if encoder =='json' then encoder = 'dkjson' end
 	local encoder_lib = require ('lib/'..encoder)
 	encode_f = encoder_lib.encode
@@ -191,9 +188,15 @@ M.init = function(conf)
 		end
 	end
 	
-	log('PROXY', 'INFO', 'starting proxy on ip "%s" port "%s"', tostring(ip), tostring(port))
+	log('PROXY', 'INFO', 'starting proxy on %s:%s, using %s', tostring(ip), tostring(port), tostring(encoder))
 	M.skt_server = selector.new_tcp_server(ip, port, nil, get_request_handler())
 end
 
+--- Configuration Table.
+-- This table is populated by toribio from the configuration file.
+-- @table conf
+-- @field ip the ip where the server listens (defaults to '*')
+-- @field port the port where the server listens (defaults to 1985)
+-- @field encoder the encoding method to use: 'bencode' or 'json' (default).
 
 return M

@@ -192,8 +192,7 @@ end
 
 
 --- Start the server.
--- @param conf the configuration table. The fields of interest are
--- _ip_  of the service (defaults to '*') and _port_ of the service (defaults to 2012)
+-- @param conf the configuration table (see @{conf}).
 M.init = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
@@ -239,5 +238,11 @@ M.shell_env = {
 	sched = sched,
 }
 for k, v in pairs(_G) do M.shell_env [k] = v end
+
+--- Configuration Table.
+-- This table is populated by toribio from the configuration file.
+-- @table conf
+-- @field ip the ip where the server listens (defaults to '*')
+-- @field port the port where the server listens (defaults to 2012)
 
 return M

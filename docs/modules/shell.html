@@ -107,6 +107,10 @@ server.init({ip='127.0.0.1', port=2012})</pre>
 	<td class="name" nowrap><a href="#shell_env">shell_env</a></td>
 	<td class="summary">The environment for the shell.</td>
 	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#conf">conf</a></td>
+	<td class="summary">Configuration Table.</td>
+	</tr>
 </table>
 
 <br/>
@@ -143,8 +147,7 @@ server.init({ip='127.0.0.1', port=2012})</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>conf</em></code>:  the configuration table. The fields of interest are
- <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 2012)</li>
+       <li><code><em>conf</em></code>:  the configuration table (see <a href="../modules/shell.html#conf">conf</a>).</li>
     </ul>
 
 
@@ -170,6 +173,24 @@ server.init({ip='127.0.0.1', port=2012})</pre>
     <ul>
        <li><code><em>sched</em></code>:  A reference to the Lumen scheduler library</li>
        <li><code><em>ps</em></code>:  A function that prints a human readable tasks list</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "conf"></a>
+    <strong>conf</strong>
+    </dt>
+    <dd>
+    Configuration Table. 
+ This table is populated by toribio from the configuration file.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>ip</em></code>:  the ip where the server listens (defaults to '*')</li>
+       <li><code><em>port</em></code>:  the port where the server listens (defaults to 2012)</li>
     </ul>
 
 
