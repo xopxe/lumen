@@ -72,7 +72,6 @@ local function handle_incomming(sktd, data)
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler, sktd, data) 
 		if not ok then 
-			print ('handler died', errcall)
 			sktd:close()
 		elseif not errcall then 
 			sktd:close()
@@ -99,10 +98,11 @@ end
 
 local register_client = function (sktd)
 	local function client_handler(polle)
-		local data, code, msg
+		local ok, data, code, msg
 		repeat
-			data,code,msg=polle.it()
-			if data then
+			--if polle.do_not_read then code=999; break end
+			ok,data,code,msg=pcall(polle.it)
+			if ok and data then
 				local block = polle.block
 				if not block or block=='line'  or block == #data then
 					handle_incomming(sktd, data)
@@ -115,7 +115,7 @@ local register_client = function (sktd)
 					end
 				end
 			end
-		until not data
+		until not ok or not data
 		if code~=11 then
 			sktd:close()
 			handle_incomming_error(sktd, code)
@@ -143,7 +143,6 @@ local register_client = function (sktd)
 	pollt[#pollt+1]=polle
 end
 local register_server = function (sktd) --, block, backlog)
-	local accepted_event = sktd.events.accepted
 	local function accept_handler(polle)
 		local skt, host, port = polle.fd:accept()
 		local skt_table_client = {
@@ -152,18 +151,16 @@ local register_server = function (sktd) --, block, backlog)
 			events={data=skt},
 			pattern=sktd.pattern,
 		}
+		local insktd = init_sktd(skt_table_client)
 		if sktd.handler=='stream' then
 			local s = streams.new()
-			skt_table_client.handler = s
-			local insktd = init_sktd(skt_table_client)
-			register_client(insktd)
-			sched.signal(accepted_event, insktd, s)
+			insktd.handler = s
+			insktd.stream = s
 		else
-			skt_table_client.handler = sktd.handler
-			local insktd = init_sktd(skt_table_client)
-			register_client(insktd)
-			sched.signal(accepted_event, insktd)
+			insktd.handler = sktd.handler
 		end
+		sched.signal(sktd.events.accepted, insktd)
+		register_client(insktd)
 	end
 	local polle={
 		fd=sktd.fd,
@@ -255,7 +252,6 @@ end)
 
 M.init = function(conf)
 	conf=conf or {}
-	M.service=conf.service or 'socketeer'
 	
 	--M.nixiorator=nixiorator
 	M.new_tcp_server = function(locaddr, locport, pattern, handler)
@@ -294,7 +290,7 @@ M.init = function(conf)
 	end
 	M.new_fd = function ( filename, flags, pattern, handler, stream )
 		local sktd=init_sktd()
-		local err
+		local err, errmsg
 		sktd.fd, err, errmsg = nixio.open(filename, nixio.open_flags(unpack(flags)))
 		if not sktd.fd then return nil, errmsg end
 		sktd.flags = flags  or {}
@@ -331,14 +327,22 @@ M.init = function(conf)
 		return sktd
 	end
 	M.close = function(sktd)
+		--sktd.polle.do_not_read = true
 		local fd = sktd.fd
 		unregister(fd)
 		pcall(fd.close, fd)
 	end
 	M.send_sync = function(sktd, data)
-		local start, len, err,done=0,0,nil, nil
+		local start, len, err,done, errmsg=0,0,nil, nil, nil
+		local ok
 		while true do
-			len, err, errmsg=sktd.fd:write(data,start)
+			--len, err, errmsg=sktd.fd:write(data,start)
+			ok, len, err, errmsg=pcall(sktd.fd.write, sktd.fd, data, start)
+			if not ok then 
+				sktd:close()
+				done, errmsg = nil, 'invalid fd object'
+				break
+			end
 			start=start+(len or 0)
 			done = start==#data
 			if done or err then
@@ -371,7 +375,6 @@ M.init = function(conf)
 	M.getpeername = function(sktd)
 		return sktd.fd:getpeername()
 	end
-
 	
 	M.task=module_task
 	module_task:run()

@@ -21,7 +21,7 @@ M.init = function(conf)
 	native.init()
 	
 	--- Creates a TCP server socket.
-	-- Emits a _sktd.events.accepted, client\_sktd, [stream]_ signal on new connections.
+	-- Emits a _sktd.events.accepted, client\_sktd_ signal on new connections.
 	-- @function new_tcp_server
 	-- @param locaddr Local IP address or '*' (defaults to '*')
 	-- @param locport Local port (defaults to 0)
@@ -29,7 +29,7 @@ M.init = function(conf)
 	-- @param handler Optional,  a handler function or 'stream'. Will be used 
 	-- when creating new client sockets.  See @{new_tcp_client}. 
 	-- 'stream' mean a new stream will be created, and provided in 
-	-- the accepted signal.
+	-- the @{sktd} object.
 	-- @return a @{sktd} object
 	M.new_tcp_server = native.new_tcp_server
 

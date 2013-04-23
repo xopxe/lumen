@@ -93,6 +93,10 @@ server.init({ip='127.0.0.1', port=2012})</pre>
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
+	<td class="name" nowrap><a href="#new_shell">new_shell&nbsp;()</a></td>
+	<td class="summary">Returns a shell object.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
 	<td class="summary">Start the server.</td>
 	</tr>
@@ -112,6 +116,24 @@ server.init({ip='127.0.0.1', port=2012})</pre>
     <h2><a name="Functions"></a>Functions</h2>
     
     <dl class="function">
+    <dt>
+    <a name = "new_shell"></a>
+    <strong>new_shell&nbsp;()</strong>
+    </dt>
+    <dd>
+    Returns a shell object. 
+ This is useful if you want to handle an interactive session on you own, not trough the
+ integrated server.  
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a shell object
+    </ol>
+
+
+</dd>
     <dt>
     <a name = "init"></a>
     <strong>init&nbsp;(conf)</strong>

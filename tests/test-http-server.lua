@@ -4,9 +4,10 @@
 --look for packages one folder up.
 package.path = package.path .. ";;;../?.lua"
 
---require "log".setlevel('INFO')
+require "log".setlevel('ALL', 'HTTP')
+--require "log".setlevel('ALL')
 
-require "strict"
+--require "strict"
 
 local service = _G.arg [1] or 'luasocket'
 
@@ -22,7 +23,43 @@ else
 	http_server.serve_static_content_from_ram('/docs/', '../docs')
 end
 
-local conf = {ip='127.0.0.1', port='8080'}
+sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
+
+http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
+	local shell = require 'tasks/shell' 
+	local sh = shell.new_shell()
+	
+	sched.run(function()
+		while true do
+			local message,opcode = ws:receive()
+			if not message then
+				ws:close()
+				return
+			end
+			if opcode == ws.TEXT then
+				sh.pipe_in:write('line', message)
+			end
+		end
+	end):attach(sh.task)
+	
+	sched.run(function()
+		while true do
+			local _, prompt, out = sh.pipe_out:read()
+			if out then 
+				assert(ws:send(tostring(out)..'\r\n'))
+			end
+			if prompt then
+				assert(ws:send(prompt))
+			end
+		end
+	end)
+end)
+
+local conf = {
+	ip='127.0.0.1', 
+	port=8080,
+	ws_enable = true,
+}
 http_server.init(conf)
 
 print ('http server listening on', conf.ip, conf.port)

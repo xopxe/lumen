@@ -37,7 +37,7 @@ local function loadbuffer (buffer, name, destroy)
 	return load (destroy and dest_reader or keep_reader, name)
 end
 
-local function handle_sheellbuffer ( shell )
+local function handle_shellbuffer ( shell )
 	local background, pretty
 
 	-- Parse first special character --
@@ -124,7 +124,23 @@ local function handle_sheellbuffer ( shell )
 	end
 end
 
-local function new_shell()
+local function print_from_pipe(pipe_out, skt)
+	repeat
+		local _, prompt, out = pipe_out:read()
+		if out then 
+			skt:send_sync(tostring(out)..'\r\n')
+		end
+		if prompt then
+			skt:send_sync(prompt)
+		end
+	until pipe_out:len() == 0
+end
+
+--- Returns a shell object.
+-- This is useful if you want to handle an interactive session on you own, not trough the
+-- integrated server.  
+-- @return a shell object
+M.new_shell = function()
 	-- prepare environment
 	local shell = {
 		prompt_ready = '> ',
@@ -134,14 +150,14 @@ local function new_shell()
 		lines = {},
 		pipe_in = pipes.new(100),
 		pipe_out = pipes.new(100),
-		handle_sheellbuffer = handle_sheellbuffer
+		handle_shellbuffer = handle_shellbuffer
 	}
 	for k, v in pairs (M.shell_env) do shell.env[k] = v end
 	shell.env.print = function(...)
 		local args = table.pack(...)
 		local t= {}
-		for k = 1, args.n do table.insert(t, tostring(args[k])) end
-		shell.pipe_out:write(nil, table.concat(t, '\t')..'\r\n')
+		for k = 1, args.n do t[#t+1] =tostring(args[k]) end
+		shell.pipe_out:write(nil, table.concat(t, '\t')) --..'\r\n')
 	end
 	
 	shell.env.ps = function()
@@ -161,30 +177,19 @@ local function new_shell()
 		shell.env.print(table.concat(out, '\r\n')) 
 	end
 	
-	shell.task=sched.new_task(function()
+	shell.task=sched.run(function()
 		shell.pipe_out:write(shell.prompt_ready, shell.banner)
 		while true do
 			local _, command, data = shell.pipe_in:read()
 			if command == 'line' then
 				shell.lines[#shell.lines+1] = data
-				shell:handle_sheellbuffer()
+				shell:handle_shellbuffer()
 			end
 		end
-	end):set_as_attached():run()
+	end)
 	return shell
 end
 
-local function print_from_pipe(pipe_out, skt)
-	repeat
-		local _, prompt, out = pipe_out:read()
-		if out then 
-			skt:send_sync(tostring(out)..'\r\n')
-		end
-		if prompt then
-			skt:send_sync(prompt)
-		end
-	until pipe_out:len() == 0
-end
 
 --- Start the server.
 -- @param conf the configuration table. The fields of interest are
@@ -199,10 +204,9 @@ M.init = function(conf)
 		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
 		log('SHELL', 'INFO', 'shell accepting connections on %s %s', tcp_server:getsockname())
 		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
-			print ("#", os.time(), sktd_cli )
 			if sktd_cli then
 				log('SHELL', 'DETAIL', 'connection accepted from %s %s', sktd_cli:getpeername())
-				local shell = new_shell() 
+				local shell = M.new_shell() 
 				print_from_pipe(shell.pipe_out, sktd_cli)
 				local waitd_skt = {emitter=selector.task, events={sktd_cli.events.data}}
 				sched.sigrun(waitd_skt, function(_,  _, data, err )

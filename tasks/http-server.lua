@@ -2,7 +2,9 @@
 -- This is a general purpose web server. It depends on the selector module
 -- being up and running.  
 -- To use it, the programmer must register callbacks for method/url pattern pairs.  
--- Handlers for serving static files from disk is provided.
+-- Handlers for serving static files from disk is provided.  
+-- To support websockets, there are aditional dependencies: luabitop (if not using Lua 5.2 or LuaJIT)
+-- and lpack.  
 -- @module http-server 
 -- @alias M
 
@@ -15,38 +17,20 @@ local stream = require 'stream'
 
 local M = {}
 
-local build_http_header = function(status, header, response)
-	local httpstatus = tostring(status).." "..http_util.http_error_code[status]
-	header = header or {}
-	
-	if not header["Content-Length"] and type (response) == "string" then 
-		header["Content-Length"] = #response
-	end
-	if not header["Content-Type"] then
-		header["Content-Type"] = 'text/plain'
-	end
-
-	local header_entries = {"HTTP/1.1 "..httpstatus}
-	for k, v in pairs(header or {}) do
-		header_entries[#header_entries+1] = k..": "..v
-	end
-	header_entries[#header_entries+1] = "\r\n"
-	local http_string = table.concat(header_entries, '\r\n')
-	return http_string
-end
-
 local function backup_response(code_out, header_out)
 	local httpstatus = tostring(code_out).." "..http_util.http_error_code[code_out]
 	header_out = header_out or {}
 	
 	local response = "<html><head><title>"..httpstatus.."</title></head><body><h3>"..httpstatus.."</h3><hr><small>Lumen http-server</small></body></html>"
-	header_out["Content-Type"] = 'text/html'
-	header_out["Content-Length"] = #response
+	header_out["content-type"] = 'text/html'
+	header_out["content-length"] = #response
 	
 	return header_out, response
 end
 
+
 --- How long keep a session open.
+-- Defaults to 15s.
 M.HTTP_TIMEOUT = 15 --how long keep connections open
 
 -- Derived from Orbit & Orbiter
@@ -59,7 +43,7 @@ local request_handlers = M.request_handlers
 -- handler overlap, the one deeper is selected (ie if there is '/' and '/docs/', the later is selected)
 -- @param callback the callback function. Must have a _method, path, http\_params, http\_header_ 
 -- signature, where _http\_params, http\_header_ are tables. If callback is nil, a handler with matching
--- method and pattern will  be removed. The callback must reurn a number 
+-- method and pattern will  be removed. The callback must return a number 
 -- (an http error code), followed by an array with headers, and a string (the content).
 M.set_request_handler = function ( method, pattern, callback )
 	for i = 1,  #request_handlers do
@@ -82,9 +66,23 @@ M.set_request_handler = function ( method, pattern, callback )
 	}
 end
 
+local websocket = require 'tasks/http-server/websocket'
+
+--- Register a websocket protocol.
+-- The configuration flag _ws_enable_ must be set (see @{conf})
+-- @function set_websocket_protocol
+-- @param protocol the protocol name
+-- @param handler a handler function. This function will be called when a new connection requesting
+-- the protocol arrives. It will be pased a websocket object. If the handler parameter is nil, the protocol will be 
+-- removed.
+-- @param keep_clients when handler is nil, or changing an already present protocol, wether to kill the 
+-- already running connections or leave them.
+M.set_websocket_protocol = websocket.set_websocket_protocol
+
+
 --- Serve static files from a folder (using ram).
 -- This helper function calls @{set_request_handler} with a handler for providing static content.  
--- The whole file will be read into RAM and server from there.
+-- The whole file will be read into RAM and served from there.
 -- @param webroot the root of the url where the content will be served. 
 -- @param fileroot the path to the root folder where the content to be served is found.
 M.serve_static_content_from_ram = function (webroot, fileroot)
@@ -95,7 +93,7 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 			path = path:sub(#webroot)
 			if path:sub(-1) == '/' then path=path..'index.html' end
 			local abspath=fileroot..path
-						
+			
 			local file, err = io.open(abspath, "r")
 			if file then 
 				local extension = path:match('%.(%a+)$') or 'other'
@@ -103,7 +101,7 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 				local content = file:read('*all')
 				file:close()
 				if content then 
-					return 200, {['Content-Type']=mime, ['Content-Length']=#content}, content
+					return 200, {['content-type']=mime, ['content-length']=#content}, content
 				else
 					return 500
 				end
@@ -140,7 +138,7 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 			        local mime = http_util.mime_types[extension] or 'text/plain'
 				local fsize  = nixio.fs.stat(abspath, 'size')
 				if fsize then 
-					return 200, {['Content-Type']=mime, ['Content-Length']=fsize}, stream_file
+					return 200, {['content-type']=mime, ['content-length']=fsize}, stream_file
 				else
 					return 500
 				end
@@ -152,21 +150,26 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 	)
 end
 
-
 --- Start the http server.
+-- @param conf the configuration table (see @{conf}).
+
 -- @param conf a configuration table. Attributes of interest are _ip_ (defaults to '*')
--- and _port_ (defaults to 8080).
+-- and _port_ (defaults to 8080). Also, kill_on_close parameter indicates whether current connections should be
+-- terminated if the server task is closed.
 M.init = function(conf)
 	conf = conf or  {}
 	local ip = conf.ip or '*'
 	local port = conf.port or 8080
+	local attached = conf.kill_on_close
 	
 	local tcp_server = selector.new_tcp_server(ip, port, 0, 'stream')
-	
-	local servertask = sched.new_task( function()
-		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
-		log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
-		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli, instream)
+
+	local waitd_accept=sched.new_waitd({emitter=selector.task, events={tcp_server.events.accepted}, buff_len=10})
+	log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
+	M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
+		-- run the connection in a separated task
+		sched.run(function()
+			local instream = sktd_cli.stream
 			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', sktd_cli:getpeername())
 			local function find_matching_handler(method, url)
 				local max_depth, best_handler = 0
@@ -197,8 +200,8 @@ M.init = function(conf)
 					if not line then sktd_cli:close(); return end
 					if line=='' then break end
 					local key, value=string.match(line, '^([^:]+):%s*(.*)$')
-					--print ('HEADER', line, key, value)
-					http_req_header[key] = value
+					--print ('HEADER', key, value)
+					if key and value then http_req_header[key:lower()] = value end
 				end
 				return http_req_header
 			end
@@ -217,10 +220,20 @@ M.init = function(conf)
 				-- read header ---------------------------------------------------------
 				local http_req_header  = read_incomming_header()
 				
+				-- handle websockets ----------------------------------------------
+				if conf.ws_enable
+				and http_req_header['connection']=='Upgrade' 
+				and http_req_header['upgrade']=='websocket' then
+					log('HTTP', 'DEBUG', 'incoming websocket request')
+					websocket.handle_websocket_request(sktd_cli,http_req_header) 
+					-- this should return only when finished
+					return
+				end
+				
 				-- read body ------------------------------------------------------------
 				local http_params
 				if http_req_method=='POST' then 
-					local data = instream:read( http_req_header['Content-Length'] or 0 )
+					local data = instream:read( http_req_header['content-length'] or 0 )
 					if not data then sktd_cli:close(); return end
 					http_params=parse_params(data)
 				else
@@ -232,7 +245,7 @@ M.init = function(conf)
 				--print ('matching', path, path:match('/[^/%.]+$'))
 				if http_req_path:match('/[^/%.]+$') then 
 					--redirect to path..'/'
-					http_out_code, http_out_header = 301, {['Location']='http://'..http_req_header['Host']..http_req_path..'/'}
+					http_out_code, http_out_header = 301, {['location']='http://'..http_req_header['host']..http_req_path..'/'}
 				else
 					local callback = find_matching_handler(http_req_method, http_req_path)
 					if callback then 
@@ -248,15 +261,15 @@ M.init = function(conf)
 				end
 				
 				-- write response ------------------------------------------------------------
-
+				log('HTTP', 'DEBUG', 'sending response %s', tostring(http_out_code))
 				local need_flush
 				
-				local response_header = build_http_header(http_out_code, http_out_header, response)
+				local response_header = http_util.build_http_header(http_out_code, http_out_header, response)
 				sktd_cli:send_sync(response_header)
 				if type(response) == 'string' then
 					sktd_cli:send_sync(response)
 				else --stream
-					if not http_out_header["Content-Length"] then
+					if not http_out_header["content-length"] then
 						need_flush = true
 					end
 					while true do
@@ -267,16 +280,22 @@ M.init = function(conf)
 					end
 				end
 				
-				if (http_req_version== '1.0' and http_req_header['Connection']~='Keep-Alive')
+				if (http_req_version== '1.0' and http_req_header['connection']~='Keep-Alive')
 				or need_flush then 
 					sktd_cli:close()
 					return
 				end
 			end
-		end)
+		end, attached)
 	end)
-	M.task = servertask
-	servertask:run()
 end
+
+--- Configuration Table.
+-- This table is populated by toribio from the configuration file.
+-- @table conf
+-- @field ip the ip where the server listens (defaults to '*')
+-- @field port the port where the server listens (defaults to 8080)
+-- @field ws_enable enable the websocket server component. This requires aditional dependencies: luabitop (if not using Lua 5.2 or LuaJIT)
+-- and lpack. 
 
 return M
