@@ -57,7 +57,7 @@ end)
 
 local conf = {
 	ip='127.0.0.1', 
-	port=12345,
+	port=8080,
 	ws_enable = true,
 }
 http_server.init(conf)

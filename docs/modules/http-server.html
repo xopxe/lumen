@@ -33,6 +33,7 @@
 <h2>Contents</h2>
 <ul>
 <li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
 <li><a href="#Fields">Fields</a></li>
 </ul>
 
@@ -76,7 +77,9 @@
 <p> This is a general purpose web server. It depends on the selector module
  being up and running. <br/>
  To use it, the programmer must register callbacks for method/url pattern pairs. <br/>
- Handlers for serving static files from disk is provided.</p>
+ Handlers for serving static files from disk is provided. <br/>
+ To support websockets, there are aditional dependencies: luabitop (if not using Lua 5.2 or LuaJIT)
+ and lpack.  </p>
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
@@ -96,9 +99,12 @@
 	<td class="name" nowrap><a href="#serve_static_content_from_stream">serve_static_content_from_stream&nbsp;(webroot, fileroot, buffer_size)</a></td>
 	<td class="summary">Serve static files from a folder (using streams).</td>
 	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
-	<td class="summary">Start the http server.</td>
+	<td class="name" nowrap><a href="#conf">conf</a></td>
+	<td class="summary">Configuration Table.</td>
 	</tr>
 </table>
 <h2><a href="#Fields">Fields</a></h2>
@@ -144,6 +150,7 @@
     </dt>
     <dd>
     Register a websocket protocol. 
+ The configuration flag <em>ws</em>enable_ must be set (see <a href="../modules/http-server.html#conf">conf</a>)
 
     <h3>Parameters:</h3>
     <ul>
@@ -166,7 +173,7 @@
     <dd>
     Serve static files from a folder (using ram). 
  This helper function calls <a href="../modules/http-server.html#set_request_handler">set_request_handler</a> with a handler for providing static content. <br/>
- The whole file will be read into RAM and server from there.
+ The whole file will be read into RAM and served from there.
 
     <h3>Parameters:</h3>
     <ul>
@@ -199,17 +206,24 @@
 
 
 </dd>
+</dl>
+    <h2><a name="Tables"></a>Tables</h2>
+    
+    <dl class="function">
     <dt>
-    <a name = "init"></a>
-    <strong>init&nbsp;(conf)</strong>
+    <a name = "conf"></a>
+    <strong>conf</strong>
     </dt>
     <dd>
-    Start the http server. 
+    Configuration Table. 
+ This table is populated by toribio from the configuration file.
 
-    <h3>Parameters:</h3>
+    <h3>Fields:</h3>
     <ul>
-       <li><code><em>conf</em></code>:  a configuration table. Attributes of interest are <em>ip</em> (defaults to '*')
- and <em>port</em> (defaults to 8080).</li>
+       <li><code><em>ip</em></code>:  the ip where the server listens (defaults to '*')</li>
+       <li><code><em>port</em></code>:  the port where the server listens (defaults to 8080)</li>
+       <li><code><em>ws_enable</em></code>:  enable the websocket server component. This requires aditional dependencies: luabitop (if not using Lua 5.2 or LuaJIT)
+ and lpack.</li>
     </ul>
 
 
@@ -226,6 +240,7 @@
     </dt>
     <dd>
     How long keep a session open. 
+ Defaults to 15s.
 
 
 

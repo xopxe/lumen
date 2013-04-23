@@ -2,7 +2,9 @@
 -- This is a general purpose web server. It depends on the selector module
 -- being up and running.  
 -- To use it, the programmer must register callbacks for method/url pattern pairs.  
--- Handlers for serving static files from disk is provided.
+-- Handlers for serving static files from disk is provided.  
+-- To support websockets, there are aditional dependencies: luabitop (if not using Lua 5.2 or LuaJIT)
+-- and lpack.  
 -- @module http-server 
 -- @alias M
 
@@ -28,6 +30,7 @@ end
 
 
 --- How long keep a session open.
+-- Defaults to 15s.
 M.HTTP_TIMEOUT = 15 --how long keep connections open
 
 -- Derived from Orbit & Orbiter
@@ -66,6 +69,7 @@ end
 local websocket = require 'tasks/http-server/websocket'
 
 --- Register a websocket protocol.
+-- The configuration flag _ws_enable_ must be set (see @{conf})
 -- @function set_websocket_protocol
 -- @param protocol the protocol name
 -- @param handler a handler function. This function will be called when a new connection requesting
@@ -78,7 +82,7 @@ M.set_websocket_protocol = websocket.set_websocket_protocol
 
 --- Serve static files from a folder (using ram).
 -- This helper function calls @{set_request_handler} with a handler for providing static content.  
--- The whole file will be read into RAM and server from there.
+-- The whole file will be read into RAM and served from there.
 -- @param webroot the root of the url where the content will be served. 
 -- @param fileroot the path to the root folder where the content to be served is found.
 M.serve_static_content_from_ram = function (webroot, fileroot)
@@ -147,6 +151,8 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 end
 
 --- Start the http server.
+-- @param conf the configuration table (see @{conf}).
+
 -- @param conf a configuration table. Attributes of interest are _ip_ (defaults to '*')
 -- and _port_ (defaults to 8080). Also, kill_on_close parameter indicates whether current connections should be
 -- terminated if the server task is closed.
@@ -283,5 +289,13 @@ M.init = function(conf)
 		end, attached)
 	end)
 end
+
+--- Configuration Table.
+-- This table is populated by toribio from the configuration file.
+-- @table conf
+-- @field ip the ip where the server listens (defaults to '*')
+-- @field port the port where the server listens (defaults to 8080)
+-- @field ws_enable enable the websocket server component. This requires aditional dependencies: luabitop (if not using Lua 5.2 or LuaJIT)
+-- and lpack. 
 
 return M
