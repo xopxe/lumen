@@ -93,6 +93,10 @@ server.init({ip='127.0.0.1', port=2012})</pre>
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
+	<td class="name" nowrap><a href="#new_shell">new_shell&nbsp;()</a></td>
+	<td class="summary">Returns a shell object.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
 	<td class="summary">Start the server.</td>
 	</tr>
@@ -102,6 +106,10 @@ server.init({ip='127.0.0.1', port=2012})</pre>
 	<tr>
 	<td class="name" nowrap><a href="#shell_env">shell_env</a></td>
 	<td class="summary">The environment for the shell.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#conf">conf</a></td>
+	<td class="summary">Configuration Table.</td>
 	</tr>
 </table>
 
@@ -113,6 +121,24 @@ server.init({ip='127.0.0.1', port=2012})</pre>
     
     <dl class="function">
     <dt>
+    <a name = "new_shell"></a>
+    <strong>new_shell&nbsp;()</strong>
+    </dt>
+    <dd>
+    Returns a shell object. 
+ This is useful if you want to handle an interactive session on you own, not trough the
+ integrated server.  
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+        a shell object
+    </ol>
+
+
+</dd>
+    <dt>
     <a name = "init"></a>
     <strong>init&nbsp;(conf)</strong>
     </dt>
@@ -121,8 +147,7 @@ server.init({ip='127.0.0.1', port=2012})</pre>
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>conf</em></code>:  the configuration table. The fields of interest are
- <em>ip</em>  of the service (defaults to '*') and <em>port</em> of the service (defaults to 2012)</li>
+       <li><code><em>conf</em></code>:  the configuration table (see <a href="../modules/shell.html#conf">conf</a>).</li>
     </ul>
 
 
@@ -148,6 +173,24 @@ server.init({ip='127.0.0.1', port=2012})</pre>
     <ul>
        <li><code><em>sched</em></code>:  A reference to the Lumen scheduler library</li>
        <li><code><em>ps</em></code>:  A function that prints a human readable tasks list</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "conf"></a>
+    <strong>conf</strong>
+    </dt>
+    <dd>
+    Configuration Table. 
+ This table is populated by toribio from the configuration file.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>ip</em></code>:  the ip where the server listens (defaults to '*')</li>
+       <li><code><em>port</em></code>:  the port where the server listens (defaults to 2012)</li>
     </ul>
 
 

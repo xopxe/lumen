@@ -88,7 +88,7 @@ selector.init({service='luasocket'})</pre>
 <table class="function_list">
 	<tr>
 	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
-	<td class="summary">Start the task.</td>
+	<td class="summary">Start the service.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#new_tcp_server">new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</a></td>
@@ -141,6 +141,10 @@ selector.init({service='luasocket'})</pre>
 	<td class="name" nowrap><a href="#sktd">sktd</a></td>
 	<td class="summary">Socket/File descriptor.</td>
 	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#conf">conf</a></td>
+	<td class="summary">Configuration Table.</td>
+	</tr>
 </table>
 <h2><a href="#Fields">Fields</a></h2>
 <table class="function_list">
@@ -166,12 +170,11 @@ selector.init({service='luasocket'})</pre>
     <strong>init&nbsp;(conf)</strong>
     </dt>
     <dd>
-    Start the task. 
+    Start the service. 
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>conf</em></code>:  the configuration table. The fields of interest is
- <em>service</em> , the backend to use (defaults to 'luasocket')</li>
+       <li><code><em>conf</em></code>:  the configuration table (see <a href="../modules/selector.html#conf">conf</a>).</li>
     </ul>
 
 
@@ -184,7 +187,7 @@ selector.init({service='luasocket'})</pre>
     </dt>
     <dd>
     Creates a TCP server socket. 
- Emits a <em>sktd.events.accepted, client_sktd, [stream]</em> signal on new connections.
+ Emits a <em>sktd.events.accepted, client_sktd</em> signal on new connections.
 
     <h3>Parameters:</h3>
     <ul>
@@ -194,7 +197,7 @@ selector.init({service='luasocket'})</pre>
        <li><code><em>handler</em></code>:  Optional,  a handler function or 'stream'. Will be used 
  when creating new client sockets.  See <a href="../modules/selector.html#new_tcp_client">new_tcp_client</a>. 
  'stream' mean a new stream will be created, and provided in 
- the accepted signal.</li>
+ the <a href="../modules/selector.html#sktd">sktd</a> object.</li>
     </ul>
 
 
@@ -233,7 +236,7 @@ selector.init({service='luasocket'})</pre>
 
     <h3>Returns:</h3>
     <ol>
-        a <a href="../modules/selector.html#sktd">sktd</a> object
+        a <a href="../modules/selector.html#sktd">sktd</a> object on success, <em>nil, err</em> on fauilure
     </ol>
 
 
@@ -462,6 +465,23 @@ selector.init({service='luasocket'})</pre>
     <ul>
        <li><code><em>task</em></code>:  task that will emit signal related to this object</li>
        <li><code><em>stream</em></code>:  If asigned a <a href="../modules/stream.html#">stream</a> object, will write data into it (in addittion to signals)</li>
+    </ul>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "conf"></a>
+    <strong>conf</strong>
+    </dt>
+    <dd>
+    Configuration Table. 
+ This table is populated by toribio from the configuration file.
+
+    <h3>Fields:</h3>
+    <ul>
+       <li><code><em>service</em></code>:  backend to use: 'nixio' or 'luasocket' (default)</li>
     </ul>
 
 
