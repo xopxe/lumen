@@ -1,7 +1,5 @@
-require'pack'
-
-local sha1 = require'tasks/http-server/websocket/tools'.sha1
-local base64 = require'tasks/http-server/websocket/tools'.base64
+local sha1 = require'tasks/http-server/websocket/sha1'.sha1_binary
+local base64 = require'tasks/http-server/websocket/base64'
 local tinsert = table.insert
 
 local guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"

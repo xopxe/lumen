@@ -3,8 +3,6 @@
 -- being up and running.  
 -- To use it, the programmer must register callbacks for method/url pattern pairs.  
 -- Handlers for serving static files from disk is provided.  
--- To support websockets, there are aditional dependencies: luabitop (if not using Lua 5.2 or LuaJIT)
--- and lpack.  
 -- @module http-server 
 -- @alias M
 
@@ -291,7 +289,6 @@ end
 -- @table conf
 -- @field ip the ip where the server listens (defaults to '*')
 -- @field port the port where the server listens (defaults to 8080)
--- @field ws_enable enable the websocket server component. This requires aditional dependencies: luabitop (if not using Lua 5.2 or LuaJIT)
--- and lpack. 
+-- @field ws_enable enable the websocket server component. 
 
 return M

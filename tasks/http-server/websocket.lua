@@ -1,9 +1,10 @@
 -- websocket support adaptded from lua-websocket (http://lipp.github.io/lua-websockets/)
 -- depends on 
--- - lpack
--- - luabitop (if not using Lua 5.2 nor luajit)
+-- - luabitop or nixio (if not using Lua 5.2 nor luajit)
 
 local http_util = require 'tasks/http-server/http-util'
+local handshake = require 'tasks/http-server/websocket/handshake'
+local sync = require 'tasks/http-server/websocket/sync'
 
 local websocket_protocols = {} --websocket_protocols[protocol] = handler
 local websocket_clients = setmetatable({}, {__mode='k'})
@@ -24,14 +25,11 @@ local set_websocket_protocol = function ( protocol, handler, keep_clients )
 end
 
 local handle_websocket_request = function (sktd, req_headers)
-	local handshake = require 'tasks/http-server/websocket/handshake'
-	local sync = require 'tasks/http-server/websocket/sync'
 	local http_out_code, http_out_header, prot = handshake.accept_upgrade(req_headers, websocket_protocols)
 	
 	local response_header = http_util.build_http_header(http_out_code, http_out_header, nil)
 	sktd.stream:set_timeout(-1, -1)
 	sktd:send_sync(response_header)
-	
 	local ws = sync.create_ws(sktd)
 	ws.state = 'OPEN'
 	ws.is_server = true

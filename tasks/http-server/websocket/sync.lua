@@ -113,7 +113,7 @@ local connect = function(self,ws_url,ws_protocol)
     host = host,
     port = port,
     protocols = {ws_protocol or ''},
-    origin = origin,
+    --FIXME origin = origin, 
     uri = uri
   }
   local ok,err = self.sktd:send_sync(req)
