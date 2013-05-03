@@ -86,12 +86,12 @@
 local mx = mutex.new()
 
 local function critical()
-  mx.acquire()
+  mx:acquire()
   ...
-  mx.release()
+  mx:release()
 end
 
-local critical = mx.synchronize(function() ... end) --other method</pre>
+local critical = mx:synchronize(function() ... end) --other method</pre>
     </ul>
 
 <h2><a href="#Functions">Functions</a></h2>

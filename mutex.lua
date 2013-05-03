@@ -12,12 +12,12 @@
 --local mx = mutex.new()
 --
 --local function critical()
---  mx.acquire()
+--  mx:acquire()
 --  ...
---  mx.release()
+--  mx:release()
 --end
 --
---local critical = mx.synchronize(function() ... end) --other method
+--local critical = mx:synchronize(function() ... end) --other method
 -- @alias M
 
 local sched=require 'sched'
