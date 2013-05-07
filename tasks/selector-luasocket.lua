@@ -1,3 +1,5 @@
+local log=require 'log'
+
 local sched = require 'sched'
 local socket = require 'socket'
 --local pipes = require 'pipes'
@@ -56,7 +58,7 @@ local function handle_incomming(sktd, data)
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler, sktd, data) 
 		if not ok then 
-			print ('handler died', errcall)
+			log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
 			sktd:close()
 		elseif not errcall then 
 			sktd:close()
@@ -81,7 +83,6 @@ end
 local function send_from_pipe (fd)
 	local sktd = sktds[fd]
 	local out_data = sktd.outstanding_data
-	--print ('outdata', skt, out_data)
 	if out_data then 
 		local data, next_pos = out_data.data, out_data.last+1
 		local last, err, lasterr = fd:send(data, next_pos, next_pos+CHUNK_SIZE )
@@ -140,9 +141,7 @@ local register_client = function (sktd)
 	recvt[#recvt+1]=sktd.fd
 end
 local step = function (timeout)
-	--print('+', #recvt, #sendt, timeout)
 	local recvt_ready, sendt_ready, err_accept = socket.select(recvt, sendt, timeout)
-	--print('-', #recvt_ready, #sendt_ready, err_accept or '')
 	if err_accept~='timeout' then
 		for _, fd in ipairs(sendt_ready) do
 			send_from_pipe(fd)
@@ -174,10 +173,8 @@ local step = function (timeout)
 					sched.signal(sktd.events.accepted, nil, err)
 				end
 			else
-				--print('&+', sktd, pattern)
 				if type(pattern) == "number" and pattern <= 0 then
 					local data,err,part = fd:receive(CHUNK_SIZE)
-					--print('&-',#(data or ''),#(part or ''), err)
 					data = data or part
 					if err=='closed' then
 						sktd:close()
@@ -188,7 +185,6 @@ local step = function (timeout)
 				else
 					local data,err,part = fd:receive(pattern,sktd.partial)
 					sktd.partial=part
-					--print('&-', #(data or ''), #(part or ''), data,err,part)
 					if data then
 						handle_incomming(sktd, data)
 					elseif err=='closed' then 
@@ -220,7 +216,7 @@ local normalize_pattern = function(pattern)
 	or (tonumber(pattern) and tonumber(pattern)<=0) then
 		return  0 --'*a'
 	end
-	print ('Could not normalize the pattern:', pattern)
+	log('SELECTOR', 'WARN', 'Could not normalize pattern "%s"', tostring(pattern))
 end
 
 M.init = function()

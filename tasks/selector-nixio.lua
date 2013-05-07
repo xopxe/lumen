@@ -1,7 +1,4 @@
---- Task for accessing nixio library.
--- Selector-nixio is a Lumen task that allow to interface with nixio.
--- @module selector-nixio
--- @alias M
+local log=require 'log'
 
 local sched = require 'sched'
 local nixio = require 'nixio'
@@ -50,7 +47,7 @@ local normalize_pattern = function( pattern)
 	or (tonumber(pattern) and tonumber(pattern)<=0) then
 		return nil
 	end
-	print ('Could not normalize the pattern:', pattern)
+	log('SELECTOR', 'WARN', 'Could not normalize pattern "%s"', tostring(pattern))
 end
 
 local init_sktd = function(sktdesc)
@@ -87,7 +84,7 @@ local function handle_incomming_error(sktd, err)
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler,sktd, nil, err) 
 		if not ok then 
-			print ('handler died', errcall)
+			log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
 		end
 	elseif read_streams[sktd] then
 		read_streams[sktd]:write(nil, err)
@@ -199,7 +196,6 @@ local function send_from_pipe (sktd)
 		--local piped = assert(write_pipes[skt] , "socket not registered?")
 		local streamd = write_streams[sktd] ; if not streamd then return end
 		if streamd.len>0 then 
-			--print ('data', #data)
 			local data, err = streamd:read()
 			
 			local blocksize = CHUNK_SIZE

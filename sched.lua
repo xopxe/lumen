@@ -619,7 +619,7 @@ M.idle = function (t)
 	local ret = os.execute('sleep '..t) 
 	if _VERSION =='Lua 5.1' and ret ~= 0 
 	or _VERSION =='Lua 5.2' and ret ~= true then 
-		print ('Idle sleeping cancelled')
+		log('SCHED', 'INFO', 'Idle sleeping cancelled, will exit.')
 		os.exit() 
 	end
 end
