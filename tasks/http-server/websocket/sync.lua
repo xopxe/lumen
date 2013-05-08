@@ -1,10 +1,24 @@
 local frame = require'tasks/http-server/websocket/frame'
 local handshake = require'tasks/http-server/websocket/handshake'
-local tools = require'tasks/http-server/websocket/tools'
+local http_util = require'tasks/http-server/http-util'
+local base64_encode = require 'tasks/http-server/base64'.encode
+
 
 local tinsert = table.insert
 local tconcat = table.concat
+local mrandom = math.random
 
+local generate_key = function()
+	local key = string.char(
+		mrandom(0,0xff),mrandom(0,0xff),mrandom(0,0xff),mrandom(0,0xff),
+		mrandom(0,0xff),mrandom(0,0xff),mrandom(0,0xff),mrandom(0,0xff),
+		mrandom(0,0xff),mrandom(0,0xff),mrandom(0,0xff),mrandom(0,0xff),
+		mrandom(0,0xff),mrandom(0,0xff),mrandom(0,0xff),mrandom(0,0xff)
+	)
+
+	assert(#key==16,#key)
+	return base64_encode(key)
+end
 
 local receive = function(self)
 	if self.state ~= 'OPEN' and self.state ~= 'CLOSING' then
@@ -100,13 +114,13 @@ local connect = function(self,ws_url,ws_protocol)
   if self.state == 'OPEN' then
     return nil, 'already connected'
   end
-  local protocol,host,port,uri = tools.parse_url(ws_url)
+  local protocol,host,port,uri = http_util.parse_url(ws_url)
   if protocol ~= 'ws' then
     return nil, 'bad protocol'
   end
   --XOP must be connected
   --self:sock_connect(host,port)
-  local key = tools.generate_key()
+  local key = generate_key()
   local req = handshake.upgrade_request
   {
     key = key,

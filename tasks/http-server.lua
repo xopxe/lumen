@@ -13,8 +13,6 @@ local selector = require 'tasks/selector'
 local http_util = require 'tasks/http-server/http-util'
 local stream = require 'stream'
 
-local M = {}
-
 local function backup_response(code_out, header_out)
 	local httpstatus = tostring(code_out).." "..http_util.http_error_code[code_out]
 	header_out = header_out or {}
@@ -26,6 +24,16 @@ local function backup_response(code_out, header_out)
 	return header_out, response
 end
 
+local populate_cache_control =  function(http_out_header, http_req_path, conf)
+	if not conf.max_age then return end
+	local extension = http_req_path:match('%.([^%.]+)$')
+	local max_age = conf.max_age[extension] 
+	if not max_age then return http_out_header end
+	http_out_header['cache-control'] = 'max-age='..max_age
+	return http_out_header
+end
+
+local M = {}
 
 --- How long keep a session open.
 -- Defaults to 15s.
@@ -248,6 +256,8 @@ M.init = function(conf)
 						http_out_code = 404
 					end
 				end
+				populate_cache_control(http_out_header, http_req_path, conf)
+				
 				
 				-- we got no content to return, probably code_out<>200
 				if not response then 
@@ -258,7 +268,7 @@ M.init = function(conf)
 				log('HTTP', 'DEBUG', 'sending response %s', tostring(http_out_code))
 				local need_flush
 				
-				local response_header = http_util.build_http_header(http_out_code, http_out_header, response)
+				local response_header = http_util.build_http_header(http_out_code, http_out_header, response, conf)
 				sktd_cli:send_sync(response_header)
 				if type(response) == 'string' then
 					sktd_cli:send_sync(response)
@@ -289,6 +299,8 @@ end
 -- @table conf
 -- @field ip the ip where the server listens (defaults to '*')
 -- @field port the port where the server listens (defaults to 8080)
+-- @field max_age allows to set the cache-control header, selectable by file extension.  
+-- An example value could be {ico=99999, css=600, html=60}
 -- @field ws_enable enable the websocket server component. 
 
 return M

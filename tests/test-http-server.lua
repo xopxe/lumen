@@ -59,6 +59,7 @@ local conf = {
 	ip='127.0.0.1', 
 	port=8080,
 	ws_enable = true,
+	max_age = {ico=5, css=60},
 }
 http_server.init(conf)
 
