@@ -1,17 +1,25 @@
     -- Module options:
     local always_try_using_lpeg = true
+    local register_global_module_table = false
+    local global_module_name = 'json'
 
     --[==[
 
 David Kolf's JSON module for Lua 5.1/5.2
 ========================================
 
-*Version 2.2*
+*Version 2.3*
 
-This module writes no global values, not even the module table.
-Import it using
+In the default configuration this module writes no global values, not even
+the module table. Import it using
 
     json = require ("dkjson")
+
+In environments where `require` or a similiar function are not available
+and you cannot receive the return value of the module, you can set the
+option `register_global_module_table` to `true`.  The module table will
+then be saved in the global variable with the name given by the option
+`global_module_name`.
 
 Exported functions and values:
 
@@ -105,7 +113,7 @@ You can use this value for setting explicit `null` values.
 `json.version`
 --------------
 
-Set to `"dkjson 2.2"`.
+Set to `"dkjson 2.3"`.
 
 `json.quotestring (string)`
 ---------------------------
@@ -159,12 +167,12 @@ This variable is set to `true` when LPeg was loaded successfully.
 Contact
 -------
 
-You can contact the author by sending an e-mail to 'kolf' at the
-e-mail provider 'gmx.de'.
+You can contact the author by sending an e-mail to 'david' at the
+domain 'dkolf.de'.
 
 ---------------------------------------------------------------------
 
-*Copyright (C) 2010, 2011, 2012 David Heiko Kolf*
+*Copyright (C) 2010-2013 David Heiko Kolf*
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -192,7 +200,7 @@ SOFTWARE.
      it isn't a valid HTML comment (and wastes space).
   -->
 
-  <!--]==]
+<!--]==]
 
 -- global dependencies:
 local pairs, type, tostring, tonumber, getmetatable, setmetatable, rawset =
@@ -204,9 +212,13 @@ local strrep, gsub, strsub, strbyte, strchar, strfind, strlen, strformat =
       string.find, string.len, string.format
 local concat = table.concat
 
-local _ENV = nil -- blocking globals in Lua 5.2
+local json = { version = "dkjson 2.3" }
 
-local json = { version = "dkjson 2.2" }
+if register_global_module_table then
+  _G[global_module_name] = json
+end
+
+local _ENV = nil -- blocking globals in Lua 5.2
 
 pcall (function()
   -- Enable access to blocked metatables.
@@ -297,10 +309,10 @@ local function quotestring (value)
     value = fsub (value, "\216[\128-\132]", escapeutf8)
     value = fsub (value, "\220\143", escapeutf8)
     value = fsub (value, "\225\158[\180\181]", escapeutf8)
-    value = fsub (value, "\226\128[\140-\143\168\175]", escapeutf8)
+    value = fsub (value, "\226\128[\140-\143\168-\175]", escapeutf8)
     value = fsub (value, "\226\129[\160-\175]", escapeutf8)
     value = fsub (value, "\239\187\191", escapeutf8)
-    value = fsub (value, "\239\191[\176\191]", escapeutf8)
+    value = fsub (value, "\239\191[\176-\191]", escapeutf8)
   end
   return "\"" .. value .. "\""
 end
