@@ -21,9 +21,12 @@ local sched = require 'sched'
 local selector = require "tasks/selector"
 local pipes = require 'pipes'
 
+local CE = require 'lib/compat_env'
+local load     = CE.load
+
 local M = {}
 
-local function loadbuffer (buffer, name, destroy)
+local function loadbuffer (buffer, name, destroy, env)
 	local remove = table.remove
 	local function dest_reader() 
 		local ret = remove (buffer, 1)
@@ -34,7 +37,7 @@ local function loadbuffer (buffer, name, destroy)
 		i=i+1; 
 		if buffer[i] then return buffer[i]..' '  end
 	end
-	return load (destroy and dest_reader or keep_reader, name)
+	return load (destroy and dest_reader or keep_reader, name, 't', env)
 end
 
 local function handle_shellbuffer ( shell )
@@ -53,7 +56,7 @@ local function handle_shellbuffer ( shell )
 		shell.lines[1] = "return " .. special_line
 	end
 
-	local code, msg = loadbuffer(shell.lines, "@shell")
+	local code, msg = loadbuffer(shell.lines, "@shell", false, shell.env)
 	if not code then
 		if msg:match "<eof>" then -- incomplete
 			shell.lines[1] = original1st
@@ -94,7 +97,6 @@ local function handle_shellbuffer ( shell )
 			end
 		end
 		
-		setfenv(code, shell.env)
 		local task_command = sched.new_task(code)
 		task_command:set_as_attached()
 		local waitd_command = sched.new_waitd({emitter=task_command, buff_len=1, events={sched.EVENT_DIE}})
