@@ -7,7 +7,7 @@ package.path = package.path .. ";;;../?.lua"
 local sched = require "sched"
 
 -- task emits 5 signals and pauses itself.
-local emitter_task=sched.run(function()
+local emitter_task=sched.new_task(function()
 	while true do
 		for i=1, 5 do
 			sched.signal('ev', i)
@@ -31,4 +31,5 @@ sched.run(function()
 	end
 end)
 
+emitter_task:run()
 sched.go()

@@ -10,7 +10,7 @@ local sched=require 'sched'
 ----------------------------------------------------------
 print 'testing without buffer'
 -- sender --
-local sender = sched.run(function()
+local sender = sched.new_task(function()
 	for i=1, 10 do
 		print("sending", i)
 		sched.signal('tick', i)
@@ -27,6 +27,8 @@ sched.run(function()
 		sched.sleep(3)
 	end
 end)
+
+sender:run()
 sched.go()
 ----------------------------------------------------------
 --]]
