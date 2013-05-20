@@ -15,15 +15,16 @@ sched.get_time = function()
 end 
 sched.idle = function( t )
 	local timer = ev.Timer.new(unloop_default_loop, t)
-	timer:start(ev.Loop.default) -- , true)
+	timer:start(ev.Loop.default)
 	ev.Loop.default:loop()
 end
 
 -- build a timer event loop with a task defined as a callback
+-- this will be the "user event" in this sample
 function build_timer(loop, interval)
     local i = 0
     local function callback(loop, timer_event)
-        print(os.date(), "EV emitting " .. tostring(i), "interval: " .. interval)
+        print("EV emitting " .. tostring(i), "interval: " .. interval)
 	sched.signal('ping!', i)
         i = i + 1
     end
@@ -47,7 +48,7 @@ local step = function ( t )
 end
 local ev_task=sched.new_task( function ()
 	--register ev events here
-	build_timer(ev.Loop.default, 5.0)
+	build_timer(ev.Loop.default, 2.0)
 
 	--main loop of the ev task
 	while true do
