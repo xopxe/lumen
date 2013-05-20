@@ -6,7 +6,7 @@
 -- example, under bencode strings, numbers, lists (pure arrays) and tables 
 -- with strings as  keys are supported.
 -- This module depends on the selector task, which must be started
--- seperataly.
+-- separataly.
 -- @usage  local proxy = require 'proxy'
 --
 -- --for accepting connections

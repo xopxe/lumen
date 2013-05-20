@@ -10,7 +10,7 @@ description = "A cooperative scheduler for Lua tasks"
 format = 'markdown'
 examples={'tests/test.lua', 'tests/test-buff.lua', 'tests/test-selector.lua'
 	--, 'tests/test-nixiorator.lua', 'tests/test-socketeer.lua'
-	, 'tests/test-pipe.lua', 'tests/test-stress.lua'
+	, 'tests/test-pipe.lua', 'tests/test-stress.lua', 'tests/test-pause.lua'
 	, 'tests/test-wait.lua', 'tests/test-mutex.lua', 'tests/test-http-server.lua'}
 readme = "README.md"
 

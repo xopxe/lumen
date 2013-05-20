@@ -37,10 +37,10 @@
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
-  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
+  <li><strong>test-pause.lua</strong></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
-  <li><strong>test-stress.lua</strong></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
   <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
@@ -66,48 +66,43 @@
 
 <div id="content">
 
-<h1>Example <code>test-stress.lua</code></h1>
+<h1>Example <code>test-pause.lua</code></h1>
 
     <pre>
 <span class="comment">---
-</span><span class="comment">-- A test program with two tasks, one emitting signals and the other accepting them.
-</span><span class="comment">--See how fast it can run.
+</span><span class="comment">-- A test program for pausing and resuming tasks
 </span>
 <span class="comment">--look for packages one folder up.
 </span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
 
-<span class="comment">--require "strict"
-</span><span class="comment">--require "profiler"
-</span>
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
 
-<span class="keyword">local</span> i=<span class="number">0</span>
-
-<span class="comment">--profiler.start('profiler.out')
-</span>
-<span class="comment">-- task emits as fast as it can (but also yields to be realistic)
-</span><span class="keyword">local</span> emitter_task=sched.run(<span class="keyword">function</span>()
+<span class="comment">-- task emits 5 signals and pauses itself.
+</span><span class="keyword">local</span> emitter_task=sched.new_task(<span class="keyword">function</span>()
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		sched.signal(<span class="string">'ev'</span>, <span class="string">'data!'</span>)
-		sched.yield()
+		<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">5</span> <span class="keyword">do</span>
+			sched.signal(<span class="string">'ev'</span>, i)
+			sched.sleep(<span class="number">1</span>)
+		<span class="keyword">end</span>
+		sched.running_task:set_pause(<span class="keyword">true</span>)
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
 
-<span class="comment">-- task receives the messages and counts them
+<span class="comment">-- if stop receiving signals, un-pause the emitter task.
 </span>sched.run(<span class="keyword">function</span>()
-	<span class="keyword">local</span> waitd={emitter=emitter_task, events={<span class="string">'ev'</span>}}
+	<span class="keyword">local</span> waitd={emitter=emitter_task, timeout=<span class="number">5</span>, events={<span class="string">'ev'</span>}}
 	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		<span class="comment">--uncomment this to create huge ammount of waitds:
-</span>		<span class="comment">--local waitd={emitter=emitter_task, events={'ev','ev'..i}
-</span>		sched.wait(waitd)
-		i=i+<span class="number">1</span>
-		<span class="keyword">if</span> i==<span class="number">1000000</span> <span class="keyword">then</span>
-			<span class="comment">--profiler.stop()
-</span>			<span class="global">os</span>.exit()
+		<span class="keyword">local</span> _, _, s = sched.wait(waitd)
+		<span class="keyword">if</span> s <span class="keyword">then</span>
+			<span class="global">print</span>(s)
+		<span class="keyword">else</span>
+			<span class="global">print</span> (<span class="string">'wakeup!'</span>)
+			emitter_task:set_pause(<span class="keyword">false</span>)
 		<span class="keyword">end</span>
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
 
+emitter_task:run()
 sched.go()
 
 </div> <!-- id="content" -->

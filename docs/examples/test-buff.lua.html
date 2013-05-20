@@ -37,6 +37,7 @@
   <li><strong>test-buff.lua</strong></li>
   <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
@@ -80,7 +81,7 @@
 </span><span class="comment">----------------------------------------------------------
 </span><span class="global">print</span> <span class="string">'testing without buffer'</span>
 <span class="comment">-- sender --
-</span><span class="keyword">local</span> sender = sched.run(<span class="keyword">function</span>()
+</span><span class="keyword">local</span> sender = sched.new_task(<span class="keyword">function</span>()
 	<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">10</span> <span class="keyword">do</span>
 		<span class="global">print</span>(<span class="string">"sending"</span>, i)
 		sched.signal(<span class="string">'tick'</span>, i)
@@ -97,6 +98,8 @@ sched.run(<span class="keyword">function</span>()
 		sched.sleep(<span class="number">3</span>)
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
+
+sender:run()
 sched.go()
 <span class="comment">----------------------------------------------------------
 </span><span class="comment">--]]
