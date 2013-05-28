@@ -60,6 +60,7 @@
   <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
   <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
@@ -240,6 +241,8 @@
     <ul>
        <li><code><em>ip</em></code>:  the ip where the server listens (defaults to '*')</li>
        <li><code><em>port</em></code>:  the port where the server listens (defaults to 8080)</li>
+       <li><code><em>max_age</em></code>:  allows to set the cache-control header, selectable by file extension. <br/>
+ An example value could be {ico=99999, css=600, html=60}</li>
        <li><code><em>ws_enable</em></code>:  enable the websocket server component.</li>
     </ul>
 
