@@ -59,7 +59,7 @@ end)
 
 sched.run(function()
 	while true do 
-		local _, _, data = sched.wait({emitter='*', events={'ping!'}})
+		local _, _, data = sched.wait({emitter=ev_task, events={'ping!'}})
 		print ('EV received', data)
 	end
 end)

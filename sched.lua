@@ -454,6 +454,11 @@ M.signal = function ( event, ... )
 	emit_signal( M.running_task, event, ... )
 end
 
+M.fake_signal = function ( taskd, event, ... )
+	log('SCHED', 'DEBUG', '%s emitting fake event %s with %d parameters, trough %s', 
+		tostring(M.running_task), tostring(event), select('#', ...), tostring(taskd))
+	emit_signal( taskd, event, ... )
+end
 
 local n_waitd=0
 --- Create a Wait Descriptor.
