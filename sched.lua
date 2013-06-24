@@ -472,8 +472,8 @@ M.new_waitd = function(waitd_table)
 		--OO
 		waitd_table.new_sigrun_task = M.new_sigrun_task
 		waitd_table.new_sigrunonce_task = M.new_sigrunonce_task
-		waitd_table.new_sigrun = M.new_sigrun
-		waitd_table.new_sigrunonce = M.new_sigrunonce
+		waitd_table.sigrun = M.sigrun
+		waitd_table.sigrunonce = M.sigrunonce
 		waitd_table.wait = M.wait
 		
 		log('SCHED', 'DETAIL', '%s created %s', tostring(M.running_task), tostring(waitd_table))
