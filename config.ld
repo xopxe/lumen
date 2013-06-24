@@ -6,6 +6,7 @@ file = {"sched.lua", "mutex.lua", "catalog.lua", "pipes.lua", "stream.lua"
 	, "tasks/http-server.lua"
 	, "docs/debug.ldoc"}
 project = "Lumen"
+dir='docs/'
 description = "A cooperative scheduler for Lua tasks"
 format = 'markdown'
 examples={'tests/test.lua', 'tests/test-buff.lua', 'tests/test-selector.lua'

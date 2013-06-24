@@ -1,3 +1,4 @@
+-- websocket support adaptded from lua-websocket (http://lipp.github.io/lua-websockets/)
 -- WARN: incomplete, just enough to support lumen's websockets signaling
 
 local has_bit32,bit32 = pcall(require,'bit32')

@@ -151,15 +151,14 @@ end
 --will wake up and run all tasks waiting on a event
 local emit_signal = function (emitter, event, ...)
 	--print('emitsignal',emitter, waiting[event], event, ...)
-	local onevent=waiting[event]
-	if onevent then
-		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
+	local on_event, on_evaster = waiting[event], waiting['*']
+	if on_event then
+		local waiting1, waiting2 = on_event[emitter], on_event[ '*' ]
 		if waiting1 then walktasks(waiting1, emitter, event, ...) end
 		if waiting2 then walktasks(waiting2, emitter, event, ...) end
 	end
-	onevent=waiting['*']
-	if onevent then
-		local waiting1, waiting2 = onevent[emitter], onevent[ '*' ]
+	if on_evaster then
+		local waiting1, waiting2 = on_event[emitter], on_event[ '*' ]
 		if waiting1 then walktasks(waiting1, emitter, event, ...) end
 		if waiting2 then walktasks(waiting2, emitter, event, ...) end
 	end

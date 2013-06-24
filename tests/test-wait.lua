@@ -36,7 +36,7 @@ local emitter3=sched.run(function()
 	end
 end)
 
---[[
+---[[
 -- we are only interested in events B and C, emitted by tasks 2 and 3
 sched.sigrun({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print)
 --]]
@@ -46,7 +46,7 @@ sched.sigrun({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print)
 sched.sigrun({emitter='*', events='*'}, print)
 --]]
 
----[[
+--[[
 -- we will wait on the equivalent of several waitds at the same time
 local multiwaitd=sched.new_waitd({
   multi = {

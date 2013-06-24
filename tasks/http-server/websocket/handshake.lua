@@ -1,3 +1,5 @@
+-- websocket support adaptded from lua-websocket (http://lipp.github.io/lua-websockets/)
+
 local sha1 = require'tasks/http-server/sha1'.sha1_binary
 local base64 = require'tasks/http-server/base64'
 local tinsert = table.insert

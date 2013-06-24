@@ -80,6 +80,7 @@
  To use it, the programmer must register callbacks for method/url pattern pairs. <br/>
  Handlers for serving static files from disk is provided.  </p>
 
+
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
@@ -123,25 +124,28 @@
 
 
     <h2><a name="Functions"></a>Functions</h2>
-    
     <dl class="function">
     <dt>
     <a name = "set_request_handler"></a>
     <strong>set_request_handler&nbsp;(method, pattern, callback)</strong>
     </dt>
     <dd>
-    Register a new handler. 
+    Register a new handler.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>method</em></code>:  the http method to be attendend, such as 'GET', 'POST' or '*'</li>
-       <li><code><em>pattern</em></code>:  if a url matches this, the handler is selected. When the pattern of several
+        <li><span class="parameter">method</span>
+         the http method to be attendend, such as 'GET', 'POST' or '*'</li>
+        <li><span class="parameter">pattern</span>
+         if a url matches this, the handler is selected. When the pattern of several
  handler overlap, the one deeper is selected (ie if there is '/' and '/docs/', the later is selected)</li>
-       <li><code><em>callback</em></code>:  the callback function. Must have a <em>method, path, http_params, http_header</em> 
+        <li><span class="parameter">callback</span>
+         the callback function. Must have a <em>method, path, http_params, http_header</em>
  signature, where <em>http_params, http_header</em> are tables. If callback is nil, a handler with matching
- method and pattern will  be removed. The callback must return a number 
+ method and pattern will  be removed. The callback must return a number
  (an http error code), followed by an array with headers, and a string (the content).</li>
     </ul>
+
 
 
 
@@ -152,18 +156,22 @@
     <strong>set_websocket_protocol&nbsp;(protocol, handler, keep_clients)</strong>
     </dt>
     <dd>
-    Register a websocket protocol. 
+    Register a websocket protocol.
  The configuration flag <em>ws</em>enable_ must be set (see <a href="../modules/http-server.html#conf">conf</a>)
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>protocol</em></code>:  the protocol name</li>
-       <li><code><em>handler</em></code>:  a handler function. This function will be called when a new connection requesting
- the protocol arrives. It will be pased a websocket object. If the handler parameter is nil, the protocol will be 
+        <li><span class="parameter">protocol</span>
+         the protocol name</li>
+        <li><span class="parameter">handler</span>
+         a handler function. This function will be called when a new connection requesting
+ the protocol arrives. It will be pased a websocket object. If the handler parameter is nil, the protocol will be
  removed.</li>
-       <li><code><em>keep_clients</em></code>:  when handler is nil, or changing an already present protocol, wether to kill the 
+        <li><span class="parameter">keep_clients</span>
+         when handler is nil, or changing an already present protocol, wether to kill the
  already running connections or leave them.</li>
     </ul>
+
 
 
 
@@ -174,15 +182,18 @@
     <strong>serve_static_content_from_ram&nbsp;(webroot, fileroot)</strong>
     </dt>
     <dd>
-    Serve static files from a folder (using ram). 
+    Serve static files from a folder (using ram).
  This helper function calls <a href="../modules/http-server.html#set_request_handler">set_request_handler</a> with a handler for providing static content. <br/>
  The whole file will be read into RAM and served from there.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>webroot</em></code>:  the root of the url where the content will be served.</li>
-       <li><code><em>fileroot</em></code>:  the path to the root folder where the content to be served is found.</li>
+        <li><span class="parameter">webroot</span>
+         the root of the url where the content will be served.</li>
+        <li><span class="parameter">fileroot</span>
+         the path to the root folder where the content to be served is found.</li>
     </ul>
+
 
 
 
@@ -193,17 +204,21 @@
     <strong>serve_static_content_from_stream&nbsp;(webroot, fileroot, buffer_size)</strong>
     </dt>
     <dd>
-    Serve static files from a folder (using streams). 
+    Serve static files from a folder (using streams).
  This helper function calls <a href="../modules/http-server.html#set_request_handler">set_request_handler</a> with a handler for providing static content. <br/>
  The file will be served as it is read from disk, so there is no file size limitation. <br/>
  Depends on nixio library.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>webroot</em></code>:  the root of the url where the content will be served.</li>
-       <li><code><em>fileroot</em></code>:  the path to the root folder where the content to be served is found.</li>
-       <li><code><em>buffer_size</em></code>:  the reccmended ammount of RAM to use as buffer (defauls to 100kb)</li>
+        <li><span class="parameter">webroot</span>
+         the root of the url where the content will be served.</li>
+        <li><span class="parameter">fileroot</span>
+         the path to the root folder where the content to be served is found.</li>
+        <li><span class="parameter">buffer_size</span>
+         the reccmended ammount of RAM to use as buffer (defauls to 100kb)</li>
     </ul>
+
 
 
 
@@ -214,12 +229,14 @@
     <strong>init&nbsp;(conf)</strong>
     </dt>
     <dd>
-    Start the http server. 
+    Start the http server.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>conf</em></code>:  the configuration table (see <a href="../modules/http-server.html#conf">conf</a>).</li>
+        <li><span class="parameter">conf</span>
+         the configuration table (see <a href="../modules/http-server.html#conf">conf</a>).</li>
     </ul>
+
 
 
 
@@ -227,24 +244,28 @@
 </dd>
 </dl>
     <h2><a name="Tables"></a>Tables</h2>
-    
     <dl class="function">
     <dt>
     <a name = "conf"></a>
     <strong>conf</strong>
     </dt>
     <dd>
-    Configuration Table. 
+    Configuration Table.
  This table is populated by toribio from the configuration file.
 
     <h3>Fields:</h3>
     <ul>
-       <li><code><em>ip</em></code>:  the ip where the server listens (defaults to '*')</li>
-       <li><code><em>port</em></code>:  the port where the server listens (defaults to 8080)</li>
-       <li><code><em>max_age</em></code>:  allows to set the cache-control header, selectable by file extension. <br/>
+        <li><span class="parameter">ip</span>
+         the ip where the server listens (defaults to '*')</li>
+        <li><span class="parameter">port</span>
+         the port where the server listens (defaults to 8080)</li>
+        <li><span class="parameter">max_age</span>
+         allows to set the cache-control header, selectable by file extension. <br/>
  An example value could be {ico=99999, css=600, html=60}</li>
-       <li><code><em>ws_enable</em></code>:  enable the websocket server component.</li>
+        <li><span class="parameter">ws_enable</span>
+         enable the websocket server component.</li>
     </ul>
+
 
 
 
@@ -252,15 +273,15 @@
 </dd>
 </dl>
     <h2><a name="Fields"></a>Fields</h2>
-    
     <dl class="function">
     <dt>
     <a name = "HTTP_TIMEOUT"></a>
     <strong>HTTP_TIMEOUT</strong>
     </dt>
     <dd>
-    How long keep a session open. 
+    How long keep a session open.
  Defaults to 15s.
+
 
 
 
@@ -273,7 +294,7 @@
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.2</a></i>
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.3.12</a></i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>

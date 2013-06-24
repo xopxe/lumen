@@ -1,3 +1,4 @@
+-- websocket support adaptded from lua-websocket (http://lipp.github.io/lua-websockets/)
 -- Following Websocket RFC: http://tools.ietf.org/html/rfc6455
 require'pack'
 local bit = require'tasks/http-server/websocket/bit'
