@@ -65,7 +65,7 @@ local next_waketime
 local step_task
 
 -- debugging stuff
-local  track_waitd_statistics
+local track_waitd_statistics
 local track_taskd_statistics 
 local do_not_yield 
 
@@ -227,39 +227,46 @@ end
 
 --blocks a task waiting for a signal. registers the task in waiting table.
 local register_signal = function(taskd, waitd)
-	local emitter,  events = waitd.emitter or '*', waitd.events
-	if events=='*' then events={'*'} end
-
-	--print('registersignal', task, emitter, timeout, #events)
 	log('SCHED', 'DETAIL', '%s registers waitd %s', tostring(taskd), tostring(waitd))
-
-	if events then
-		local function register_emitter(etask)
-			for _, event in ipairs(events) do
-				--print('',':', event)
-				waiting[event]=waiting[event] or setmetatable({}, weak_key)
-				if not waiting[event][etask] then
-					waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
-					waiting_emitter_counter = waiting_emitter_counter +1
-				end
-				waiting[event][etask][taskd]=waitd
-			end
-			if waiting_emitter_counter>M.to_clean_up then
-				waiting_emitter_counter = 0
-				clean_up()
-			end
-		end
-
-		if emitter=='*' or emitter.co then
-			--single taskd parameter
-			register_emitter(emitter)
-		else
-			--is a array of taskd
-			for _, e in ipairs(emitter) do 
-				register_emitter(e)
-			end
-		end
-	end
+  
+  local function process_emev(emitter, events)
+    local function register_emitter(events, etask)
+      for _, event in ipairs(events) do
+        --print('',':', event)
+        waiting[event]=waiting[event] or setmetatable({}, weak_key)
+        if not waiting[event][etask] then
+          waiting[event][etask] = setmetatable({}, { __mode = 'kv' })
+          waiting_emitter_counter = waiting_emitter_counter + 1
+        end
+        waiting[event][etask][taskd]=waitd
+      end
+      if waiting_emitter_counter>M.to_clean_up then
+        waiting_emitter_counter = 0
+        clean_up()
+      end
+    end
+    if events then
+      if events=='*' then events={'*'} end
+      if emitter=='*' or emitter.co then
+        --single taskd parameter
+        register_emitter(events, emitter)
+      else
+        --is a array of taskd
+        for _, e in ipairs(emitter) do 
+          register_emitter(events, e)
+        end
+      end
+    end
+  end
+  
+  if waitd.multi then
+    for _, v in ipairs(waitd.multi) do
+      process_emev(v.emitter or '*', v.events)
+    end
+  else
+    process_emev(waitd.emitter or '*', waitd.events)
+  end  
+  
 end
 
 local emit_timeout = function (taskd)
@@ -490,39 +497,6 @@ M.new_waitd = function(waitd_table)
 	end
 	
 	return waitd_table
-end
-
---- Create a Multiwait Descriptor.
--- A Multiwait Descriptor is a @{waitd} set up for for waiting on several other waitds 
--- at the same time.
--- The multiwaitd will provide all signals caught by any of the input waitds. The original 
--- signal is available in the parameters. A multiwaitd has an additional attribute 
--- compared to a plain waitd: a release() function. This function must be called when
--- the multiwaitd is of no further use (for example, just before going out of scope).
--- Notice that a multiwaitd is less efficient than normal waitd.
--- @usage local multiwaitd = sched.new_multiwaitd( waitd1, waitd2, waitd3 )
---_,_,emitter, ev, par1, par2 = sched.wait(multiwaitd) 
--- @param ... waitds to listen on.
--- @return a multiwaitd.
-M.new_multiwaitd = function ( ... )
-	local multi_signal = {}
-	local waitd = M.new_waitd({
-		emitter={},
-		events={multi_signal},
-	})
-	for i = 1, select('#',  ...) do
-		local w = select(i,  ...)
-		local t = M.sigrun(w, function(...)
-			M.signal(multi_signal, ...)
-		end)
-		waitd.emitter[#waitd.emitter+1] = t
-	end
-	waitd.release = function()
-		for _, t in ipairs(waitd.emitter) do
-			M.kill(t)
-		end
-	end
-	return waitd
 end
 
 --- Wait for a signal.
@@ -806,7 +780,15 @@ M.debug.track_statistics = false
 -- on first request basis.
 -- @field emitter optional, task originating the signal we wait for. If '*' or nil,
 -- means anyone. It also can be an array of  tasks, in which case any of 
--- them is accepted as a source (see @{taskd}).
+-- them is accepted as a source (see @{taskd}). To use separated emitter-events 
+-- pairs, see the _multi_ attribute.
+-- @field events optional, array with the events to wait. Can contain a '\*', 
+-- or be '\*' instead of a table, to mark interest in any event. If nil, will
+-- only return on timeout. To use separated emitter-events 
+-- pairs, see the _multi_ attribute.
+-- @field multi if more than a single emitter-events pair is needed, these can be 
+-- placed in this array. Example:  
+-- _multi={{events={'evA'}, emitter=emA}, {events={'evB'}, emitter=emB}}_
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_len Maximum length of the buffer. A buffer allows for storing
 -- signals that arrived while the task is not blocked on the wait descriptor.
@@ -817,9 +799,6 @@ M.debug.track_statistics = false
 -- or nil will skip the insertion in a full buffer.
 -- @field dropped the scheduler will set this to true when dropping events
 -- from the buffer. Can be reset by the user.
--- @field events optional, array with the events to wait. Can contain a '\*', 
--- or be '\*' instead of a table, to mark interest in any event. If nil, will
--- only return on timeout. 
 -- @table waitd
 
 ------

@@ -16,7 +16,7 @@ local emitter1=sched.run(function()
 		sched.signal('evA', 1)
 		sched.sleep(1)
 		sched.signal('evB', 1)
-		sched.sleep(1)
+		sched.sleep(1)multi
 	end
 end)
 local emitter2=sched.run(function()
@@ -36,7 +36,7 @@ local emitter3=sched.run(function()
 	end
 end)
 
----[[
+--[[
 -- we are only interested in events B and C, emitted by tasks 2 and 3
 sched.sigrun({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print)
 --]]
@@ -46,13 +46,15 @@ sched.sigrun({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print)
 sched.sigrun({emitter='*', events='*'}, print)
 --]]
 
---[[
--- we will wait on several waitds at the same time
-local multiwaitd=sched.new_multiwaitd(
-	{emitter={emitter1}, events={'evA'}},
-	{emitter={emitter2}, events={'evC'}},
-	{emitter={emitter3}, events={'evB'}}
-)
+---[[
+-- we will wait on the equivalent of several waitds at the same time
+local multiwaitd=sched.new_waitd({
+  multi = {
+    {emitter={emitter1}, events={'evA'}},
+    {emitter={emitter2}, events={'evC'}},
+    {emitter={emitter3}, events={'evB'}},
+  }
+})
 sched.sigrun(multiwaitd, print)
 --]]
 
