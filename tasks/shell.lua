@@ -238,6 +238,7 @@ end
 -- @field ps A function that prints a human readable tasks list
 M.shell_env = {
 	sched = sched,
+  ps = nil,
 }
 for k, v in pairs(_G) do M.shell_env [k] = v end
 
