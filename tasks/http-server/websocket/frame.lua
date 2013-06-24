@@ -1,14 +1,13 @@
 -- websocket support adaptded from lua-websocket (http://lipp.github.io/lua-websockets/)
 -- Following Websocket RFC: http://tools.ietf.org/html/rfc6455
-require'pack'
+--require'pack'
 local bit = require'tasks/http-server/websocket/bit'
-
 
 local band = bit.band
 local bxor = bit.bxor
 local bor = bit.bor
-local sunpack = string.unpack
-local spack = string.pack
+--local sunpack = string.unpack
+--local spack = string.pack
 local ssub = string.sub
 local sbyte = string.byte
 local schar = string.char
@@ -27,6 +26,39 @@ end
 local bit_7 = bits(7)
 local bit_0_3 = bits(0,1,2,3)
 local bit_0_6 = bits(0,1,2,3,4,5,6)
+
+--from http://stackoverflow.com/questions/5241799/lua-dealing-with-non-ascii-byte-streams-byteorder-change
+--adapted for fixed 4 byte bigendian unsigned ints.
+function int_to_bytes(num)
+    local res={}
+    local n = 4 --math.ceil(select(2,math.frexp(num))/8) -- number of bytes to be used.
+    for k=n,1,-1 do -- 256 = 2^8 bits per char.
+        local mul=2^(8*(k-1))
+        res[k]=math.floor(num/mul)
+        num=num-res[k]*mul
+    end
+    assert(num==0)
+    if endian == "big" then
+        local t={}
+        for k=1,n do
+            t[k]=res[n-k+1]
+        end
+        res=t
+    end
+    return string.char(unpack(res))
+end
+function bytes_to_int(str,endian)
+    local t={str:byte(1,4)}
+    local n=0
+    for k=1,#t do
+        n=n+t[#t-k+1]*2^((k-1)*8)
+    end
+    return n
+end
+
+local function getunsigned_2bytes_bigendian(s)
+	return 256*s:byte(1) + s:byte(2)
+end
 
 local xor_mask = function(encoded,mask,payload)
   local transformed_arr = {}
@@ -60,15 +92,18 @@ local encode = function(data,opcode,masked,fin)
   local len = #data
   if len < 126 then
     payload = bor(payload,len)
-    encoded = spack('bb',header,payload)
+    --encoded = spack('bb',header,payload)
+    encoded = string.char(header, payload)
   elseif len < 0xffff then
     payload = bor(payload,126)
-    encoded = spack('bb>H',header,payload,len)
+    --encoded = spack('bb>H',header,payload,len)
+    encoded = string.char(header,payload,math.floor(len/256),len%256)
   elseif len < 2^53 then
     local high = math.floor(len/2^32)
     local low = len - high*2^32
     payload = bor(payload,127)
-    encoded = spack('bb>I>I',header,payload,high,low)
+    --encoded = spack('bb>I>I',header,payload,high,low)
+    encoded = string.char(header,payload)..int_to_bytes(high)..int_to_bytes(low)
   end
   if not masked then
     encoded = encoded..data
@@ -78,7 +113,8 @@ local encode = function(data,opcode,masked,fin)
     local m3 = math.random(0,0xff)
     local m4 = math.random(0,0xff)
     local mask = {m1,m2,m3,m4}
-    encoded = encoded..spack('bbbb',m1,m2,m3,m4)
+    --encoded = encoded..spack('bbbb',m1,m2,m3,m4)
+    encoded = encoded..string.char(m1,m2,m3,m4)
     encoded = encoded..xor_mask(data,mask,#data)
   end
   return encoded
@@ -90,7 +126,8 @@ local high, low
   if #encoded < 2 then
     return nil,2
   end
-  local pos,header,payload = sunpack(encoded,'bb')
+  --local pos,header,payload = sunpack(encoded,'bb')
+  local pos,header,payload = 3,encoded:byte(1,2) 
   encoded = ssub(encoded,pos)
   local bytes = 2
   local fin = band(header,bit_7) > 0
@@ -102,12 +139,15 @@ local high, low
       if #encoded < 2 then
         return nil,2
       end
-      pos,payload = sunpack(encoded,'>H')
+      --pos,payload = sunpack(encoded,'>H')
+      pos,payload = 3, getunsigned_2bytes_bigendian(encoded)
+      
     elseif payload == 127 then
       if #encoded < 8 then
         return nil,8
       end
-      pos,high,low = sunpack(encoded,'>I>I')
+      --pos,high,low = sunpack(encoded,'>I>I')
+      pos,high,low = 9,bytes_to_int(encoded:sub(1,4)),bytes_to_int(encoded:sub(5,8))
       payload = high*2^32 + low
       if payload < 0xffff or payload > 2^53 then
         assert(false,'INVALID PAYLOAD '..payload)
@@ -124,7 +164,8 @@ local high, low
     if bytes_short > 0 then
       return nil,bytes_short
     end
-    local pos,m1,m2,m3,m4 = sunpack(encoded,'bbbb')
+    --local pos,m1,m2,m3,m4 = sunpack(encoded,'bbbb')
+    local pos,m1,m2,m3,m4 = 5, encoded:byte(1,4)
     encoded = ssub(encoded,pos)
     local mask = {
       m1,m2,m3,m4
@@ -149,7 +190,8 @@ end
 local encode_close = function(code,reason)
   local data
   if code and type(code) == 'number' then
-    data = spack('>H',code)
+    --data = spack('>H',code)
+    data = string.char(math.floor(code/256),code%256)
     if reason then
       data = data..tostring(reason)
     end
@@ -161,7 +203,8 @@ local decode_close = function(data)
   local _,code,reason
   if data then
     if #data > 1 then
-      _,code = sunpack(data,'>H')
+      --_,code = sunpack(data,'>H')
+      code = getunsigned_2bytes_bigendian(data)
     end
     if #data > 2 then
       reason = data:sub(3)
