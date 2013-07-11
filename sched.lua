@@ -158,7 +158,7 @@ local emit_signal = function (emitter, event, ...)
 		if waiting2 then walktasks(waiting2, emitter, event, ...) end
 	end
 	if on_evaster then
-		local waiting1, waiting2 = on_event[emitter], on_event[ '*' ]
+		local waiting1, waiting2 = on_evaster[emitter], on_evaster[ '*' ]
 		if waiting1 then walktasks(waiting1, emitter, event, ...) end
 		if waiting2 then walktasks(waiting2, emitter, event, ...) end
 	end
