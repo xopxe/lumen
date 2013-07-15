@@ -49,6 +49,7 @@
   <li><a href="../modules/catalog.html">catalog</a></li>
   <li><a href="../modules/debug.html">debug</a></li>
   <li><a href="../modules/http-server.html">http-server</a></li>
+  <li><a href="../modules/log.html">log</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/proxy.html">proxy</a></li>
@@ -107,28 +108,28 @@
 	<span class="keyword">end</span>
 <span class="keyword">end</span>)
 
-<span class="comment">--[[
--- we are only interested in events B and C, emitted by tasks 2 and 3
-sched.sigrun({emitter={emitter2, emitter3}, events={'evB', 'evC'}}, print)
---]]</span>
-
+<span class="comment">---[[
+</span><span class="comment">-- we are only interested in events B and C, emitted by tasks 2 and 3
+</span>sched.sigrun({emitter={emitter2, emitter3}, events={<span class="string">'evB'</span>, <span class="string">'evC'</span>}}, <span class="global">print</span>)
+<span class="comment">--]]
+</span>
 <span class="comment">--[[
 -- we are interested in all events
 sched.sigrun({emitter='*', events='*'}, print)
 --]]</span>
 
-<span class="comment">---[[
-</span><span class="comment">-- we will wait on the equivalent of several waitds at the same time
-</span><span class="keyword">local</span> multiwaitd=sched.new_waitd({
+<span class="comment">--[[
+-- we will wait on the equivalent of several waitds at the same time
+local multiwaitd=sched.new_waitd({
   multi = {
-    {emitter={emitter1}, events={<span class="string">'evA'</span>}},
-    {emitter={emitter2}, events={<span class="string">'evC'</span>}},
-    {emitter={emitter3}, events={<span class="string">'evB'</span>}},
+    {emitter={emitter1}, events={'evA'}},
+    {emitter={emitter2}, events={'evC'}},
+    {emitter={emitter3}, events={'evB'}},
   }
 })
-sched.sigrun(multiwaitd, <span class="global">print</span>)
-<span class="comment">--]]
-</span>
+sched.sigrun(multiwaitd, print)
+--]]</span>
+
 sched.go()</pre>
 
 

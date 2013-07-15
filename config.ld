@@ -1,5 +1,5 @@
-file = {"sched.lua", "mutex.lua", "catalog.lua", "pipes.lua", "stream.lua"
-	--, "tasks/nixiorator.lua", "tasks/socketeer.lua", 
+file = {"sched.lua", "mutex.lua", "catalog.lua", "pipes.lua", "stream.lua", "log.lua"
+	--, "tasks/nixiorator.lua", "tasks/socketeer.lua" 
 	, "tasks/shell.lua"
 	, "tasks/selector.lua"
 	, "tasks/proxy.lua"
