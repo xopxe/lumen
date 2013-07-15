@@ -2,7 +2,7 @@
 -- This is a general purpose web server. It depends on the selector module
 -- being up and running.  
 -- To use it, the programmer must register callbacks for method/url pattern pairs.  
--- Handlers for serving static files from disk is provided.  
+-- Handlers for serving static files from disk are provided.  
 -- @module http-server 
 -- @alias M
 
@@ -112,7 +112,7 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 					return 500
 				end
 			else
-				log('HTTP', 'WARN', 'Error opening file %s', err)
+				log('HTTP', 'WARN', 'Error opening file %s: %s', abspath, err)
 				return 404
 			end
 		end
