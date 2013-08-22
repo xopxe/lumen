@@ -23,7 +23,7 @@ local M = {}
 -- stream is closed and empty (_err_ is the additinal error parameter provided on @{write}).
 M.read = function (streamd, len)
 	if len == 0 then return '' end
-	len = len or -1
+	len = tonumber(len) or -1
 	
 	local buff_data = streamd.buff_data
 	if streamd.closed and (streamd.len<len or streamd.len==0) then

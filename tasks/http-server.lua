@@ -237,7 +237,7 @@ M.init = function(conf)
 				-- read body ------------------------------------------------------------
 				local http_params
 				if http_req_method=='POST' then 
-					local data = instream:read( http_req_header['content-length'] or 0 )
+					local data = instream:read( tonumber(http_req_header['content-length']) or 0 )
 					if not data then sktd_cli:close(); return end
 					http_params=parse_params(data)
 				else
