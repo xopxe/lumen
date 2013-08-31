@@ -271,9 +271,9 @@ M.init = function(conf)
 				local need_flush
 				
 				local response_header = http_util.build_http_header(http_out_code, http_out_header, response, conf)
-				sktd_cli:send_sync(response_header)
+				sktd_cli:send_async(response_header)
 				if type(response) == 'string' then
-					sktd_cli:send_sync(response)
+					sktd_cli:send_async(response)
 				else --stream
 					if not http_out_header["content-length"] then
 						need_flush = true
@@ -282,7 +282,7 @@ M.init = function(conf)
 						--TODO share streams?
 						local s, _ = response:read()
 						if not s then break end
-						sktd_cli:send_sync(s)
+						sktd_cli:send_async(s)
 					end
 				end
 				
