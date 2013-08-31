@@ -41,8 +41,6 @@
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/debug.html">debug</a></li>
-  <li><a href="../modules/http-server.html">http-server</a></li>
   <li><a href="../modules/log.html">log</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
@@ -58,14 +56,11 @@
 </ul>
 <h2>Examples</h2>
 <ul>
-  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -283,7 +278,7 @@ selector.init({service=&apos;luasocket&apos;})</pre>
         <li><span class="parameter">handler</span>
          Optional, either a handler function or a stream.
  The handler function must have a (sktd, data, err, part) signature.
- The handler must return true to keep the socket open, otherwised the socket will b e closed
+ The handler must return true to keep the socket open, otherwised the socket will be closed
  as soon as it returns (or errors). <br/>
  When a stream it will be used to push data as it arrives. On socket closing, the stream
  will be closed with the error message as provided by the socket. <br/>
@@ -532,7 +527,6 @@ selector.init({service=&apos;luasocket&apos;})</pre>
     </dt>
     <dd>
     Configuration Table.
- This table is populated by toribio from the configuration file.
 
     <h3>Fields:</h3>
     <ul>

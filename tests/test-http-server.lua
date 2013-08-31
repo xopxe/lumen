@@ -5,7 +5,7 @@
 package.path = package.path .. ";;;../?.lua"
 
 require "log".setlevel('ALL', 'HTTP')
---require "log".setlevel('ALL')
+require "log".setlevel('ALL')
 
 --require "strict"
 
@@ -17,11 +17,15 @@ require "tasks/selector".init({service=service})
 local http_server = require "tasks/http-server"
 
 http_server.serve_static_content_from_ram('/', '../tasks/http-server/www')
+--http_server.serve_static_content_from_stream('/', '/home/xopxe')
+
 if service=='nixio' then
 	http_server.serve_static_content_from_stream('/docs/', '../docs')
 else
 	http_server.serve_static_content_from_ram('/docs/', '../docs')
 end
+
+
 
 sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
 

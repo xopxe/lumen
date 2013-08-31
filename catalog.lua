@@ -23,7 +23,7 @@ local M = {}
 
 local catalogs = {}
 
-local register_events = {} -- setmetatable({}, {__mode = "kv"}) 
+local register_events = setmetatable({}, {__mode = 'k'}) 
 
 -- Creates a and queries singleton event for each queried name in a catalog, 
 -- to be used to wake tasks waiting for it to appear.
@@ -32,7 +32,7 @@ local function get_register_event (catalogd, name)
 		return register_events[catalogd][name]
 	else
 		local register_event = setmetatable({}, {
-			__tostring=function() return 'signal: register$'..tostring(catalogd.name)..'/'..tostring(name) end,
+			--__tostring=function() return 'signal: register$'..tostring(catalogd.name)..'/'..tostring(name) end,
 		})
 		register_events[catalogd] = register_events[catalogd] or {}
 		register_events[catalogd][name] = register_event
@@ -93,10 +93,9 @@ M.waitfor = function ( catalogd, name, timeout )
 	if object then
 		return object
 	else
-		local _, event = sched.wait({
-			emitter='*', 
+		local event = sched.wait({
+      get_register_event(catalogd, name),
 			timeout=timeout, 
-			events={get_register_event(catalogd, name)}
 		})
 		if event then
 			return catalogd.direct[name]

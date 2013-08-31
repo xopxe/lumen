@@ -24,7 +24,7 @@ one second apart. Another tasks receives those signals and prints them.
     local sched=require 'sched'
     
     -- task emits signals
-    local emitter_task = sched.run(function()
+    sched.run(function()
     	for i = 1, 10 do
     		sched.signal('an_event', i)
     		sched.sleep(1)
@@ -33,10 +33,10 @@ one second apart. Another tasks receives those signals and prints them.
     
     -- task receives signals
     sched.run(function()
-    	local waitd = {emitter=emitter_task, events={'an_event'}}
+    	local waitd = {'an_event'}
     	while true do
-    		local _, _, data = sched.wait(waitd)
-    		print (data)
+    		local _, data = sched.wait(waitd)
+    		print(data)
     	end
     end)
     
@@ -48,10 +48,10 @@ one second apart. Another tasks receives those signals and prints them.
 Tasks can emit signals, and block waiting for them, and that's it.
 
 - A signal can be of any type, and carry any parameters
-- A task can wait on several signals, from several emitters, with a timeout.
+- A task can wait on several signals, with an optional timeout.
 - Signals can be buffered; this helps avoid losing signals when waiting signals in a loop.
-- Tasks can register a name, and query for tasks by name.
-- Tasks also can wait for a given name to get registered.
+- There is an catalog that can be used to simplify sharing data between tasks.
+
 
 ## Pipes & Streams
 
@@ -72,10 +72,12 @@ may have to resort to mutexes when your critical piece of code relinquish
 control explicitly, for example with a call to sleep, emitting a signal or blocking 
 waiting for a signal.
 
+
 ## Goodies
 
 There are a few other useful modules, like an integrated remote Lua shell and a lightweigth 
 HTTP server. 
+
 
 ## How to try it out?
 
@@ -84,25 +86,11 @@ few tasks exchanging messages, showing off basic functionality:
 
     lua test.lua
 
-You can wait on multiple events, from multiple sources. Check some
-possibilities here:
-
-    lua test-wait.lua
-
-If you want to see LuaSocket and nixio integration working for async socket and
-file I/O, try:
-
-    lua test-selector.lua
-
-To see how buffers, pipes and mutexes work and what they are for, try:
-
-    lua test-buff.lua
-    lua test-pipe.lua
-    lua test-mutex.lua
 
 ## License
 
 Same as Lua, see COPYRIGHT.
+
 
 ## Who?
 

@@ -9,7 +9,7 @@ local sched = require "sched"
 local selector = require 'tasks/selector'.init({service='nixio'})
 local proxy = require 'tasks/proxy'
 local catalog_events = require 'catalog'.get_catalog('events')
---require "log".setlevel('INFO')
+require "log".setlevel('INFO', 'PROXY')
 
 sched.run(function()
 	proxy.init({ip='*', port=2002, encoder='bencode'})
@@ -26,7 +26,7 @@ sched.run(function()
 		end
 	end)
 	
-	--[[
+	---[[
 	sched.run(function()
 		local e = {bbb=1}
 		catalog_events:register('BBB',e)
@@ -34,7 +34,7 @@ sched.run(function()
 		while true do
 			i=i+1
 			print ('b', i)
-			sched.signal(e, nil, i)
+			sched.signal(e, 'data', i)
 			sched.sleep(0.3)
 		end
 	end)

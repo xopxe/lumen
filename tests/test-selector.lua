@@ -6,7 +6,7 @@
 --look for packages one folder up.
 package.path = package.path .. ";;;../?.lua"
 
-require "strict"
+--require "strict"
 
 local sched = require "sched"
 
@@ -17,12 +17,14 @@ print ('using service:', service)
 
 local selector = require "tasks/selector".init({service=service})
 
----[[ udp
+--sched.sigrun({sched.EVENT_ANY}, function(...) print("?", ...) end)
+
+--[[ udp
 -- Print out data arriving on a udp socket
 local udprecv = selector.new_udp(nil, nil, "127.0.0.1", 8888, -1)
 sched.sigrun(
-	{emitter=udprecv.task, events={udprecv.events.data}}, 
-	function(_, _, ...) print("!U", ...) end
+	{udprecv.events.data}, 
+	function(_, ...) print("!U", ...) end
 )
 
 -- Send data over an udp socket
@@ -38,37 +40,42 @@ end)
 --]]
 
 ---[[ tcp sync
-local tcp_server = selector.new_tcp_server("127.0.0.1", 8888, 
-	'line', --10,
-	function(sktd, data, err)
-		print ('!T', sktd, data, err or '')
-		return true
-	end
-)
-sched.sigrun({emitter=selector.task, events = '*'}, function(...)
-	print ('           >', ...)
+local tcp_server = selector.new_tcp_server("127.0.0.1", 8888, nil, 'stream')
+--local tcp_server = selector.new_tcp_server("127.0.0.1", 8888, 'line', 'stream')
+
+sched.sigrun({tcp_server.events.accepted}, function(_, sktd, err)
+  assert(sktd, err)
+  print ('client accepted', sktd.stream)
+  sched.run( function()
+      while true do
+        --print ('?', sktd.stream, sktd.stream.len)
+        --sched.sleep(1)
+        local line = assert(sktd.stream:read_line())
+        print ('tcp arrived on', sktd.stream, line)
+      end
+  end)
 end)
-local tcp_client = selector.new_tcp_client("127.0.0.1",8888)
+local tcp_client1 = selector.new_tcp_client("127.0.0.1",8888)
 sched.run(function()
 	--while true do
 	for i=1, 15 do
 		local m="ping! "..os.time()
-		print("tcp sending",m)
-		tcp_client:send(m.."\n")
+		print("tcp 1 sending",m)
+		tcp_client1:send(m.."\n")
 		sched.sleep(2.1)
 	end
-	tcp_client:close()
+	tcp_client1:close()
 end)
 local tcp_client2 = selector.new_tcp_client("127.0.0.1",8888)
 sched.run(function()
 	--while true do
 	for i=1, 15 do
 		local m="pong! "..os.time()
-		print("tcp sending",m)
-		tcp_client:send(m.."\n")
+		print("tcp 2 sending",m)
+		tcp_client2:send(m.."\n")
 		sched.sleep(1.5)
 	end
-	tcp_client:close()
+	tcp_client2:close()
 end)--]]
 
 --[[ tcp async

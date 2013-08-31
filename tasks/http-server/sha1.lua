@@ -212,7 +212,7 @@ end
 local function w32_to_hexstring (w) return format("%08x",w) end
 
 -- calculating the SHA1 for some text
-function sha1(msg)
+local function sha1(msg)
 	local H0,H1,H2,H3,H4 = 0x67452301,0xEFCDAB89,0x98BADCFE,0x10325476,0xC3D2E1F0
 	local msg_len_in_bits = #msg * 8
 
@@ -298,7 +298,7 @@ local function hex_to_binary(hex)
 	end)
 end
 
-function sha1_binary(msg)
+local function sha1_binary(msg)
 	return hex_to_binary(sha1(msg))
 end
 
@@ -313,7 +313,7 @@ end
 
 local blocksize = 64 -- 512 bits
 
-function hmac_sha1(key, text)
+local function hmac_sha1(key, text)
 	assert(type(key)  == 'string', "key passed to hmac_sha1 should be a string")
 	assert(type(text) == 'string', "text passed to hmac_sha1 should be a string")
 
@@ -327,7 +327,7 @@ function hmac_sha1(key, text)
 	return sha1(key_xord_with_0x5c .. sha1_binary(key_xord_with_0x36 .. text))
 end
 
-function hmac_sha1_binary(key, text)
+local function hmac_sha1_binary(key, text)
 	return hex_to_binary(hmac_sha1(key, text))
 end
 

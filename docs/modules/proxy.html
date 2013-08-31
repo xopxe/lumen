@@ -40,8 +40,6 @@
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/debug.html">debug</a></li>
-  <li><a href="../modules/http-server.html">http-server</a></li>
   <li><a href="../modules/log.html">log</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
@@ -57,14 +55,11 @@
 </ul>
 <h2>Examples</h2>
 <ul>
-  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -80,7 +75,7 @@
  Signals are serialized using bencode or json, and restrictions apply
  on what can be passed trough depending on the encoder selected. For
  example, under bencode strings, numbers, lists (pure arrays) and tables
- with strings as  keys are supported.
+ with strings as keys are supported.
  This module depends on the selector task, which must be started
  separataly.</p>
     <h3>Usage:</h3>
@@ -91,12 +86,10 @@
  proxy.init({ip=&apos;*&apos;, port=1985})
 
  --connect to a remote node
- local waitd = proxy.new_remote_waitd(&apos;192.1681.1&apos;, 1985, {
- 	emitter = {&apos;*&apos;},
- 	events = {&apos;a_event_name&apos;, &apos;other_event_name&apos;},
- })
- sched.wait(waitd, function(_, _, taskname, eventname, ...)
- 	print (&apos;received signal&apos;, taskname, eventname, ...)
+ local waitd = proxy.new_remote_waitd(&apos;192.1681.1&apos;, 1985,
+   {&apos;a_event_name&apos;, &apos;other_event_name&apos;})
+ sched.wait(waitd, function(_, eventname, ...)
+ 	print (&apos;received signal&apos;, eventname, ...)
  end)</pre>
     </ul>
 
@@ -134,14 +127,13 @@
     Creates a waitd object over a remote Lumen instance.
  The remote Lumen instance must have the proxy module started,
  and available trough a known ip address.
- The waitd_table is as the one used in plain <em>sched.new_waitd()</em> call, with
- the difference that the objects in the <em>emitter</em> and <em>events</em> fields are
- names which will be queried in the remote node's "tasks" and "events" catalogs
- (except '*', which has the usual meaning).
- There is an additional parameter, <em>name_timeout</em>, which controls the querying
+ The waitd_table is as the one used in plain _sched.new_<strong>waitd()_ call, with
+ the difference that the array part does not contain the events but the
+ names which will be queried in the remote node's "events" catalog.
+ There is an additional parameter, _name_</strong>timeout<em>, which controls the querying
  in the catalogs.
- The obtained waitd will react with a non null event, followed by the remote emitter and
- event names (as put in the waitd_table), followed by the parameters of the original event.
+ The obtained waitd will react with a non null event, followed by the event name
+ (as put in the waitd</em>table), followed by the parameters of the original event.
  On timeout, returns <em>nil, 'timeout'</em>.
 
     <h3>Parameters:</h3>
@@ -192,7 +184,6 @@
     </dt>
     <dd>
     Configuration Table.
- This table is populated by toribio from the configuration file.
 
     <h3>Fields:</h3>
     <ul>

@@ -12,28 +12,27 @@ local queue=require 'lib/queue'
 --get locals for some useful things
 local setmetatable, tostring = setmetatable, tostring
 
-
 local M = {}
 
 --- Read from a stream.
 -- Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read([len])
 -- @param streamd the the stream descriptor to read from.
--- @param len optional length of string to be returned.
+-- @param length optional length of string to be returned.
 -- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
--- stream is closed and empty (_err_ is the additinal error parameter provided on @{write}).
-M.read = function (streamd, len)
-	if len == 0 then return '' end
-	len = tonumber(len) or -1
+-- stream is closed and empty (_err_ is the additinal error parameter provided on @{write} when closing).
+M.read = function (streamd, length)
+	if length == 0 then return '' end
+	length = tonumber(length) or -1
 	
 	local buff_data = streamd.buff_data
-	if streamd.closed and (streamd.len<len or streamd.len==0) then
+	if streamd.closed and (streamd.len<length or streamd.len==0) then
 		return nil, 'closed', streamd.closed
 	end
 	
-	while streamd.len == 0 or (len>0 and streamd.len < len) do
-		local emitter = sched.wait(streamd.waitd_data)
-		if not emitter then return nil, 'timeout' end
-		if streamd.closed and (streamd.len<len or streamd.len==0) then --and #streamd.buff_data == 0 then
+	while streamd.len == 0 or (length>0 and streamd.len < length) do
+		local ev = sched.wait(streamd.waitd_data)
+		if not ev then return nil, 'timeout' end
+		if streamd.closed and (streamd.len<length or streamd.len==0) then --and #streamd.buff_data == 0 then
 			return nil, 'closed', streamd.closed
 		end
 	end
@@ -47,15 +46,15 @@ M.read = function (streamd, len)
 	
 	local s =  buff_data[1]
 	
-	if len>0 then
+	if length>0 then
 		--cut len bytes
-		local rlen = #s-len
+		local rlen = #s-length
 		if rlen>0 then 
 			buff_data[1] = s:sub(-rlen) 
 		else
 			buff_data[1] = nil
 		end
-		s=s:sub(1, len)
+		s=s:sub(1, length)
 		streamd.len = rlen
 		if not streamd.size or streamd.len <= streamd.size then 
 			sched.signal(streamd.pipe_enable_signal) -- unlock writers
@@ -74,8 +73,8 @@ end
 -- Will block if there is not a whole line to return, until it arrives. Also accessible as streamd:read_line()
 -- @param streamd the the stream descriptor to read from.
 -- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if 
--- stream is closed and empty (_err_ is the additinal error parameter provided on @{write}). The trailing newline
--- is not included in the retured string.
+-- stream is closed and empty (_err_ is the additinal error parameter provided on @{write} when closing). 
+-- The trailing newline is not included in the returned string.
 M.read_line = function (streamd)
 	local buff_data = streamd.buff_data
 
@@ -141,8 +140,8 @@ M.write = function (streamd, s, err)
 		return nil, 'closed', streamd.closed 
 	end
 	if streamd.size and streamd.len > streamd.size then
-		local emitter = sched.wait(streamd.waitd_enable)
-		if not emitter then return nil, 'timeout' end
+		local ev = sched.wait(streamd.waitd_enable)
+		if not ev then return nil, 'timeout' end
 	end
 	streamd.buff_data[#streamd.buff_data+1] = s
 	streamd.len = streamd.len + #s
@@ -160,13 +159,13 @@ M.set_timeout = function (streamd, read_timeout, write_timeout)
 	streamd.waitd_enable.timeout = write_timeout
 	
 	--force unlock so new timeouts get applied.
-	if streamd.waitd_enable.buff:len() > 0  then sched.signal(streamd.pipe_enable_signal) end
-	if streamd.waitd_data.buff:len() > 0  then sched.signal(streamd.pipe_data_signal) end
+	if streamd.waitd_enable.buff_event  then sched.signal(streamd.pipe_enable_signal) end
+	if streamd.waitd_data.buff_event  then sched.signal(streamd.pipe_data_signal) end
 end
 
 local n_streams=0
 --- Create a new stream.
--- @param size When the buffered string length surpases this value, follwing attempts to
+-- @param size When the buffered string length surpases this value, following attempts to
 -- write will block. nil means no limit.
 -- @param read_timeout timeout for blocking on stream reading operations. -1 or nil wait forever
 -- timeout
@@ -175,29 +174,28 @@ local n_streams=0
 M.new = function(size, read_timeout, write_timeout)
 	n_streams=n_streams+1
 	local pipename = 'stream: #'..tostring(n_streams)
-	local streamd = setmetatable({}, {__tostring=function() return pipename end, __index=M})
+	local streamd = setmetatable({
+      set_timeout = M.set_timeout,
+      read = M.read,
+      read_line = M.read_line,
+      write = M.write,
+  }, {__tostring=function() return pipename end--[[,__index=M]]})
 	log('STREAM', 'DETAIL', 'stream with name "%s" created', tostring(pipename))
 	streamd.size=size
 	streamd.pipe_enable_signal = {} --singleton event for pipe control
 	streamd.pipe_data_signal = {} --singleton event for pipe data
 	streamd.len = 0
 	streamd.buff_data = {}
-	streamd.waitd_data = sched.new_waitd({
-		emitter='*', 
-		buff_len=1, 
+	streamd.waitd_data = {
+    streamd.pipe_data_signal,
 		timeout=read_timeout, 
-		buff_mode='drop_last', 
-		events = {streamd.pipe_data_signal}, 
-		buff =queue:new(),
-	})
-	streamd.waitd_enable = sched.new_waitd({
-		emitter='*', 
-		buff_len=1, 
+		buff_mode='keep_first', 
+	}
+	streamd.waitd_enable = {
+    streamd.pipe_enable_signal,
 		timeout=write_timeout, 
-		buff_mode='drop_last', 
-		events = {streamd.pipe_enable_signal}, 
-		buff = queue:new(),
-	})
+		buff_mode='keep_first', 
+	}
 	
 	return streamd
 end

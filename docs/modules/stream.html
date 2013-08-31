@@ -39,8 +39,6 @@
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/debug.html">debug</a></li>
-  <li><a href="../modules/http-server.html">http-server</a></li>
   <li><a href="../modules/log.html">log</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
@@ -56,14 +54,11 @@
 </ul>
 <h2>Examples</h2>
 <ul>
-  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -85,7 +80,7 @@
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#read">read&nbsp;(streamd, len)</a></td>
+	<td class="name" nowrap><a href="#read">read&nbsp;(streamd, length)</a></td>
 	<td class="summary">Read from a stream.</td>
 	</tr>
 	<tr>
@@ -114,7 +109,7 @@
     <dl class="function">
     <dt>
     <a name = "read"></a>
-    <strong>read&nbsp;(streamd, len)</strong>
+    <strong>read&nbsp;(streamd, length)</strong>
     </dt>
     <dd>
     Read from a stream.
@@ -124,7 +119,7 @@
     <ul>
         <li><span class="parameter">streamd</span>
          the the stream descriptor to read from.</li>
-        <li><span class="parameter">len</span>
+        <li><span class="parameter">length</span>
          optional length of string to be returned.</li>
     </ul>
 
@@ -132,7 +127,7 @@
     <ol>
 
         a string if data is available, <em>nil,'timeout'</em> on timeout, <em>nil, 'closed', err</em> if
- stream is closed and empty (<em>err</em> is the additinal error parameter provided on <a href="../modules/stream.html#write">write</a>).
+ stream is closed and empty (<em>err</em> is the additinal error parameter provided on <a href="../modules/stream.html#write">write</a> when closing).
     </ol>
 
 
@@ -157,8 +152,8 @@
     <ol>
 
           a string if data is available, <em>nil,'timeout'</em> on timeout, <em>nil, 'closed', err</em> if
- stream is closed and empty (<em>err</em> is the additinal error parameter provided on <a href="../modules/stream.html#write">write</a>). The trailing newline
- is not included in the retured string.
+ stream is closed and empty (<em>err</em> is the additinal error parameter provided on <a href="../modules/stream.html#write">write</a> when closing).
+ The trailing newline is not included in the returned string.
     </ol>
 
 
@@ -227,7 +222,7 @@
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">size</span>
-         When the buffered string length surpases this value, follwing attempts to
+         When the buffered string length surpases this value, following attempts to
  write will block. nil means no limit.</li>
         <li><span class="parameter">read_timeout</span>
          timeout for blocking on stream reading operations. -1 or nil wait forever

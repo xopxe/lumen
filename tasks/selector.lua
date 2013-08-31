@@ -62,7 +62,7 @@ M.init = function(conf)
 	-- @param pattern Any of nixio or luasocket patterns.
 	-- @param handler Optional, either a handler function or a stream. 
 	-- The handler function must have a (sktd, data, err, part) signature.
-	-- The handler must return true to keep the socket open, otherwised the socket will b e closed
+	-- The handler must return true to keep the socket open, otherwised the socket will be closed
 	-- as soon as it returns (or errors).  
 	-- When a stream it will be used to push data as it arrives. On socket closing, the stream 
 	-- will be closed with the error message as provided by the socket.  
@@ -152,11 +152,6 @@ M.init = function(conf)
 
 	require 'catalog'.get_catalog('tasks'):register('selector', M.task)
 
-	--[[
-	M.register_server = service.register_server
-	M.register_client = service.register_client
-	M.unregister = service.unregister
-	--]]
 	return M
 end
 
@@ -167,7 +162,6 @@ end
 -- @table sktd
 
 --- Configuration Table.
--- This table is populated by toribio from the configuration file.
 -- @table conf
 -- @field service backend to use: 'nixio' or 'luasocket' (default)
 

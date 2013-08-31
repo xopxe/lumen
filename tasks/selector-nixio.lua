@@ -22,8 +22,6 @@ local read_streams = setmetatable({}, weak_key)
 
 local M = {}
 
-local module_task
-
 -------------------
 -- replace sched's default get_time and idle with nixio's
 sched.get_time = function()
@@ -51,9 +49,13 @@ local normalize_pattern = function( pattern)
 end
 
 local init_sktd = function(sktdesc)
-	local sktd = setmetatable(sktdesc or {},{ __index=M })
-	sktd.task = module_task
-	return sktd
+  sktdesc.send_sync = M.send_sync
+  sktdesc.send = M.send
+  sktdesc.send_async = M.send_async
+  sktdesc.getsockname = M.getsockname
+  sktdesc.getpeername = M.getpeername
+  sktdesc.close = M.close
+	return sktdesc
 end
 
 local pollt={}
@@ -83,7 +85,7 @@ local function handle_incomming_error(sktd, err)
 	err = err or 'fd closed'
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler,sktd, nil, err) 
-		if not ok then 
+		if not ok then
 			log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
 		end
 	elseif read_streams[sktd] then
@@ -237,13 +239,6 @@ local step = function (timeout)
 	end
 
 end
-module_task = sched.new_task( function ()
-	while true do
-		local t, _ = sched.yield()
-		step( t )
-	end
-end)
-
 -------------------
 
 M.init = function(conf)
@@ -252,48 +247,54 @@ M.init = function(conf)
 	--M.nixiorator=nixiorator
 	M.new_tcp_server = function(locaddr, locport, pattern, handler)
 		--address, port, pattern, backlog)
-		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
-		sktd.fd = nixio.bind(locaddr, locport, 'inet', 'stream')
-		sktd.events = {accepted=sktd.fd }
-		sktd.handler = handler
-		sktd.pattern = normalize_pattern(pattern)
+		local sktd=init_sktd({
+      fd = nixio.bind(locaddr, locport, 'inet', 'stream'),
+      handler = handler,
+      pattern = normalize_pattern(pattern),
+    })
+    sktd.events = {accepted=sktd.fd }
+    if sktd.pattern=='*l' and handler == 'stream' then sktd.pattern=nil end
 		register_server(sktd)
 		return sktd
 	end
 	M.new_tcp_client = function(address, port, locaddr, locport, pattern, handler)
-		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
-		sktd.fd = nixio.bind(locaddr, locport or 0, 'inet', 'stream')
+		local sktd=init_sktd({
+      fd = nixio.bind(locaddr, locport or 0, 'inet', 'stream'),
+      pattern=normalize_pattern(pattern),
+      handler = handler,
+    })
 		local ok, _, errmsg = sktd.fd:connect(address, port)
 		if not ok then return nil, errmsg end
 		sktd.events = {data=sktd.fd, async_finished={}}
-		sktd.pattern=normalize_pattern(pattern)
-		sktd.handler = handler
+    if sktd.pattern=='*l' and handler == 'stream' then sktd.pattern=nil end
 		register_client(sktd)
 		return sktd
 	end
 	M.new_udp = function( address, port, locaddr, locport, pattern, handler)
-		local sktd=init_sktd()
 		if locaddr=='*' then locaddr = nil end
-		sktd.fd = nixio.bind(locaddr, locport or 0, 'inet', 'dgram')
+		local sktd=init_sktd({
+      fd = nixio.bind(locaddr, locport or 0, 'inet', 'dgram'),
+      pattern =  normalize_pattern(pattern),
+      handler = handler,
+    })
 		sktd.events = {data=sktd.fd, async_finished={}}
 		if address and port then sktd.fd:connect(address, port) end
-		sktd.pattern =  normalize_pattern(pattern)
-		sktd.handler = handler
 		register_client(sktd)
 		return sktd
 	end
 	M.new_fd = function ( filename, flags, pattern, handler, stream )
-		local sktd=init_sktd()
+		local sktd=init_sktd({
+      flags = flags  or {},
+      pattern =  normalize_pattern(pattern),
+      handler = handler,
+      stream = stream,
+    })
 		local err, errmsg
 		sktd.fd, err, errmsg = nixio.open(filename, nixio.open_flags(unpack(flags)))
 		if not sktd.fd then return nil, errmsg end
-		sktd.flags = flags  or {}
 		sktd.events = {data=sktd.fd, async_finished={}}
-		sktd.pattern =  normalize_pattern(pattern)
-		sktd.handler = handler
-		sktd.stream = stream
 		register_client(sktd)
 		return sktd
 	end
@@ -313,12 +314,14 @@ M.init = function(conf)
 				nixio.exec("/bin/sh", "-c", command) --should not return
 			end
 		end
-		local sktd=init_sktd()
-		sktd.fd =  run_shell_nixio(command)
+		local sktd=init_sktd({
+      pattern =  normalize_pattern(pattern),
+      handler = handler,
+      fd = run_shell_nixio(command),
+    })
 		if not sktd.fd then return end
 		sktd.events = {data=sktd.fd}
-		sktd.pattern =  normalize_pattern(pattern)
-		sktd.handler = handler
+    if sktd.pattern=='*l' and handler == 'stream' then sktd.pattern=nil end
 		register_client(sktd)
 		return sktd
 	end
@@ -344,7 +347,7 @@ M.init = function(conf)
 			if done or err then
 				break
 			else
-				sched.yield()
+				sched.wait()
 			end
 		end
 		return done, errmsg, start
@@ -363,7 +366,7 @@ M.init = function(conf)
 		end
 		streamd:write(data)
 
-		sched.yield()
+		sched.wait()
 	end
 	M.getsockname = function(sktd)
 		return sktd.fd:getsockname()
@@ -372,9 +375,13 @@ M.init = function(conf)
 		return sktd.fd:getpeername()
 	end
 	
-	M.task=module_task
-	module_task:run()
-	
+	M.task = sched.run(function ()
+    while true do
+      local _, t, _ = sched.wait()
+      step( t )
+    end
+  end)
+
 	return M
 end
 

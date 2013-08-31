@@ -1,3 +1,5 @@
+-- adapted from Luasched.
+
 ------------------------------------------------------------------------------
 --- Log library provides logging facilities.
 -- The module exposes extension points. It is possible to provide both the custom printing function and the custom log saving function. <br />
@@ -59,7 +61,7 @@ M.modules = {}
 -- The string format of the timestamp is the same as what os.date takes.
 -- Example: "%F %T"
 -------------------------------------------------------------------------------
-M.timestampformat = nil
+M.timestampformat = '%s'--nil
 
 -------------------------------------------------------------------------------
 -- logger functions, will be called if non nil

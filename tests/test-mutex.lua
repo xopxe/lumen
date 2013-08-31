@@ -25,13 +25,13 @@ print "non synchronized access"
 sched.run(function()
 	for i=1,5 do
 		func('A')
-		sched.yield()
+		sched.wait()
 	end
 end)
 sched.run(function()
 	for i=1,5 do
 		func('B')
-		sched.yield()
+		sched.wait()
 	end
 end)
 sched.go()
@@ -42,13 +42,13 @@ print "\nsynchronized access"
 sched.run(function()
 	for i=1,5 do
 		critical('A')
-		sched.yield()
+		sched.wait()
 	end
 end)
 sched.run(function()
 	for i=1,5 do
 		critical('B')
-		sched.yield()
+		sched.wait()
 	end
 end)
 sched.go()

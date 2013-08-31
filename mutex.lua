@@ -6,7 +6,7 @@
 -- Notice that Lumen being a cooperative scheduler, it will never preempt
 -- control from a task. Thus mutexes can be needed only if the fragment of code 
 -- being locked contains a call that explicitly relinquish control, such as 
--- sched.sleep(), sched.yield(), sched.signal() or sched.wait().
+-- sched.sleep(), sched.signal() or sched.wait().
 -- @module mutex
 -- @usage local mutex = require 'mutex'
 --local mx = mutex.new()
@@ -37,14 +37,14 @@ local n_mutex=0
 local M = {}
 
 local event_release = {} --singleton event when releasing a lock
-local events_release = {event_release, sched.EVENT_DIE} --all the events that can release a lock
+local events_release = {event_release, sched.EVENT_DIE, sched.EVENT_FINISH} --all the events that can release a lock
 
 --memoize waitds that wait for a unlock signal from a certain task
-local function get_waitd_lock (task) 
-	if waitd_locks[task] then return waitd_locks[task] 
+local function get_waitd_lock (taskd) 
+	if waitd_locks[taskd] then return waitd_locks[taskd] 
 	else
-		local waitd = {emitter=task, events=events_release}
-		waitd_locks[task] = waitd
+		local waitd = {{}, taskd.EVENT_DIE, taskd.EVENT_FINISH}
+		waitd_locks[taskd] = waitd
 		return waitd
 	end
 end
@@ -53,7 +53,7 @@ end
 -- @return a mutexd object.
 M.new = function()
 	n_mutex = n_mutex+1
-	local mutex_name = 'MUTEX#'..n_mutex
+	local mutex_name = 'mutex #'..n_mutex
 	local m = setmetatable({}, {
 		__tostring=function() return mutex_name end, 
 		__index = M,
@@ -85,7 +85,8 @@ M.release = function(mutexd)
 	end
 	log('MUTEX', 'DEBUG', '%s released %s', tostring(mutexd.locker), tostring(mutexd))
 	mutexd.locker = nil
-	sched.signal(event_release)
+  get_waitd_lock (sched.running_task)
+	sched.signal( get_waitd_lock (sched.running_task)[1] )
 end
 
 --- Generate a synchronizzed version of a function.

@@ -1,8 +1,0 @@
-* add a ljsyscall backend to selector
-
-* rethink waitd structure (why "emitter" and "events"?)
-
-* Integrate RNR and LuPA (somehow)
-
-* Add telnet support to shell
-

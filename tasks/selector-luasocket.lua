@@ -28,8 +28,6 @@ sched.idle = socket.sleep
 --local write_pipes = setmetatable({}, weak_key)
 --local outstanding_data = setmetatable({}, weak_key)
 
-local module_task
-
 local unregister = function (fd)
 	local sktd = sktds[fd]
 	if not sktd then return end
@@ -124,8 +122,13 @@ local function send_from_pipe (fd)
 	end
 end
 local init_sktd = function(sktdesc)
-	local sktd = setmetatable(sktdesc or {},{ __index=M })
-	return sktd
+  sktdesc.send_sync = M.send_sync
+  sktdesc.send = M.send
+  sktdesc.send_async = M.send_async
+  sktdesc.getsockname = M.getsockname
+  sktdesc.getpeername = M.getpeername
+  sktdesc.close = M.close
+	return sktdesc
 end
 local register_server = function (sktd)
 	sktd.isserver=true
@@ -155,7 +158,7 @@ local step = function (timeout)
 				if client then
 					local skt_table_client = {
 						fd=client,
-						task=module_task,
+						--task=module_task,
 						events={data=client},
 						pattern=pattern,
 					}
@@ -167,6 +170,7 @@ local step = function (timeout)
 					else
 						skt_table_client.handler = sktd.handler
 					end
+          print ('>>', sched.running_task)
 					sched.signal(sktd.events.accepted, insktd)
 					register_client(insktd)
 				else
@@ -197,12 +201,6 @@ local step = function (timeout)
 		end
 	end
 end
-module_task = sched.new_task( function ()
-	while true do
-		local t, _ = sched.yield()
-		step( t )
-	end
-end)
 ---------------------------------------
 
 local normalize_pattern = function(pattern)
@@ -222,36 +220,41 @@ end
 M.init = function()
 	M.new_tcp_server = function (locaddr, locport, pattern, handler)
 		--address, port, backlog, pattern)
-		local sktd=init_sktd()
-		sktd.fd=assert(socket.bind(locaddr, locport))
-		sktd.events = {accepted=sktd.fd}
-		sktd.task=module_task
-		sktd.pattern=normalize_pattern(pattern)
-		sktd.handler = handler
+		local sktd=init_sktd({
+      fd=assert(socket.bind(locaddr, locport)),
+      --task=module_task,
+      pattern=normalize_pattern(pattern),
+      handler = handler,
+    })
+    sktd.events = {accepted=sktd.fd}
+    if sktd.pattern=='*l' and handler == 'stream' then sktd.pattern=nil end
 		register_server(sktd)
 		return sktd
 	end
 	M.new_tcp_client = function (address, port, locaddr, locport, pattern, handler)
 		--address, port, locaddr, locport, pattern)
-		local sktd=init_sktd()
-		sktd.fd=assert(socket.connect(address, port, locaddr, locport))
-		sktd.events = {data=sktd.fd, async_finished={}}
-		sktd.task=module_task
-		sktd.pattern=normalize_pattern(pattern)
-		sktd.handler = handler
+		local sktd=init_sktd({
+      fd=assert(socket.connect(address, port, locaddr, locport)),
+      --task=module_task,
+      pattern=normalize_pattern(pattern),
+      handler = handler,
+    })
+    sktd.events = {data=sktd.fd, async_finished={}}
+    if sktd.pattern=='*l' and handler == 'stream' then sktd.pattern=nil end
 		register_client(sktd)
 		return sktd
 	end
 	M.new_udp = function ( address, port, locaddr, locport, pattern, handler)
 	--address, port, locaddr, locport, count)
-		local sktd=init_sktd()
-		sktd.fd=socket.udp()
-		sktd.events = {data=sktd.fd, async_finished={}}
-		sktd.task=module_task
-		sktd.pattern=pattern 
-		sktd.fd:setsockname(locaddr or '*', locport or 0)
-		sktd.fd:setpeername(address or '*', port)
-		sktd.handler = handler
+		local sktd=init_sktd({
+      fd=socket.udp(),
+      --task=module_task,
+      pattern=pattern,
+      handler = handler,
+    })
+    sktd.events = {data=sktd.fd, async_finished={}}
+    sktd.fd:setsockname(locaddr or '*', locport or 0)
+    sktd.fd:setpeername(address or '*', port)
 		register_client(sktd)
 		return sktd
 	end
@@ -267,7 +270,7 @@ M.init = function()
 			if done or err then
 				break
 			else
-				sched.yield()
+				sched.wait()
 			end
 		end
 		return done, err, start
@@ -290,7 +293,7 @@ M.init = function()
 		end
 		streamd:write(data)
 
-		sched.yield()
+		sched.wait()
 	end
 	M.new_fd = function ()
 		return nil, 'Not supported by luasocket'
@@ -302,8 +305,14 @@ M.init = function()
 		return sktd.fd:getpeername()
 	end
 	
-	M.task=module_task
-	module_task:run()
+	M.task=sched.run(function ()
+    while true do
+      local _, t, _ = sched.wait()
+      print('>', sched.running_task, t)
+      step( t )
+    end
+  end)
+
 	--[[
 	M.register_server = service.register_server
 	M.register_client = service.register_client

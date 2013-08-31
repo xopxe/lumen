@@ -189,21 +189,23 @@ M.init = function(conf)
 	
 	local tcp_server = selector.new_tcp_server(ip, port, 0, 'stream')
 
-	local waitd_accept=sched.new_waitd({emitter=selector.task, events={tcp_server.events.accepted}, buff_len=10})
+	local waitd_accept={tcp_server.events.accepted}
 	log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
-	M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
+	M.task = sched.sigrun(waitd_accept, function (_, sktd_cli)
 		-- run the connection in a separated task
 		sched.run(function()
 			local instream = sktd_cli.stream
 			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', sktd_cli:getpeername())
-
+      
 			local read_incomming_header = function()
+        --FIXME According to RFC-2616, section 4.2:	Header fields can be extended over multiple 
+        --lines by preceding each	extra line with at least one SP or HT. 
 				local http_req_header  = {}
 				while true do
 					local line = instream:read_line()
 					if not line then sktd_cli:close(); return end
 					if line=='' then break end
-					local key, value=string.match(line, '^([^:]+):%s*(.*)$')
+					local key, value=string.match(line, '^(.-):%s*(.-)$')
 					--print ('HEADER', key, value)
 					if key and value then http_req_header[key:lower()] = value end
 				end

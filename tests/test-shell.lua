@@ -3,11 +3,9 @@
 
 --look for packages one folder up.
 package.path = package.path .. ";;;../?.lua"
---require "log".setlevel('INFO')
+--require "log".setlevel('ALL')
 
-require "strict"
-
-local service = arg [1] or 'luasocket'
+local service = 'luasocket' --arg [1] or 'luasocket'
 
 local sched = require "sched"
 --local selector = require "tasks/selector".init({service=service})
@@ -15,6 +13,8 @@ local selector = require "tasks/selector".init({service=service})
 
 local shell = require "tasks/shell"
 
+--sched.sigrun({sched.EVENT_ANY}, function(...) print('!', ...) end )
+sched.sigrun({sched.EVENT_DIE, sched.EVENT_FINISH}, function(...) print('!', ...) end )
 
 sched.run(function()
 	local conf = {ip='127.0.0.1', port='2012'}

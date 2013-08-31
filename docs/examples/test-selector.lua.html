@@ -34,21 +34,16 @@
 
 <h2>Examples</h2>
 <ul>
-  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><strong>test-selector.lua</strong></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/debug.html">debug</a></li>
-  <li><a href="../modules/http-server.html">http-server</a></li>
   <li><a href="../modules/log.html">log</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
@@ -78,8 +73,8 @@
 <span class="comment">--look for packages one folder up.
 </span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
 
-<span class="global">require</span> <span class="string">"strict"</span>
-
+<span class="comment">--require "strict"
+</span>
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
 
 
@@ -89,58 +84,65 @@
 
 <span class="keyword">local</span> selector = <span class="global">require</span> <span class="string">"tasks/selector"</span>.init({service=service})
 
-<span class="comment">---[[ udp
-</span><span class="comment">-- Print out data arriving on a udp socket
-</span><span class="keyword">local</span> udprecv = selector.new_udp(<span class="keyword">nil</span>, <span class="keyword">nil</span>, <span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, -<span class="number">1</span>)
+<span class="comment">--sched.sigrun({sched.EVENT_ANY}, function(...) print("?", ...) end)
+</span>
+<span class="comment">--[[ udp
+-- Print out data arriving on a udp socket
+local udprecv = selector.new_udp(nil, nil, "127.0.0.1", 8888, -1)
 sched.sigrun(
-	{emitter=udprecv.task, events={udprecv.events.data}},
-	<span class="keyword">function</span>(_, _, ...) <span class="global">print</span>(<span class="string">"!U"</span>, ...) <span class="keyword">end</span>
+	{udprecv.events.data},
+	function(_, ...) print("!U", ...) end
 )
 
-<span class="comment">-- Send data over an udp socket
-</span>sched.run(<span class="keyword">function</span>()
-	<span class="keyword">local</span> udpsend = selector.new_udp(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>)
-	<span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-		<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
-		<span class="global">print</span>(<span class="string">"udp sending"</span>,m)
+-- Send data over an udp socket
+sched.run(function()
+	local udpsend = selector.new_udp("127.0.0.1", 8888)
+	while true do
+		local m="ping! "..os.time()
+		print("udp sending",m)
 		udpsend:send(m)
-		sched.sleep(<span class="number">1</span>)
-	<span class="keyword">end</span>
-<span class="keyword">end</span>)
-<span class="comment">--]]
-</span>
+		sched.sleep(1)
+	end
+end)
+--]]</span>
+
 <span class="comment">---[[ tcp sync
-</span><span class="keyword">local</span> tcp_server = selector.new_tcp_server(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>,
-	<span class="string">'line'</span>, <span class="comment">--10,
-</span>	<span class="keyword">function</span>(sktd, data, err)
-		<span class="global">print</span> (<span class="string">'!T'</span>, sktd, data, err <span class="keyword">or</span> <span class="string">''</span>)
-		<span class="keyword">return</span> <span class="keyword">true</span>
-	<span class="keyword">end</span>
-)
-sched.sigrun({emitter=selector.task, events = <span class="string">'*'</span>}, <span class="keyword">function</span>(...)
-	<span class="global">print</span> (<span class="string">'           &gt;'</span>, ...)
+</span><span class="keyword">local</span> tcp_server = selector.new_tcp_server(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="keyword">nil</span>, <span class="string">'stream'</span>)
+<span class="comment">--local tcp_server = selector.new_tcp_server("127.0.0.1", 8888, 'line', 'stream')
+</span>
+sched.sigrun({tcp_server.events.accepted}, <span class="keyword">function</span>(_, sktd, err)
+  <span class="global">assert</span>(sktd, err)
+  <span class="global">print</span> (<span class="string">'client accepted'</span>, sktd.stream)
+  sched.run( <span class="keyword">function</span>()
+      <span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
+        <span class="comment">--print ('?', sktd.stream, sktd.stream.len)
+</span>        <span class="comment">--sched.sleep(1)
+</span>        <span class="keyword">local</span> line = <span class="global">assert</span>(sktd.stream:read_line())
+        <span class="global">print</span> (<span class="string">'tcp arrived on'</span>, sktd.stream, line)
+      <span class="keyword">end</span>
+  <span class="keyword">end</span>)
 <span class="keyword">end</span>)
-<span class="keyword">local</span> tcp_client = selector.new_tcp_client(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
+<span class="keyword">local</span> tcp_client1 = selector.new_tcp_client(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
 sched.run(<span class="keyword">function</span>()
 	<span class="comment">--while true do
 </span>	<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">15</span> <span class="keyword">do</span>
 		<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
-		<span class="global">print</span>(<span class="string">"tcp sending"</span>,m)
-		tcp_client:send(m..<span class="string">"\n"</span>)
+		<span class="global">print</span>(<span class="string">"tcp 1 sending"</span>,m)
+		tcp_client1:send(m..<span class="string">"\n"</span>)
 		sched.sleep(<span class="number">2.1</span>)
 	<span class="keyword">end</span>
-	tcp_client:close()
+	tcp_client1:close()
 <span class="keyword">end</span>)
 <span class="keyword">local</span> tcp_client2 = selector.new_tcp_client(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
 sched.run(<span class="keyword">function</span>()
 	<span class="comment">--while true do
 </span>	<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">15</span> <span class="keyword">do</span>
 		<span class="keyword">local</span> m=<span class="string">"pong! "</span>..<span class="global">os</span>.time()
-		<span class="global">print</span>(<span class="string">"tcp sending"</span>,m)
-		tcp_client:send(m..<span class="string">"\n"</span>)
+		<span class="global">print</span>(<span class="string">"tcp 2 sending"</span>,m)
+		tcp_client2:send(m..<span class="string">"\n"</span>)
 		sched.sleep(<span class="number">1.5</span>)
 	<span class="keyword">end</span>
-	tcp_client:close()
+	tcp_client2:close()
 <span class="keyword">end</span>)<span class="comment">--]]
 </span>
 <span class="comment">--[[ tcp async

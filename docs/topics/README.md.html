@@ -51,8 +51,6 @@
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/debug.html">debug</a></li>
-  <li><a href="../modules/http-server.html">http-server</a></li>
   <li><a href="../modules/log.html">log</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
@@ -64,14 +62,11 @@
 </ul>
 <h2>Examples</h2>
 <ul>
-  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -111,7 +106,7 @@ one second apart. Another tasks receives those signals and prints them.</p>
     <span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'sched'</span>
 
     <span class="comment">-- task emits signals
-</span>    <span class="keyword">local</span> emitter_task = sched.run(<span class="keyword">function</span>()
+</span>    sched.run(<span class="keyword">function</span>()
         <span class="keyword">for</span> i = <span class="number">1</span>, <span class="number">10</span> <span class="keyword">do</span>
             sched.signal(<span class="string">'an_event'</span>, i)
             sched.sleep(<span class="number">1</span>)
@@ -120,10 +115,10 @@ one second apart. Another tasks receives those signals and prints them.</p>
 
     <span class="comment">-- task receives signals
 </span>    sched.run(<span class="keyword">function</span>()
-        <span class="keyword">local</span> waitd = {emitter=emitter_task, events={<span class="string">'an_event'</span>}}
+        <span class="keyword">local</span> waitd = {<span class="string">'an_event'</span>}
         <span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-            <span class="keyword">local</span> _, _, data = sched.wait(waitd)
-            <span class="global">print</span> (data)
+            <span class="keyword">local</span> _, data = sched.wait(waitd)
+            <span class="global">print</span>(data)
         <span class="keyword">end</span>
     <span class="keyword">end</span>)
 
@@ -138,11 +133,11 @@ one second apart. Another tasks receives those signals and prints them.</p>
 
 <ul>
     <li>A signal can be of any type, and carry any parameters</li>
-    <li>A task can wait on several signals, from several emitters, with a timeout.</li>
+    <li>A task can wait on several signals, with an optional timeout.</li>
     <li>Signals can be buffered; this helps avoid losing signals when waiting signals in a loop.</li>
-    <li>Tasks can register a name, and query for tasks by name.</li>
-    <li>Tasks also can wait for a given name to get registered.</li>
+    <li>There is an catalog that can be used to simplify sharing data between tasks.</li>
 </ul>
+
 
 <p><a name="Pipes___Streams"></a></p>
 <h2>Pipes &amp; Streams</h2>
@@ -167,11 +162,13 @@ may have to resort to mutexes when your critical piece of code relinquish
 control explicitly, for example with a call to sleep, emitting a signal or blocking
 waiting for a signal.</p>
 
+
 <p><a name="Goodies"></a></p>
 <h2>Goodies</h2>
 
 <p>There are a few other useful modules, like an integrated remote Lua shell and a lightweigth
 HTTP server. </p>
+
 
 <p><a name="How_to_try_it_out_"></a></p>
 <h2>How to try it out?</h2>
@@ -184,35 +181,11 @@ few tasks exchanging messages, showing off basic functionality:</p>
  lua test.lua
 </pre>
 
-<p>You can wait on multiple events, from multiple sources. Check some
-possibilities here:</p>
-
-
-<pre>
- lua test-wait.lua
-</pre>
-
-<p>If you want to see LuaSocket and nixio integration working for async socket and
-file I/O, try:</p>
-
-
-<pre>
- lua test-selector.lua
-</pre>
-
-<p>To see how buffers, pipes and mutexes work and what they are for, try:</p>
-
-
-<pre>
- lua test-buff.lua
- lua test-pipe.lua
- lua test-mutex.lua
-</pre>
-
 <p><a name="License"></a></p>
 <h2>License</h2>
 
 <p>Same as Lua, see COPYRIGHT.</p>
+
 
 <p><a name="Who_"></a></p>
 <h2>Who?</h2>

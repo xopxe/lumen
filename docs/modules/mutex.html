@@ -39,8 +39,6 @@
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/debug.html">debug</a></li>
-  <li><a href="../modules/http-server.html">http-server</a></li>
   <li><a href="../modules/log.html">log</a></li>
   <li><strong>mutex</strong></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
@@ -56,14 +54,11 @@
 </ul>
 <h2>Examples</h2>
 <ul>
-  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -81,7 +76,7 @@
  Notice that Lumen being a cooperative scheduler, it will never preempt
  control from a task. Thus mutexes can be needed only if the fragment of code
  being locked contains a call that explicitly relinquish control, such as
- sched.sleep(), sched.yield(), sched.signal() or sched.wait().</p>
+ sched.sleep(), sched.signal() or sched.wait().</p>
     <h3>Usage:</h3>
     <ul>
         <pre class="example"> local mutex = require &apos;mutex&apos;

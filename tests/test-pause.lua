@@ -19,10 +19,10 @@ end)
 
 -- if stop receiving signals, un-pause the emitter task.
 sched.run(function()
-	local waitd={emitter=emitter_task, timeout=5, events={'ev'}}
+	local waitd={timeout=5, 'ev'}
 	while true do
-		local _, _, s = sched.wait(waitd)
-		if s then
+		local ev, s = sched.wait(waitd)
+		if ev then
 			print(s)
 		else
 			print ('wakeup!')

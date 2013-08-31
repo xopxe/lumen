@@ -19,10 +19,10 @@ local log=require 'log'
 
 local sched = require 'sched'
 local selector = require "tasks/selector"
-local pipes = require 'pipes'
+local pipe = require 'pipe'
 
 local CE = require 'lib/compat_env'
-local load     = CE.load
+local load = CE.load
 
 local M = {}
 
@@ -99,13 +99,18 @@ local function handle_shellbuffer ( shell )
 		
 		local task_command = sched.new_task(code)
 		task_command:set_as_attached()
-		local waitd_command = sched.new_waitd({emitter=task_command, buff_len=1, events={sched.EVENT_DIE}})
-		task_command:run()
+		local waitd_command = sched.new_waitd({
+      buff_mode='keep_last', 
+      task_command.EVENT_DIE, 
+      task_command.EVENT_FINISH,
+    })
+    task_command:run()
 		if background then -- create task that will push into out pipe
 			shell.pipe_out:write(shell.prompt_ready, 'In background: '..tostring(task_command))
-			sched.sigrun(waitd_command, function(_,_,okrun, ...) 
+			sched.sigrunonce(waitd_command, function(event, ...) 
+        print ('xxxxxx', event, ...) 
 				sched.running_task:set_as_attached()
-				if okrun then
+				if event == task_command.EVENT_FINISH then
 					shell.pipe_out:write(nil, 'Background finished: '..tostring(task_command))
 					shell.pipe_out:write(nil, printer(...))
 				else
@@ -114,8 +119,9 @@ local function handle_shellbuffer ( shell )
 				end
 			end)
 		else -- wait until command finishes
-			local function read_signal(_,_,okrun, ...)
-				if okrun then
+			local function read_signal(event, ...)
+        print ('yyyyyy', event, task_command, ...) 
+				if event == task_command.EVENT_FINISH then
 					shell.pipe_out:write(shell.prompt_ready, printer(...))
 				else
 					shell.pipe_out:write(shell.prompt_ready, 'Error: '.. tostring(...))
@@ -127,7 +133,7 @@ local function handle_shellbuffer ( shell )
 end
 
 local function print_from_pipe(pipe_out, skt)
-	repeat
+	while true do
 		local _, prompt, out = pipe_out:read()
 		if out then 
 			skt:send_sync(tostring(out)..'\r\n')
@@ -135,7 +141,7 @@ local function print_from_pipe(pipe_out, skt)
 		if prompt then
 			skt:send_sync(prompt)
 		end
-	until pipe_out:len() == 0
+  end
 end
 
 --- Returns a shell object.
@@ -150,15 +156,15 @@ M.new_shell = function()
 		banner = 'Welcome to Lumen Shell',
 		env={},
 		lines = {},
-		pipe_in = pipes.new(100),
-		pipe_out = pipes.new(100),
+		pipe_in = pipe.new(100),
+		pipe_out = pipe.new(100),
 		handle_shellbuffer = handle_shellbuffer
 	}
 	for k, v in pairs (M.shell_env) do shell.env[k] = v end
 	shell.env.print = function(...)
 		local args = table.pack(...)
-		local t= {}
-		for k = 1, args.n do t[#t+1] =tostring(args[k]) end
+		local t = {}
+		for k = 1, args.n do t[#t+1] = tostring(args[k]) end
 		shell.pipe_out:write(nil, table.concat(t, '\t')) --..'\r\n')
 	end
 	
@@ -202,22 +208,28 @@ M.init = function(conf)
 		
 	local tcp_server = selector.new_tcp_server(ip, port, 'line')
 	sched.run( function()
-		local waitd_accept={emitter=selector.task, events={tcp_server.events.accepted}}
 		log('SHELL', 'INFO', 'shell accepting connections on %s %s', tcp_server:getsockname())
-		M.task = sched.sigrun(waitd_accept, function (_,_, sktd_cli)
+		M.task = sched.sigrun({tcp_server.events.accepted}, function (_, sktd_cli)
 			if sktd_cli then
 				log('SHELL', 'DETAIL', 'connection accepted from %s %s', sktd_cli:getpeername())
 				local shell = M.new_shell() 
-				print_from_pipe(shell.pipe_out, sktd_cli)
-				local waitd_skt = {emitter=selector.task, events={sktd_cli.events.data}}
-				sched.sigrun(waitd_skt, function(_,  _, data, err )
+				--print_from_pipe(shell.pipe_out, sktd_cli)
+				local client_task = sched.sigrun({sktd_cli.events.data}, function(_, data, err )
 					if not data then 
 						log('SHELL', 'DETAIL', 'connection closed from %s %s', sktd_cli:getpeername())
+            sched.kill(shell.task)
+            sched.kill(sched.running_task)
 						return nil, err 
 					end
 					shell.pipe_in:write('line', data)
-					print_from_pipe(shell.pipe_out, sktd_cli)
+					--print_from_pipe(shell.pipe_out, sktd_cli)
 				end, true)
+        
+        local printer_task = sched.run(function()
+          print_from_pipe(shell.pipe_out, sktd_cli)
+        end)
+        client_task:attach(printer_task)
+        
 			end
 		end)
 	end)

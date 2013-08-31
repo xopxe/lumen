@@ -8,7 +8,7 @@ local sched=require 'sched'
 --require "log".setlevel('ALL')
 local stream=require 'stream'
 
-local astream=stream.new(10)
+local astream=stream.new()
 
 -- sender --
 sched.run(function()
