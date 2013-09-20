@@ -25,10 +25,6 @@ else
 	http_server.serve_static_content_from_ram('/docs/', '../docs')
 end
 
-
-
-sched.sigrun({emitter='*', events={sched.EVENT_DIE}}, print)
-
 http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
 	local shell = require 'tasks/shell' 
 	local sh = shell.new_shell()
