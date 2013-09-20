@@ -79,8 +79,8 @@ local function emit_signal ( event, packed, ... ) --FIXME
       if taskd.waitingfor == waitd and taskd.status=='ready' then
         taskd.waketime, taskd.waitingfor = nil, nil
         step_task(taskd, event, ...)
-        if M.running_task.status == 'dead' then -- the task was killed from a triggered task
-          --error('the task was killed from a triggered task')
+        if M.running_task and M.running_task.status == 'dead' then 
+          -- the task was killed from a triggered task
           print('the task was killed from a triggered task')
           --print (debug.traceback())
           --return --FIXME
@@ -91,7 +91,7 @@ local function emit_signal ( event, packed, ... ) --FIXME
         if waitd.buff_mode == 'keep_last' or
         waitd.buff_mode == 'keep_first' and not waitd.buff_event then
           waitd.buff_event = event
-          print ('buff', select('#',...), ...)
+          --print ('buff', select('#',...), ...)
           local n = select('#',...)
           if packed then 
             waitd.signal_packed, waitd.buff_parameter = true, select(1, ...)
@@ -181,12 +181,12 @@ M.new_waitd = function(waitd_table)
       waiting[ev] = waiting[ev] or setmetatable({}, weak_key)
       waiting[ev][waitd_table] = true --setmetatable({}, weak_key)
     end
-		log('SCHED', 'DETAIL', '%s created %s', tostring(M.running_task), tostring(waitd_table))
+		log('SCHED', 'DETAIL', 'task %s created waitd %s', tostring(M.running_task), tostring(waitd_table))
     waitd_count = waitd_count + 1
     if waitd_count % M.to_clean_up == 0 then clean_up() end
   else
-    log('SCHED', 'DETAIL', '%s using existing %s', tostring(M.running_task), tostring(waitd_table))
-		waitd_table[M.running_task] = true
+    log('SCHED', 'DETAIL', 'task %s using existing waitd %s', tostring(M.running_task), tostring(waitd_table))
+		waitd_table.tasks[M.running_task] = true
   end
   
   return waitd_table
@@ -430,7 +430,7 @@ end
 -- @param event event of the signal. Can be of any type.
 -- @param ... further parameters to be sent with the signal.
 M.signal = function ( event, ... )
-	log('SCHED', 'DEBUG', '%s emitting event %s with %d parameters', 
+	log('SCHED', 'DEBUG', 'task %s emitting event %s with %d parameters', 
 		tostring(M.running_task), tostring(event), select('#', ...))
   emit_signal(event, false, ...)  
 end
