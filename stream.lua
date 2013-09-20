@@ -30,7 +30,9 @@ M.read = function (streamd, length)
 	end
 	
 	while streamd.len == 0 or (length>0 and streamd.len < length) do
+    streamd.rblocked = true
 		local ev = sched.wait(streamd.waitd_data)
+    streamd.rblocked = false
 		if not ev then return nil, 'timeout' end
 		if streamd.closed and (streamd.len<length or streamd.len==0) then --and #streamd.buff_data == 0 then
 			return nil, 'closed', streamd.closed
@@ -56,14 +58,16 @@ M.read = function (streamd, length)
 		end
 		s=s:sub(1, length)
 		streamd.len = rlen
-		if not streamd.size or streamd.len <= streamd.size then 
-			sched.signal(streamd.pipe_enable_signal) -- unlock writers
-		end
+    if streamd.wblocked and (not streamd.size or streamd.len <= streamd.size) then 
+      sched.signal(streamd.pipe_enable_signal)  -- unlock writers
+    end
 	else
 		--return everything
 		buff_data[1] = nil
 		streamd.len = 0
-		sched.signal(streamd.pipe_enable_signal) -- unlock writers
+    if streamd.wblocked then 
+      sched.signal(streamd.pipe_enable_signal)  -- unlock writers
+    end
 	end
 	
 	return s
@@ -88,8 +92,10 @@ M.read_line = function (streamd)
 	end
 
 	while not line_available do
-		local emitter = sched.wait(streamd.waitd_data)
-		if not emitter then return nil, 'timeout' end
+    streamd.rblocked = true
+		local ev = sched.wait(streamd.waitd_data)
+    streamd.rblocked = false
+		if not ev then return nil, 'timeout' end
 		line_available, new_line_last = string.find (buff_data[#buff_data] or '', '\r?\n')
 		if streamd.closed and not line_available then
 			return nil, 'closed', streamd.closed
@@ -101,7 +107,7 @@ M.read_line = function (streamd)
 		local s = table.concat(buff_data)
 		streamd.buff_data = {[1] = s}
 		buff_data = streamd.buff_data
-		line_available, new_line_last = string.find(s,  '\r?\n')  --TODO keep count of positions to avoid rescanning
+		line_available, new_line_last = string.find(s, '\r?\n')  --TODO keep count of positions to avoid rescanning
 	end
 	
 	local s = buff_data[1]
@@ -111,15 +117,17 @@ M.read_line = function (streamd)
 		local remainder = s:sub(-remainder_length)
 		buff_data[1] = remainder
 		streamd.len = remainder_length
-		if not streamd.size or streamd.len <= streamd.size then 
-			sched.signal(streamd.pipe_enable_signal) -- unlock writers
-		end
-	else
+    if streamd.wblocked and (not streamd.size or streamd.len <= streamd.size) then 
+      sched.signal(streamd.pipe_enable_signal)  -- unlock writers
+    end
+  else
 		buff_data[1] = nil
 		streamd.len = 0
-		sched.signal(streamd.pipe_enable_signal) -- unlock writers
-	end
-	
+    if streamd.wblocked then 
+      sched.signal(streamd.pipe_enable_signal)  -- unlock writers
+    end
+  end
+  
 	return line
 end
 
@@ -133,19 +141,23 @@ end
 M.write = function (streamd, s, err)
 	if not s then --closing stream
 		streamd.closed=err or true
-		sched.signal(streamd.pipe_data_signal)
+    if streamd.rblocked then sched.signal(streamd.pipe_data_signal) end -- unlock readers
 		return true
 	end
 	if streamd.closed then --closing stream
 		return nil, 'closed', streamd.closed 
 	end
 	if streamd.size and streamd.len > streamd.size then
+    streamd.wblocked = true
 		local ev = sched.wait(streamd.waitd_enable)
+    streamd.wblocked = false
 		if not ev then return nil, 'timeout' end
 	end
 	streamd.buff_data[#streamd.buff_data+1] = s
 	streamd.len = streamd.len + #s
-	sched.signal(streamd.pipe_data_signal) -- unlock readers
+  if streamd.rblocked then -- unlock readers
+    sched.signal(streamd.pipe_data_signal) 
+  end
 	return true
 end
 
@@ -157,10 +169,8 @@ end
 M.set_timeout = function (streamd, read_timeout, write_timeout)
 	streamd.waitd_data.timeout = read_timeout
 	streamd.waitd_enable.timeout = write_timeout
-	
-	--force unlock so new timeouts get applied.
-	if streamd.waitd_enable.buff_event  then sched.signal(streamd.pipe_enable_signal) end
-	if streamd.waitd_data.buff_event  then sched.signal(streamd.pipe_data_signal) end
+	if streamd.wblocked then sched.signal(streamd.pipe_enable_signal) end
+	if streamd.rblocked then sched.signal(streamd.pipe_data_signal) end
 end
 
 local n_streams=0
@@ -185,16 +195,17 @@ M.new = function(size, read_timeout, write_timeout)
 	streamd.pipe_enable_signal = {} --singleton event for pipe control
 	streamd.pipe_data_signal = {} --singleton event for pipe data
 	streamd.len = 0
+  streamd.rblocked, streamd.wblocked = false, false
 	streamd.buff_data = {}
 	streamd.waitd_data = {
     streamd.pipe_data_signal,
 		timeout=read_timeout, 
-		buff_mode='keep_first', 
+		--buff_mode='keep_first', 
 	}
 	streamd.waitd_enable = {
     streamd.pipe_enable_signal,
 		timeout=write_timeout, 
-		buff_mode='keep_first', 
+		--buff_mode='keep_first', 
 	}
 	
 	return streamd
