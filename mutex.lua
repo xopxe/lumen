@@ -36,14 +36,11 @@ local n_mutex=0
 
 local M = {}
 
-local event_release = {} --singleton event when releasing a lock
-local events_release = {event_release, sched.EVENT_DIE, sched.EVENT_FINISH} --all the events that can release a lock
-
 --memoize waitds that wait for a unlock signal from a certain task
 local function get_waitd_lock (taskd) 
 	if waitd_locks[taskd] then return waitd_locks[taskd] 
 	else
-		local waitd = {{}, taskd.EVENT_DIE, taskd.EVENT_FINISH}
+		local waitd = {{}, taskd.EVENT_DIE, taskd.EVENT_FINISH} --all the events that can release a lock
 		waitd_locks[taskd] = waitd
 		return waitd
 	end
@@ -85,7 +82,6 @@ M.release = function(mutexd)
 	end
 	log('MUTEX', 'DEBUG', '%s released %s', tostring(mutexd.locker), tostring(mutexd))
 	mutexd.locker = nil
-  get_waitd_lock (sched.running_task)
 	sched.signal( get_waitd_lock (sched.running_task)[1] )
 end
 
