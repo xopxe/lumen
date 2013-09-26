@@ -12,8 +12,6 @@ local sort, concat, insert = table.sort, table.concat, table.insert
 local pairs, ipairs, type, tonumber, tostring = pairs, ipairs, type, tonumber, tostring
 local sub, find = string.sub, string.find
 
-module "bencode"
-
 local M = {}
 
 -- helpers
