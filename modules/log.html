@@ -1,0 +1,386 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>Lumen</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><strong>log</strong></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
+  <li><a href="../modules/sched.html">sched</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/stream.html">stream</a></li>
+</ul>
+<h2>Topics</h2>
+<ul>
+  <li><a href="../topics/README.md.html">README.md</a></li>
+</ul>
+<h2>Examples</h2>
+<ul>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test.lua.html">test.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>log</code></h1>
+
+<p>Log library provides logging facilities.</p>
+<p> The module exposes extension points. It is possible to provide both the custom printing function and the custom log saving function. <br />
+ The module is callable. Thus:</p>
+<pre><code>local log = require"log"
+log("MODULE", "INFO", "message")
+</code></pre>
+<p> calls the <a href="../modules/log.html#trace">trace</a> function.</p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#displaylogger">displaylogger&nbsp;(module, severity, msg)</a></td>
+	<td class="summary">Default logger for instant display.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#storelogger">storelogger&nbsp;(module, severity, msg)</a></td>
+	<td class="summary">Logger function for log storage.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#musttrace">musttrace&nbsp;(module, severity)</a></td>
+	<td class="summary">Determines whether a log must be traced depending on its severity and the module.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#trace">trace&nbsp;(module, severity, fmt, ...)</a></td>
+	<td class="summary">Prints out a log entry according to the module and the severity of the log entry.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#setlevel">setlevel&nbsp;(slevel, ...)</a></td>
+	<td class="summary">Sets the log level for a list of module names.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#levels">levels</a></td>
+	<td class="summary">Severity name &lt;-> Severity numeric value translation table.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#modules">modules</a></td>
+	<td class="summary">Per module verbosity levels.</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#defaultlevel">defaultlevel</a></td>
+	<td class="summary">Default verbosity level.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#timestampformat">timestampformat</a></td>
+	<td class="summary">The string format of the timestamp is the same as what os.date takes.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#format">format</a></td>
+	<td class="summary">Format is a string used to apply specific formating before the log is outputted.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    <dl class="function">
+    <dt>
+    <a name = "displaylogger"></a>
+    <strong>displaylogger&nbsp;(module, severity, msg)</strong>
+    </dt>
+    <dd>
+    Default logger for instant display.
+ This logger can be replaced by a custom function. <br />
+ It is called only if the log needs to be traced.
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">module</span>
+         string identifying the module that issues the log</li>
+        <li><span class="parameter">severity</span>
+         string representing the log level.</li>
+        <li><span class="parameter">msg</span>
+         string containing the message to log.</li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "storelogger"></a>
+    <strong>storelogger&nbsp;(module, severity, msg)</strong>
+    </dt>
+    <dd>
+    Logger function for log storage.  <br />
+ This logger can be replaced by a custom function. <br />
+ There is no default logger. <br />
+ It is called only if the log needs to be traced (see <a href="../modules/log.html#musttrace">musttrace</a>) and after the log has been displayed using {displaylogger}.
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">module</span>
+         string identifying the module thats issues the log</li>
+        <li><span class="parameter">severity</span>
+         string representing the log level.</li>
+        <li><span class="parameter">msg</span>
+         string containing the message to log.</li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "musttrace"></a>
+    <strong>musttrace&nbsp;(module, severity)</strong>
+    </dt>
+    <dd>
+    Determines whether a log must be traced depending on its severity and the module.
+ issuing the log.
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">module</span>
+         string identifying the module that issues the log.</li>
+        <li><span class="parameter">severity</span>
+         string representing the log level.</li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        `nil' if the message of the given severity by the given module should
+ not be printed.</li>
+        <li>
+        true if the message should be printed.</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "trace"></a>
+    <strong>trace&nbsp;(module, severity, fmt, ...)</strong>
+    </dt>
+    <dd>
+    Prints out a log entry according to the module and the severity of the log entry.  <br />
+ This function uses <a href="../modules/log.html#format">format</a> and <a href="../modules/log.html#timestampformat">timestampformat</a> to create the final message string. <br />
+ It calls <a href="../modules/log.html#displaylogger">displaylogger</a> and <a href="../modules/log.html#storelogger">storelogger</a>.
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">module</span>
+         string identifying the module that issues the log.</li>
+        <li><span class="parameter">severity</span>
+         string representing the log level.</li>
+        <li><span class="parameter">fmt</span>
+         string format that holds the log text the same way as string.format does.</li>
+        <li><span class="parameter">...</span>
+         additional arguments can be provided (as with string.format).</li>
+    </ul>
+
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">trace(<span class="string">"MODULE"</span>, <span class="string">"INFO"</span>, <span class="string">"message=%s"</span>, <span class="string">"sometext"</span>).</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "setlevel"></a>
+    <strong>setlevel&nbsp;(slevel, ...)</strong>
+    </dt>
+    <dd>
+    Sets the log level for a list of module names.
+ If no module name is given, the default log level is affected
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">slevel</span>
+         level as in <a href="../modules/log.html#levels">levels</a></li>
+        <li><span class="parameter">...</span>
+         Optional list of modules names (string) to apply the level to.</li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        nothing.
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="Tables"></a>Tables</h2>
+    <dl class="function">
+    <dt>
+    <a name = "levels"></a>
+    <strong>levels</strong>
+    </dt>
+    <dd>
+
+<p>Severity name &lt;-> Severity numeric value translation table.  <br />
+ Built-in values (in order from the least verbose to the most):</p>
+
+<ul>
+    <li>'NONE'</li>
+    <li>'ERROR'</li>
+    <li>'WARNING'</li>
+    <li>'INFO'</li>
+    <li>'DETAIL'</li>
+    <li>'DEBUG'</li>
+    <li>'ALL'</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "modules"></a>
+    <strong>modules</strong>
+    </dt>
+    <dd>
+    Per module verbosity levels.
+ See <a href="../modules/log.html#levels">levels</a> to see existing levels.
+
+
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+    <dl class="function">
+    <dt>
+    <a name = "defaultlevel"></a>
+    <strong>defaultlevel</strong>
+    </dt>
+    <dd>
+    Default verbosity level.  <br />
+ Default value is 'WARNING'.
+ See <a href="../modules/log.html#levels">levels</a> to see existing levels.
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "timestampformat"></a>
+    <strong>timestampformat</strong>
+    </dt>
+    <dd>
+    The string format of the timestamp is the same as what os.date takes.
+ Example: "%F %T"
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "format"></a>
+    <strong>format</strong>
+    </dt>
+    <dd>
+
+<p>Format is a string used to apply specific formating before the log is outputted.  <br />
+ Within a format, the following tokens are available (in addition to standard text)</p>
+
+<ul>
+    <li>%l => the actual log (given in 3rd argument when calling log() function)</li>
+    <li>%t => the current date</li>
+    <li>%m => module name</li>
+    <li>%s => log level (severity)</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.3.12</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

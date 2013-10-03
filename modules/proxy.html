@@ -40,8 +40,7 @@
 <h2>Modules</h2>
 <ul>
   <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/debug.html">debug</a></li>
-  <li><a href="../modules/http-server.html">http-server</a></li>
+  <li><a href="../modules/log.html">log</a></li>
   <li><a href="../modules/mutex.html">mutex</a></li>
   <li><a href="../modules/pipes.html">pipes</a></li>
   <li><strong>proxy</strong></li>
@@ -56,14 +55,11 @@
 </ul>
 <h2>Examples</h2>
 <ul>
-  <li><a href="../examples/test-buff.lua.html">test-buff.lua</a></li>
-  <li><a href="../examples/test-http-server.lua.html">test-http-server.lua</a></li>
   <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
   <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
   <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
   <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
   <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-wait.lua.html">test-wait.lua</a></li>
   <li><a href="../examples/test.lua.html">test.lua</a></li>
 </ul>
 
@@ -78,26 +74,25 @@
  Lumen instance, trough a socket. <br/>
  Signals are serialized using bencode or json, and restrictions apply
  on what can be passed trough depending on the encoder selected. For
- example, under bencode strings, numbers, lists (pure arrays) and tables 
- with strings as  keys are supported.
+ example, under bencode strings, numbers, lists (pure arrays) and tables
+ with strings as keys are supported.
  This module depends on the selector task, which must be started
  separataly.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local proxy = require 'proxy'
+        <pre class="example">  local proxy = require &apos;proxy&apos;
 
  --for accepting connections
- proxy.init({ip='*', port=1985}) 
- 
+ proxy.init({ip=&apos;*&apos;, port=1985})
+
  --connect to a remote node
- local waitd = proxy.new_remote_waitd('192.1681.1', 1985, {
- 	emitter = {'*'},
- 	events = {'a_event_name', 'other_event_name'},
- })
- sched.wait(waitd, function(_, _, taskname, eventname, ...)
- 	print ('received signal', taskname, eventname, ...)
+ local waitd = proxy.new_remote_waitd(&apos;192.1681.1&apos;, 1985,
+   {&apos;a_event_name&apos;, &apos;other_event_name&apos;})
+ sched.wait(waitd, function(_, eventname, ...)
+ 	print (&apos;received signal&apos;, eventname, ...)
  end)</pre>
     </ul>
+
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
@@ -123,38 +118,41 @@
 
 
     <h2><a name="Functions"></a>Functions</h2>
-    
     <dl class="function">
     <dt>
     <a name = "new_remote_waitd"></a>
     <strong>new_remote_waitd&nbsp;(ip, port, waitd_table)</strong>
     </dt>
     <dd>
-    Creates a waitd object over a remote Lumen instance. 
+    Creates a waitd object over a remote Lumen instance.
  The remote Lumen instance must have the proxy module started,
  and available trough a known ip address.
- The waitd_table is as the one used in plain <em>sched.new_waitd()</em> call, with
- the difference that the objects in the <em>emitter</em> and <em>events</em> fields are
- names which will be queried in the remote node's "tasks" and "events" catalogs
- (except '*', which has the usual meaning).
- There is an additional parameter, <em>name_timeout</em>, which controls the querying
+ The waitd_table is as the one used in plain _sched.new_<strong>waitd()_ call, with
+ the difference that the array part does not contain the events but the
+ names which will be queried in the remote node's "events" catalog.
+ There is an additional parameter, _name_</strong>timeout<em>, which controls the querying
  in the catalogs.
- The obtained waitd will react with a non null event, followed by the remote emitter and
- event names (as put in the waitd_table), followed by the parameters of the original event.
+ The obtained waitd will react with a non null event, followed by the event name
+ (as put in the waitd</em>table), followed by the parameters of the original event.
  On timeout, returns <em>nil, 'timeout'</em>.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>ip</em></code>:  ip of the remote proxy module.</li>
-       <li><code><em>port</em></code>:  port of the remote proxy module.</li>
-       <li><code><em>waitd_table</em></code>:  a wait descriptor.</li>
+        <li><span class="parameter">ip</span>
+         ip of the remote proxy module.</li>
+        <li><span class="parameter">port</span>
+         port of the remote proxy module.</li>
+        <li><span class="parameter">waitd_table</span>
+         a wait descriptor.</li>
     </ul>
-
 
     <h3>Returns:</h3>
     <ol>
+
         a waitd object
     </ol>
+
+
 
 
 </dd>
@@ -163,13 +161,15 @@
     <strong>init&nbsp;(conf)</strong>
     </dt>
     <dd>
-    Starts the proxy. 
+    Starts the proxy.
  This starts the task that will accept incomming wait requests.
 
     <h3>Parameters:</h3>
     <ul>
-       <li><code><em>conf</em></code>:  the configuration table (see <a href="../modules/proxy.html#conf">conf</a>)</li>
+        <li><span class="parameter">conf</span>
+         the configuration table (see <a href="../modules/proxy.html#conf">conf</a>)</li>
     </ul>
+
 
 
 
@@ -177,22 +177,24 @@
 </dd>
 </dl>
     <h2><a name="Tables"></a>Tables</h2>
-    
     <dl class="function">
     <dt>
     <a name = "conf"></a>
     <strong>conf</strong>
     </dt>
     <dd>
-    Configuration Table. 
- This table is populated by toribio from the configuration file.
+    Configuration Table.
 
     <h3>Fields:</h3>
     <ul>
-       <li><code><em>ip</em></code>:  the ip where the server listens (defaults to '*')</li>
-       <li><code><em>port</em></code>:  the port where the server listens (defaults to 1985)</li>
-       <li><code><em>encoder</em></code>:  the encoding method to use: 'bencode' or 'json' (default).</li>
+        <li><span class="parameter">ip</span>
+         the ip where the server listens (defaults to '*')</li>
+        <li><span class="parameter">port</span>
+         the port where the server listens (defaults to 1985)</li>
+        <li><span class="parameter">encoder</span>
+         the encoding method to use: 'bencode' or 'json' (default).</li>
     </ul>
+
 
 
 
@@ -204,7 +206,7 @@
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.2</a></i>
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.3.12</a></i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
