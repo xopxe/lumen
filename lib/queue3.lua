@@ -8,16 +8,16 @@ function M:new ()
 	return q
 end
 
-function M.pushleft (list, v1,v2,v3)
+function M.pushleft (list, v1, v2, v3)
 	local first = list.first - 1
 	list.first = first
-	list.data1[first], list.data2[first], list.data3[first] = v1,v2,v3
+	list.data1[first], list.data2[first], list.data3[first] = v1, v2, v3
 end
 
-function M.pushright (list, v1,v2,v3)
+function M.pushright (list, v1, v2, v3)
 	local last = list.last + 1
 	list.last = last
-	list.data1[last], list.data2[last], list.data3[last] = v1,v2,v3
+	list.data1[last], list.data2[last], list.data3[last] = v1, v2, v3
 end
 
 function M.popleft (list)
@@ -38,7 +38,7 @@ function M.popright (list)
 	return v1, v2, v3
 end
 
-function M.len(list)
+function M.len (list)
 	return list.last - list.first + 1
 end
 

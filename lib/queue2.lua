@@ -8,16 +8,16 @@ function M:new ()
 	return q
 end
 
-function M.pushleft (list, v1,v2)
+function M.pushleft (list, v1, v2)
 	local first = list.first - 1
 	list.first = first
-	list.data1[first], list.data2[first] = v1,v2
+	list.data1[first], list.data2[first] = v1, v2
 end
 
-function M.pushright (list, v1,v2)
+function M.pushright (list, v1, v2)
 	local last = list.last + 1
 	list.last = last
-	list.data1[last], list.data2[last] = v1,v2
+	list.data1[last], list.data2[last] = v1, v2
 end
 
 function M.popleft (list)

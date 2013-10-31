@@ -26,7 +26,7 @@ end
 
 local populate_cache_control =  function(http_out_header, http_req_path, conf)
 	if not conf.max_age then return end
-	local extension = http_req_path:match('%.([^%.]+)$')
+	local extension = http_req_path:match('^%.*([^%.]+)$')
 	local max_age = conf.max_age[extension] 
 	if not max_age then return http_out_header end
 	http_out_header['cache-control'] = 'max-age='..max_age
@@ -35,7 +35,7 @@ end
 
 local M = {}
 
---- How long keep a session open.
+--- How long keep a http session open.
 -- Defaults to 15s.
 M.HTTP_TIMEOUT = 15 --how long keep connections open
 
@@ -288,6 +288,7 @@ M.init = function(conf)
 					end
 				end
 				
+        --handle socket closing when appropiate
 				if (http_req_version== '1.0' and http_req_header['connection']~='Keep-Alive')
 				or need_flush then 
 					sktd_cli:close()
