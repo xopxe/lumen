@@ -23,15 +23,7 @@ one second apart. Another tasks receives those signals and prints them.
 
 ```lua
     local sched=require 'sched'
-    
-    -- task emits signals
-    sched.run(function()
-    	for i = 1, 10 do
-    		sched.signal('an_event', i)
-    		sched.sleep(1)
-    	end
-    end)
-    
+
     -- task receives signals
     sched.run(function()
     	local waitd = {'an_event'}
@@ -41,6 +33,14 @@ one second apart. Another tasks receives those signals and prints them.
     	end
     end)
     
+    -- task emits signals
+    sched.run(function()
+    	for i = 1, 10 do
+    		sched.signal('an_event', i)
+    		sched.sleep(1)
+    	end
+    end)
+        
     sched.go()
 ```
 
