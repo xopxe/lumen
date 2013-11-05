@@ -101,4 +101,4 @@ end)
 --]]
 
 
-sched.go()
+sched.loop()

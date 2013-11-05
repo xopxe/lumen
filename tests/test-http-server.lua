@@ -68,4 +68,4 @@ for _, h in pairs (http_server.request_handlers) do
 	print ('url:', h.pattern)
 end
 
-sched.go()
+sched.loop()

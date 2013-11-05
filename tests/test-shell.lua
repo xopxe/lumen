@@ -22,4 +22,4 @@ sched.run(function()
 	print ('Shell started on '..tostring(conf.ip)..':'..tostring(conf.port))
 end)
 
-sched.go()
+sched.loop()

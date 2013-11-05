@@ -4,11 +4,11 @@
 -- and that's it.
 -- @module sched
 -- @usage local sched = require 'sched'
---sched.sigrun({'a signal'}, print)
---local task=sched.run(function()
+-- sched.sigrun({'a signal'}, print)
+-- local task=sched.run(function()
 --   sched.signal('a signal', 'data')
 --   sched.sleep(1)
---end)
+-- end)
 -- @alias M
 
 local log=require 'log'
@@ -26,7 +26,7 @@ end
 local M = {}
 
 --- Currently running task.
--- the task descriptor from current task.
+-- The task descriptor from current task.
 M.running_task = false
 
 --- Task died event.
@@ -269,10 +269,11 @@ end
 --- Create a task.
 -- The task is created in paused mode. To run the created task,
 -- use @{run} or @{set_pause}.
--- The task will emit a _sched.EVENT\_DIE, true, params..._
+-- The task will emit a _sched.EVENT\_FINISH, true, params..._
 -- signal upon normal finalization, were params are the returns of f.
 -- If there is a error, the task will emit a _sched.EVENT\_DIE, false, err_ were
 -- err is the error message.
+-- @function new_task
 -- @param f function for the task
 -- @return task in the scheduler (see @{taskd}).
 M.new_task = new_task
@@ -280,7 +281,7 @@ M.new_task = new_task
 --- Attach a task to another.
 -- An attached task will be killed by the scheduler whenever
 -- the parent task is finished (returns, errors or is killed). Can be 
--- invoked as taskd:attach(taskd_child).
+-- invoked as taskd:attach(taskd\_child).
 -- @param taskd The parent task
 -- @param taskd_child The child (attached) task.
 -- @return the modified taskd.
@@ -293,7 +294,7 @@ end
 --- Set a task as attached to the creator task.
 -- An attached task will be killed by the scheduler whenever
 -- the parent task (the task that created it) is finished (returns, errors or is killed). 
--- Can be invoked as taskd:set_as_attached().
+-- Can be invoked as taskd:set\_as\_attached().
 -- @param taskd The child (attached) task.
 -- @return the modified taskd.
 M.set_as_attached = function(taskd)
@@ -304,7 +305,7 @@ end
 --- Run a task.
 -- Can be provided either a @{taskd} or a function, with optional parameters.
 -- If provided a taskd, will run it. If provided a function, will use @{new_task}
--- to create a task first.
+-- to create a task first. This call yields control to the new task immediatelly.
 -- @param task wither a @{taskd} or function for the task.
 -- @param ... parameters passed to the task upon first run.
 -- @return a task in the scheduler (see @{taskd}).
@@ -438,7 +439,7 @@ end
 --- Emit a signal lazily.
 -- Like @{signal}, except it does not yield control.
 -- Will schedule the event to be emitted after task yields by 
--- other means (it even can be delayed beyond that by the ccheduler). 
+-- other means (it even can be delayed beyond that by the scheduler). 
 -- Scheduled signals from multiple tasks will be 
 -- emitted in order.
 -- @param event event of the signal. Can be of any type.
@@ -531,10 +532,17 @@ M.step = function ()
 	return remaining
 end
 
---- Starts the scheduler.
--- Will run until there is no more activity, i.e. there's no active task,
--- and none of the waiting tasks has a timeout set.
-M.go = function ()
+--- Wait for the scheduler to finish.
+-- This call will block until there is no more task activity, i.e. there's no active task,
+-- and none of the waiting tasks has a timeout set. 
+-- @usage local sched = require 'sched'
+-- sched.run(function()
+--    --start at least one task
+-- end)
+-- sched.loop()
+-- --potentially free any resources before finishing here  
+--
+M.loop = function ()
 	log('SCHED', 'INFO', 'Started.')
 	repeat
 		local idle_time = M.step()

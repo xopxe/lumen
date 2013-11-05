@@ -78,11 +78,11 @@
     <h3>Usage:</h3>
     <ul>
         <pre class="example"> local sched = require &apos;sched&apos;
-sched.sigrun({&apos;a signal&apos;}, print)
-local task=sched.run(function()
+ sched.sigrun({&apos;a signal&apos;}, print)
+ local task=sched.run(function()
    sched.signal(&apos;a signal&apos;, &apos;data&apos;)
    sched.sleep(1)
-end)</pre>
+ end)</pre>
     </ul>
 
 
@@ -103,6 +103,10 @@ end)</pre>
 	<tr>
 	<td class="name" nowrap><a href="#sleep">sleep&nbsp;(timeout)</a></td>
 	<td class="summary">Sleeps the task for t time units.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new_task">new_task&nbsp;(f)</a></td>
+	<td class="summary">Create a task.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#attach">attach&nbsp;(taskd, taskd_child)</a></td>
@@ -149,8 +153,8 @@ end)</pre>
 	<td class="summary">Runs a single step of the scheduler.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#go">go&nbsp;()</a></td>
-	<td class="summary">Starts the scheduler.</td>
+	<td class="name" nowrap><a href="#loop">loop&nbsp;()</a></td>
+	<td class="summary">Wait for the scheduler to finish.</td>
 	</tr>
 </table>
 <h2><a href="#Tables">Tables</a></h2>
@@ -182,10 +186,6 @@ end)</pre>
 	<tr>
 	<td class="name" nowrap><a href="#to_clean_up">to_clean_up</a></td>
 	<td class="summary">Control memory collection.</td>
-	</tr>
-	<tr>
-	<td class="name" nowrap><a href="#new_task">new_task</a></td>
-	<td class="summary">Create a task.</td>
 	</tr>
 </table>
 <h2><a href="#Data_structures">Data structures </a></h2>
@@ -297,6 +297,35 @@ end)</pre>
 
 </dd>
     <dt>
+    <a name = "new_task"></a>
+    <strong>new_task&nbsp;(f)</strong>
+    </dt>
+    <dd>
+    Create a task.
+ The task is created in paused mode. To run the created task,
+ use <a href="../modules/sched.html#run">run</a> or <a href="../modules/sched.html#set_pause">set_pause</a>.
+ The task will emit a <em>sched.EVENT_FINISH, true, params...</em>
+ signal upon normal finalization, were params are the returns of f.
+ If there is a error, the task will emit a <em>sched.EVENT_DIE, false, err</em> were
+ err is the error message.
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">f</span>
+         function for the task</li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        task in the scheduler (see <a href="../modules/sched.html#taskd">taskd</a>).
+    </ol>
+
+
+
+
+</dd>
+    <dt>
     <a name = "attach"></a>
     <strong>attach&nbsp;(taskd, taskd_child)</strong>
     </dt>
@@ -332,7 +361,7 @@ end)</pre>
     Set a task as attached to the creator task.
  An attached task will be killed by the scheduler whenever
  the parent task (the task that created it) is finished (returns, errors or is killed).
- Can be invoked as taskd:set<em>as</em>attached().
+ Can be invoked as taskd:set_as_attached().
 
     <h3>Parameters:</h3>
     <ul>
@@ -358,7 +387,7 @@ end)</pre>
     Run a task.
  Can be provided either a <a href="../modules/sched.html#taskd">taskd</a> or a function, with optional parameters.
  If provided a taskd, will run it. If provided a function, will use <a href="../modules/sched.html#new_task">new_task</a>
- to create a task first.
+ to create a task first. This call yields control to the new task immediatelly.
 
     <h3>Parameters:</h3>
     <ul>
@@ -538,7 +567,7 @@ end)</pre>
     Emit a signal lazily.
  Like <a href="../modules/sched.html#signal">signal</a>, except it does not yield control.
  Will schedule the event to be emitted after task yields by
- other means (it even can be delayed beyond that by the ccheduler).
+ other means (it even can be delayed beyond that by the scheduler).
  Scheduled signals from multiple tasks will be
  emitted in order.
 
@@ -575,18 +604,27 @@ end)</pre>
 
 </dd>
     <dt>
-    <a name = "go"></a>
-    <strong>go&nbsp;()</strong>
+    <a name = "loop"></a>
+    <strong>loop&nbsp;()</strong>
     </dt>
     <dd>
-    Starts the scheduler.
- Will run until there is no more activity, i.e. there's no active task,
+    Wait for the scheduler to finish.
+ This call will block until there is no more task activity, i.e. there's no active task,
  and none of the waiting tasks has a timeout set.
 
 
 
 
 
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"> <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">'sched'</span>
+ sched.run(<span class="keyword">function</span>()
+    <span class="comment">--start at least one task
+</span> <span class="keyword">end</span>)
+ sched.loop()
+ --potentially free any resources before finishing here  </pre>
+    </ul>
 
 </dd>
 </dl>
@@ -634,7 +672,7 @@ end)</pre>
     </dt>
     <dd>
     Currently running task.
- the task descriptor from current task.
+ The task descriptor from current task.
 
 
 
@@ -691,30 +729,6 @@ end)</pre>
  number of new insertions in waiting[event] before triggering clean_up.
  Defaults to 1000
 
-
-
-
-
-
-</dd>
-    <dt>
-    <a name = "new_task"></a>
-    <strong>new_task</strong>
-    </dt>
-    <dd>
-    Create a task.
- The task is created in paused mode. To run the created task,
- use <a href="../modules/sched.html#run">run</a> or <a href="../modules/sched.html#set_pause">set_pause</a>.
- The task will emit a <em>sched.EVENT_DIE, true, params...</em>
- signal upon normal finalization, were params are the returns of f.
- If there is a error, the task will emit a <em>sched.EVENT_DIE, false, err</em> were
- err is the error message.
-
-    <h3>:</h3>
-    <ul>
-        <li><span class="parameter">f</span>
-         function for the task</li>
-    </ul>
 
 
 

@@ -35,4 +35,4 @@ sched.run(function()
 	return x
 end)
 
-sched.go()
+sched.loop()

@@ -32,4 +32,4 @@ sched.run(function()
 end)
 
 emitter_task:run()
-sched.go()
+sched.loop()

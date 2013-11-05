@@ -17,4 +17,4 @@ sched.run(function()
   end
 end)
 
-sched.go()
+sched.loop()

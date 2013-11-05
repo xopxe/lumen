@@ -34,7 +34,7 @@ sched.run(function()
 		sched.wait()
 	end
 end)
-sched.go()
+sched.loop()
 --]]
 
 ---[[
@@ -51,7 +51,7 @@ sched.run(function()
 		sched.wait()
 	end
 end)
-sched.go()
+sched.loop()
 --]]
 
 
