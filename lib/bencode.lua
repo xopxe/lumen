@@ -161,7 +161,7 @@ local function decode_string(s, index)
 	index = b + 1 
 	 
 	local v = sub(s, index, index + len - 1) 
-	if #v < len - 1 then return nil, "truncated string at end of input", v end
+	if #v < tonumber(len) then return nil, "truncated string at end of input", v end
 	index = index + len 
 	return v, index 
 end 
