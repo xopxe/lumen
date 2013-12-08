@@ -41,7 +41,7 @@ one second apart. Another tasks receives those signals and prints them.
     	end
     end)
         
-    sched.go()
+    sched.loop()
 ```
 
 ## Tasks
