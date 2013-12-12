@@ -107,12 +107,12 @@ local function emit_signal ( event, packed, ... ) --FIXME
     end
   end
   if waiting[event] then 
-    for waitd, _ in pairs(waiting[event], ...) do
+    for waitd, _ in pairs(waiting[event]) do
       walk_waitd(waitd, event, ...)
     end
   end
   if waiting[M.EVENT_ANY] then 
-    for waitd, _ in pairs(waiting[M.EVENT_ANY], ...) do
+    for waitd, _ in pairs(waiting[M.EVENT_ANY]) do
       walk_waitd(waitd, event, ...)
     end
   end
