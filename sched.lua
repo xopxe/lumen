@@ -312,7 +312,7 @@ end
 M.run = function ( task, ... )
 	local taskd
 	if type(task)=='function' then
-		taskd = new_task( task, ...)
+		taskd = new_task( task )
 	else
 		taskd = task
 	end
