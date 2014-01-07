@@ -569,7 +569,7 @@ end
 -- on first request basis.  
 -- Besides the following fields, provides methods for
 -- the sched functions that have a waitd as first parameter.
--- @field array The array part contains the events to wait. Can contain a '\*', 
+-- @field array The array part contains the events to wait. Can contain `M.EVENT_ANY` 
 -- to mark interest in any event. If nil, will
 -- only return on timeout. 
 -- @field timeout optional, time to wait. nil or negative waits for ever.
