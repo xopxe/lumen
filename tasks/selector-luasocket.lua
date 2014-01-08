@@ -170,7 +170,6 @@ local step = function (timeout)
 					else
 						skt_table_client.handler = sktd.handler
 					end
-          print ('>>', sched.running_task)
 					sched.signal(sktd.events.accepted, insktd)
 					register_client(insktd)
 				else
@@ -308,7 +307,6 @@ M.init = function()
 	M.task=sched.run(function ()
     while true do
       local _, t, _ = sched.wait()
-      print('>', sched.running_task, t)
       step( t )
     end
   end)

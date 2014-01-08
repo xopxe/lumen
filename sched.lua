@@ -44,8 +44,7 @@ M.EVENT_DIE = setmetatable({}, {__tostring=function() return "event: DIE" end})
 M.EVENT_FINISH = setmetatable({}, {__tostring=function() return "event: FINISH" end})
 
 --- Event used for all events
--- When included in a @{waitd}, will match any event. This means all events will
--- be provided to wait.
+-- When included in a @{waitd}, will match any event.
 M.EVENT_ANY = {}
   
 --TODO
@@ -569,9 +568,8 @@ end
 -- on first request basis.  
 -- Besides the following fields, provides methods for
 -- the sched functions that have a waitd as first parameter.
--- @field array The array part contains the events to wait. Can contain `M.EVENT_ANY` 
--- to mark interest in any event. If nil, will
--- only return on timeout. 
+-- @field array The array part contains the events to wait. Can contain `sched.EVENT_ANY` 
+-- to mark interest in any event. If nil, will only return on timeout. 
 -- @field timeout optional, time to wait. nil or negative waits for ever.
 -- @field buff_mode Specifies how to behave when inserting in a full buffer.
 -- 'keep last' means replace with the new arrived signal. 'keep first'
