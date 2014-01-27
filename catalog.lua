@@ -124,13 +124,13 @@ M.get_catalog = function (name, strong)
 	if catalogs[name] then 
 		return catalogs[name] 
 	else
--		local catalogd = setmetatable(
--			{ direct = {}, reverse = {}, name=name}, 
--			{__index=M}
--		)
--		if not strong then 
--			setmetatable( catalogd.direct,{__mode = 'kv'} )
--			setmetatable( catalogd.reverse,{__mode = 'kv'} )
+		local catalogd = setmetatable(
+			{ direct = {}, reverse = {}, name=name}, 
+			{__index=M}
+		)
+    if not strong then 
+			setmetatable( catalogd.direct,{__mode = 'kv'} )
+			setmetatable( catalogd.reverse,{__mode = 'kv'} )
     end
 		catalogs[name] = catalogd
 		return catalogd
