@@ -1,7 +1,7 @@
 -- websocket support adaptded from lua-websocket (http://lipp.github.io/lua-websockets/)
 
-local sha1 = require'tasks/http-server/sha1'.sha1_binary
-local base64 = require'tasks/http-server/base64'
+local sha1 = require'lumen.tasks.http-server.sha1'.sha1_binary
+local base64 = require'lumen.tasks.http-server.base64'
 local tinsert = table.insert
 
 local guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"

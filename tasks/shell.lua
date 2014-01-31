@@ -11,17 +11,17 @@
 -- This module depends on the selector task, which must be started
 -- seperataly.
 -- @module shell
--- @usage local server = require 'shell'
+-- @usage local server = require 'lumen.shell'
 --server.init({ip='127.0.0.1', port=2012})
 -- @alias M
 
-local log=require 'log'
+local log=require 'lumen.log'
 
-local sched = require 'sched'
-local selector = require "tasks/selector"
-local pipe = require 'pipe'
+local sched = require 'lumen.sched'
+local selector = require "lumen.tasks.selector"
+local pipe = require 'lumen.pipe'
 
-local CE = require 'lib/compat_env'
+local CE = require 'lumen.lib.compat_env'
 local load = CE.load
 
 local M = {}

@@ -3,12 +3,12 @@
 -- to a function.
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../?.lua"
+package.path = package.path .. ";;;../../?.lua;../../?/init.lua;"
 
 --require "strict"
 
-local sched = require "sched"
-local mutex = require "mutex"
+local sched = require "lumen.sched"
+local mutex = require "lumen.mutex"
 
 local mx = mutex.new()
 

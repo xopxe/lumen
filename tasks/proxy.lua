@@ -7,7 +7,7 @@
 -- with strings as keys are supported.
 -- This module depends on the selector task, which must be started
 -- separataly.
--- @usage  local proxy = require 'proxy'
+-- @usage  local proxy = require 'lumen.proxy'
 --
 -- --for accepting connections
 -- proxy.init({ip='*', port=1985}) 
@@ -21,11 +21,11 @@
 -- @module proxy
 -- @alias M
 
-local sched = require 'sched'
-local selector = require 'tasks/selector'
-local events_catalog = require 'catalog'.get_catalog('events')
-local log=require 'log'
-
+local sched = require 'lumen.sched'
+local selector = require 'lumen.tasks.selector'
+local events_catalog = require 'lumen.catalog'.get_catalog('events')
+local log=require 'lumen.log'
+local unpack = unpack or table.unpack
 local encode_f
 local decode_f
 

@@ -1,7 +1,7 @@
 -- websocket support adaptded from lua-websocket (http://lipp.github.io/lua-websockets/)
 -- Following Websocket RFC: http://tools.ietf.org/html/rfc6455
 --require'pack'
-local bit = require'tasks/http-server/websocket/bit'
+local bit = require'lumen.tasks.http-server.websocket.bit'
 
 local band = bit.band
 local bxor = bit.bxor
@@ -14,6 +14,7 @@ local schar = string.char
 local tinsert = table.insert
 local tconcat = table.concat
 local mmin = math.min
+local unpack = unpack or table.unpack
 
 local bits = function(...)
   local n = 0

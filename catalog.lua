@@ -6,15 +6,15 @@
 -- A name is associated to a single object, and an object has a single name.
 -- Catalogs can be strong or weak, ie, they can keep objects from being garbage collected, or not.
 -- @module catalog
--- @usage local tasks = require 'catalog'.get_catalog('tasks')
+-- @usage local tasks = require 'lumen.catalog'.get_catalog('tasks')
 --...
 --tasks:register('a task', sched.running_task)
 --...
 --local a_task=tasks:waitfor('a task')
 -- @alias M
 
-local sched = require 'sched'
-local log = require 'log'
+local sched = require 'lumen.sched'
+local log = require 'lumen.log'
 
 --get locals for some useful things
 local next,  setmetatable, tostring = next,  setmetatable, tostring
@@ -141,7 +141,7 @@ end
 --- Iterator for registered objects.
 -- @param catalogd the catalog to use.
 -- @return Iterator function
--- @usage local tasks = require 'catalog'.get_catalog('tasks')
+-- @usage local tasks = require 'lumen.catalog'.get_catalog('tasks')
 --for name, task in tasks:iterator() do
 --	print(name, task)
 --end
