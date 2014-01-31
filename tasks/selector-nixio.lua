@@ -1,12 +1,12 @@
-local log=require 'log'
+local log=require 'lumen.log'
 
-local sched = require 'sched'
+local sched = require 'lumen.sched'
 local nixio = require 'nixio'
-local streams = require 'stream'
+local streams = require 'lumen.stream'
 
---local nixiorator = require 'tasks/nixiorator'
+--local nixiorator = require 'lumen.tasks.nixiorator'
 require 'nixio.util'
-
+local unpack = unpack or table.unpack
 local floor = math.floor
 local weak_key = { __mode = 'k' }
 

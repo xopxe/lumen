@@ -4,18 +4,18 @@
 -- Should run as root or sudo, for reading /dev/input/mice
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../?.lua"
+package.path = package.path .. ";;;../../?.lua;../../?/init.lua;"
 
 --require "strict"
 
-local sched = require "sched"
+local sched = require "lumen.sched"
 
 
 local service=arg[1] or 'luasocket'
 --local service='nixio'
 print ('using service:', service)
 
-local selector = require "tasks/selector".init({service=service})
+local selector = require "lumen.tasks.selector".init({service=service})
 
 --sched.sigrun({sched.EVENT_ANY}, function(...) print("?", ...) end)
 

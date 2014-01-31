@@ -22,7 +22,7 @@ Here is a small program, with two tasks: one emits ten numbered signals,
 one second apart. Another tasks receives those signals and prints them.
 
 ```lua
-    local sched=require 'sched'
+    local sched=require 'lumen.sched'
 
     -- task receives signals
     sched.run(function()

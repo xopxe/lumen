@@ -6,12 +6,12 @@
 -- @module http-server 
 -- @alias M
 
-local log=require 'log'
+local log=require 'lumen.log'
 
-local sched = require 'sched'
-local selector = require 'tasks/selector'
-local http_util = require 'tasks/http-server/http-util'
-local stream = require 'stream'
+local sched = require 'lumen.sched'
+local selector = require 'lumen.tasks.selector'
+local http_util = require 'lumen.tasks.http-server.http-util'
+local stream = require 'lumen.stream'
 
 local function backup_response(code_out, header_out)
 	local httpstatus = tostring(code_out).." "..http_util.http_error_code[code_out]
@@ -72,7 +72,7 @@ M.set_request_handler = function ( method, pattern, callback )
 	}
 end
 
-local websocket = require 'tasks/http-server/websocket'
+local websocket = require 'lumen.tasks.http-server.websocket'
 
 --- Register a websocket protocol.
 -- The configuration flag _ws_enable_ must be set (see @{conf})
