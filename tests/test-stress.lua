@@ -3,12 +3,12 @@
 --See how fast it can run.
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../../?.lua;../../?/init.lua;"
+package.path = package.path .. ";;;../?.lua"
 
 --require "strict"
 --require "profiler"
 
-local sched = require "lumen.sched"
+local sched = require "sched"
 
 local i=0
 

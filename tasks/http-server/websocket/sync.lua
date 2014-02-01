@@ -1,7 +1,7 @@
-local frame = require'lumen.tasks.http-server.websocket.frame'
-local handshake = require'lumen.tasks.http-server.websocket.handshake'
-local http_util = require'lumen.tasks.http-server.http-util'
-local base64_encode = require 'lumen.tasks.http-server.base64'.encode
+local frame = require'tasks/http-server/websocket/frame'
+local handshake = require'tasks/http-server/websocket/handshake'
+local http_util = require'tasks/http-server/http-util'
+local base64_encode = require 'tasks/http-server/base64'.encode
 
 
 local tinsert = table.insert

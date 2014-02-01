@@ -1,9 +1,9 @@
-local log=require 'lumen.log'
+local log=require 'log'
 
-local sched = require 'lumen.sched'
+local sched = require 'sched'
 local socket = require 'socket'
---local pipes = require 'lumen.pipes'
-local streams = require 'lumen.stream'
+--local pipes = require 'pipes'
+local streams = require 'stream'
 
 --get locals for some useful things
 local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type 

@@ -61,7 +61,7 @@ M.modules = {}
 -- The string format of the timestamp is the same as what os.date takes.
 -- Example: "%F %T"
 -------------------------------------------------------------------------------
-M.timestampformat = '%Y/%m/%d %H:%M:%S'--nil
+M.timestampformat = '%s'--nil
 
 -------------------------------------------------------------------------------
 -- logger functions, will be called if non nil

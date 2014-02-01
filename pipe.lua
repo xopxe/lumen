@@ -3,16 +3,16 @@
 -- no message can be missed by  task doing something else when the signal occurs:
 -- writers get blocked when the pipe is full
 -- @module pipes
--- @usage local pipe = require 'lumen.pipe'
+-- @usage local pipe = require 'pipe'
 -- @alias M
 
-local sched = require 'lumen.sched'
-local log=require 'lumen.log'
-local queue=require 'lumen.lib.queue2'
+local sched = require 'sched'
+local log=require 'log'
+local queue=require 'lib/queue2'
 table.pack = table.pack or function (...)
 	return {n=select('#',...),...}
 end
-local unpack = unpack or table.unpack
+
 --get locals for some useful things
 local setmetatable, tostring = setmetatable, tostring
 

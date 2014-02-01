@@ -2,9 +2,9 @@
 -- A test program for pausing and resuming tasks
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../../?.lua;../../?/init.lua;"
+package.path = package.path .. ";;;../?.lua"
 
-local sched = require "lumen.sched"
+local sched = require "sched"
 
 -- task emits 5 signals and pauses itself.
 local emitter_task=sched.new_task(function()

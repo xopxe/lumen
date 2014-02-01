@@ -3,22 +3,21 @@
 -- for coroutine based multitasking. Consists of a signal scheduler, 
 -- and that's it.
 -- @module sched
--- @usage local sched = require 'lumen.sched'
+-- @usage local sched = require 'sched'
 -- sched.sigrun({'a signal'}, print)
 -- local task=sched.run(function()
 --   sched.signal('a signal', 'data')
 --   sched.sleep(1)
 -- end)
 -- @alias M
-local lsleep = require'lsleep'
-local ls_sleep = lsleep.sleep
-local log=require 'lumen.log'
-local queue3 = require 'lumen.lib.queue3'
+
+local log=require 'log'
+local queue3 = require 'lib/queue3'
 local weak_key = {__mode='k'}
 local weak_value = {__mode='v'}
 local weak_keyvalue = {__mode='kv'}
 local setmetatable, coroutine, type, tostring, select, pairs, unpack, assert, next =
-      setmetatable, coroutine, type, tostring, select, pairs, unpack or table.unpack, assert, next
+      setmetatable, coroutine, type, tostring, select, pairs, unpack, assert, next
 table.pack = table.pack or function (...)
 	return {n=select('#',...),...}
 end
@@ -386,7 +385,13 @@ end
 -- It is allowed to idle for less than t; the empty function will
 -- result in a busy wait. Defaults to execution of Linux's "sleep" command.
 -- @param t time to idle
-M.idle = require'lumen.lib.idle'
+M.idle = function (t)
+	local ret = os.execute('sleep '..t) 
+	if _VERSION =='Lua 5.1' and ret ~= 0 
+	or _VERSION =='Lua 5.2' and ret ~= true then 
+		os.exit() 
+	end
+end
 
 local cycleready = {}
 
@@ -529,7 +534,7 @@ end
 --- Wait for the scheduler to finish.
 -- This call will block until there is no more task activity, i.e. there's no active task,
 -- and none of the waiting tasks has a timeout set. 
--- @usage local sched = require 'lumen.sched'
+-- @usage local sched = require 'sched'
 -- sched.run(function()
 --    --start at least one task
 -- end)

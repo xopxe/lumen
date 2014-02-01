@@ -2,11 +2,11 @@
 -- A demonstration of pipes.
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../../?.lua;../../?/init.lua;"
+package.path = package.path .. ";;;../?.lua"
 
-local sched=require 'lumen.sched'
+local sched=require 'sched'
 --require "log".setlevel('ALL')
-local pipe=require 'lumen.pipe'
+local pipe=require 'pipe'
 
 
 local p=pipe.new(2)

@@ -2,17 +2,17 @@
 -- A demonstration of pipes.
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../../?.lua;../../?/init.lua;"
+package.path = package.path .. ";;;../?.lua"
 
-local sched=require 'lumen.sched'
+local sched=require 'sched'
 --require "log".setlevel('ALL')
-local catalog=require 'lumen.catalog'
+local catalog=require 'catalog'
 local c = catalog.get_catalog('stuff')
 
 sched.run(function()
   for i=1, 10 do
     --collectgarbage()
-    sched.sleep (.1)
+    sched.sleep (1)
     local o = 'OBJ'..i
     print('storing', o)
     c:register('object'..i, o)

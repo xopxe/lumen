@@ -1,6 +1,6 @@
-package.path = package.path .. ";;;../../?.lua;../../?/init.lua;"
+package.path = package.path .. ";;;../?.lua"
 
-local sched = require "lumen.sched"
+local sched = require "sched"
 
 
 sched.run(function()

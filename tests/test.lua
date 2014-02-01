@@ -3,10 +3,10 @@
 --require "strict"
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../../?.lua;../../?/init.lua;"
+package.path = package.path .. ";;;../?.lua"
 
-local sched = require "lumen.sched"
---require "lumen.log".setlevel('ALL')
+local sched = require "sched"
+--require "log".setlevel('ALL')
 
 sched.run(function()
 	local A=sched.run(function()

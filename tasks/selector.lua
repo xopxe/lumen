@@ -4,7 +4,7 @@
 -- The socket can be setup to react to data arrival by either calling a handler function,
 -- writing to a @{stream}, or emiting signals.
 -- @module selector
--- @usage local selector = require 'lumen.selector'
+-- @usage local selector = require 'selector'
 --selector.init({service='luasocket'})
 -- @alias M
 
@@ -16,7 +16,7 @@ M.init = function(conf)
 	conf=conf or {}
 	M.service=conf.service or 'luasocket'
 	
-	local native = require ('lumen.tasks.selector-'..M.service)
+	local native = require ('tasks/selector-'..M.service)
 	native.init()
 	
 	--- Creates a TCP server socket.
@@ -150,7 +150,7 @@ M.init = function(conf)
 	-- Must be set before first call to async send. Defaults to 1mb.
 	M.ASYNC_SEND_BUFFER=1024^2 --1mb
 
-	require 'lumen.catalog'.get_catalog('tasks'):register('selector', M.task)
+	require 'catalog'.get_catalog('tasks'):register('selector', M.task)
 
 	return M
 end
