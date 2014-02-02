@@ -11,8 +11,8 @@
 -- end)
 -- @alias M
 
-local log=require 'log'
-local queue3 = require 'lib/queue3'
+local log=require 'lumen.log'
+local queue3 = require 'lumen.lib.queue3'
 local weak_key = {__mode='k'}
 local weak_value = {__mode='v'}
 local weak_keyvalue = {__mode='kv'}
@@ -534,7 +534,7 @@ end
 --- Wait for the scheduler to finish.
 -- This call will block until there is no more task activity, i.e. there's no active task,
 -- and none of the waiting tasks has a timeout set. 
--- @usage local sched = require 'sched'
+-- @usage local sched = require 'lumen.sched'
 -- sched.run(function()
 --    --start at least one task
 -- end)

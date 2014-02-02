@@ -3,5 +3,4 @@
 
 #vim swap
 *.swp
-*.sublime-workspace
-*.sublime-project
+*.sublime-*

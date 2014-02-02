@@ -5,9 +5,9 @@
 -- @usage local stream = require 'stream'
 -- @alias M
 
-local sched = require 'sched'
-local log=require 'log'
-local queue=require 'lib/queue'
+local sched = require 'lumen.sched'
+local log=require 'lumen.log'
+local queue=require 'lumen.lib.queue'
 
 --get locals for some useful things
 local setmetatable, tostring = setmetatable, tostring

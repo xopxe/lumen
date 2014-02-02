@@ -3,12 +3,14 @@
 --require "strict"
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../?.lua"
+package.path = package.path .. ";;;../../?.lua;../../?/init.lua"
+local lumen = require 'lumen'
+local sched = lumen.sched
+local selector = require 'lumen.tasks.selector'.init({service='nixio'})
+local proxy = require 'lumen.tasks.proxy'
 
-local sched = require "sched"
-local selector = require 'tasks/selector'.init({service='nixio'})
-local proxy = require 'tasks/proxy'
-require "log".setlevel('INFO', 'PROXY')
+
+lumen.log.setlevel('INFO', 'PROXY')
 
 sched.run(function()
 	--tasks:register('main', sched.running_task)

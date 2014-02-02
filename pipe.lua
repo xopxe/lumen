@@ -3,7 +3,7 @@
 -- no message can be missed by  task doing something else when the signal occurs:
 -- writers get blocked when the pipe is full
 -- @module pipes
--- @usage local pipe = require 'pipe'
+-- @usage local pipe = require 'lumen.pipe'
 -- @alias M
 
 local sched = require 'lumen.sched'
