@@ -9,6 +9,9 @@
 local sched = require 'lumen.sched'
 local log=require 'lumen.log'
 local queue=require 'lumen.lib.queue2'
+
+local unpack = unpack or table.unpack
+
 table.pack = table.pack or function (...)
 	return {n=select('#',...),...}
 end

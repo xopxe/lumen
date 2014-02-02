@@ -31,7 +31,7 @@ local selector 	= require 'lumen.tasks.selector'
 local http_util = require 'lumen.tasks.http-server.http-util'
 local websocket = require 'lumen.tasks.http-server.websocket'
 
-
+local unpack = unpack or table.unpack
 
 
 

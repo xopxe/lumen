@@ -17,7 +17,7 @@ local weak_key = {__mode='k'}
 local weak_value = {__mode='v'}
 local weak_keyvalue = {__mode='kv'}
 local setmetatable, coroutine, type, tostring, select, pairs, unpack, assert, next =
-      setmetatable, coroutine, type, tostring, select, pairs, unpack, assert, next
+      setmetatable, coroutine, type, tostring, select, pairs, unpack or table.unpack, assert, next
 table.pack = table.pack or function (...)
 	return {n=select('#',...),...}
 end

@@ -23,6 +23,8 @@
 local sched=require 'lumen.sched'
 local log=require 'lumen.log'
 
+local unpack = unpack or table.unpack
+
 table.pack = table.pack or function (...)
 	return {n=select('#',...),...}
 end

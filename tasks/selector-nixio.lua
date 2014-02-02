@@ -22,6 +22,7 @@ local outstanding_data = setmetatable({}, weak_key)
 -- streams for incomming data
 local read_streams = setmetatable({}, weak_key)
 
+local unpack = unpack or table.unpack
 
 local M = {}
 
