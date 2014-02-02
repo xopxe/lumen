@@ -8,7 +8,7 @@
 -- being locked contains a call that explicitly relinquish control, such as 
 -- sched.sleep(), sched.signal() or sched.wait().
 -- @module mutex
--- @usage local mutex = require 'mutex'
+-- @usage local mutex = require 'lumen.mutex'
 --local mx = mutex.new()
 --
 --local function critical()
@@ -20,10 +20,10 @@
 --local critical = mx:synchronize(function() ... end) --other method
 -- @alias M
 
-local sched=require 'sched'
-local log=require 'log'
+local sched=require 'lumen.sched'
+local log=require 'lumen.log'
 
-table.pack=table.pack or function (...)
+table.pack = table.pack or function (...)
 	return {n=select('#',...),...}
 end
 

@@ -1,10 +1,13 @@
-local log=require 'log'
+local lumen = require'lumen'
 
-local sched = require 'sched'
+local log 				= lumen.log
+local sched 			= lumen.sched
+local streams			= lumen.stream
+
 local nixio = require 'nixio'
-local streams = require 'stream'
 
---local nixiorator = require 'tasks/nixiorator'
+
+--local nixiorator = require 'lumen.tasks/nixiorator'
 require 'nixio.util'
 
 local floor = math.floor

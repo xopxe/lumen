@@ -2,11 +2,15 @@
 -- A demonstration of pipes.
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../?.lua"
+package.path = package.path .. ";;;../../?.lua;../../?/init.lua"
 
-local sched=require 'sched'
+local lumen = require'lumen'
+local sched   = lumen.sched
+local catalog = lumen.catalog
+
+
+
 --require "log".setlevel('ALL')
-local catalog=require 'catalog'
 local c = catalog.get_catalog('stuff')
 
 sched.run(function()

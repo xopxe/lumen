@@ -2,19 +2,32 @@
 -- A test program for the http server.
 
 --look for packages one folder up.
-package.path = package.path .. ";;;../?.lua"
+package.path = package.path .. ";;;../../?.lua;../../?/init.lua"
 
-require "log".setlevel('ALL', 'HTTP')
-require "log".setlevel('ALL')
+local lumen = require'lumen'
+
+local log     = lumen.log
+local sched   = lumen.sched
+local stream  = lumen.stream
+local catalog = lumen.catalog
+
+
+log.setlevel('ALL', 'HTTP')
+log.setlevel('ALL')
+
+local selector  = require 'lumen.tasks.selector'
+
+selector.init({service=service})
+
+
 
 --require "strict"
 
 local service = _G.arg [1] or 'luasocket'
 
-local sched = require "sched"
-require "tasks/selector".init({service=service})
 
-local http_server = require "tasks/http-server"
+
+local http_server = require "lumen.tasks.http-server"
 
 http_server.serve_static_content_from_ram('/', '../tasks/http-server/www')
 --http_server.serve_static_content_from_stream('/', '/home/xopxe')
@@ -26,7 +39,7 @@ else
 end
 
 http_server.set_websocket_protocol('lumen-shell-protocol', function(ws)
-	local shell = require 'tasks/shell' 
+	local shell = require 'lumen.tasks.shell' 
 	local sh = shell.new_shell()
 	
 	sched.run(function()
