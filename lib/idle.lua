@@ -4,22 +4,9 @@
 
 
 --[[
-https://github.com/andrewstarks/lsleep
---]]
+--https://github.com/andrewstarks/lsleep
 local success, lsleep= pcall(require, 'lsleep')
-
-
-function os.capture(cmd, raw)
-  local f = assert(io.popen(cmd, 'r'))
-  local s = assert(f:read('*a'))
-  f:close()
-  if raw then return s end
-  s = string.gsub(s, '^%s+', '')
-  s = string.gsub(s, '%s+$', '')
-  s = string.gsub(s, '[\n\r]+', ' ')
-  return s
-end
-
+--]]
 
 
 
@@ -37,5 +24,5 @@ local function windows_idle  (t)
 	os.execute( ('ping 1.1.1.1 -n 1 -w %d > nul'):format(t * 1000) )
 end
 
-return success and lsleep.sleep or 
+return --success and lsleep.sleep or 
 	os.getenv('OS'):match("^Windows-.") and windows_idle or unix_idle
