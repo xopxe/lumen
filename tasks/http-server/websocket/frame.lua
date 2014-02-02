@@ -15,6 +15,8 @@ local tinsert = table.insert
 local tconcat = table.concat
 local mmin = math.min
 
+local unpack = unpack or table.unpack
+
 local bits = function(...)
   local n = 0
   for _,bitn in pairs{...} do
