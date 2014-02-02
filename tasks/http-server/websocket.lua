@@ -2,9 +2,10 @@
 -- depends on 
 -- - luabitop or nixio (if not using Lua 5.2 nor luajit)
 
-local http_util = require 'tasks/http-server/http-util'
-local handshake = require 'tasks/http-server/websocket/handshake'
-local sync = require 'tasks/http-server/websocket/sync'
+local http_util = require		'lumen.tasks.http-server.http-util'
+local handshake = require		'lumen.tasks.http-server.websocket.handshake'
+local sync 		= require 		'lumen.tasks.http-server.websocket.sync'
+
 
 local websocket_protocols = {} --websocket_protocols[protocol] = handler
 local websocket_clients = setmetatable({}, {__mode='k'})

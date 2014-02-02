@@ -7,7 +7,7 @@
 -- with strings as keys are supported.
 -- This module depends on the selector task, which must be started
 -- separataly.
--- @usage  local proxy = require 'proxy'
+-- @usage  local proxy = require 'lumen.proxy'
 --
 -- --for accepting connections
 -- proxy.init({ip='*', port=1985}) 
@@ -20,11 +20,20 @@
 -- end)
 -- @module proxy
 -- @alias M
+local lumen = require'lumen'
 
-local sched = require 'sched'
-local selector = require 'tasks/selector'
-local events_catalog = require 'catalog'.get_catalog('events')
-local log=require 'log'
+local log 				= lumen.log
+local sched 			= lumen.sched
+local stream 			= lumen.stream
+local events_catalog 	= lumen.catalog.get_catalog('events')
+
+local selector 	= require 'lumen.tasks.selector'
+local http_util = require 'lumen.tasks.http-server.http-util'
+local websocket = require 'lumen.tasks.http-server.websocket'
+
+
+
+
 
 local encode_f
 local decode_f
@@ -107,7 +116,7 @@ M.init = function(conf)
 	local encoder = conf.encoder or 'json'
 
 	if encoder =='json' then encoder = 'dkjson' end
-	local encoder_lib = require ('lib/'..encoder)
+	local encoder_lib = require ('lumen.lib.'..encoder)
 	encode_f = encoder_lib.encode
 	decode_f = encoder_lib.decode
 

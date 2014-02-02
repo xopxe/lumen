@@ -4,7 +4,7 @@
 --- Log library provides logging facilities.
 -- The module exposes extension points. It is possible to provide both the custom printing function and the custom log saving function. <br />
 -- The module is callable. Thus:
---    local log = require"log"
+--    local log = require"lumen.log"
 --    log("MODULE", "INFO", "message")
 -- calls the @{trace} function.
 -- @module log
