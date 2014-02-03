@@ -383,15 +383,11 @@ end
 -- This function should idle up to t time units. Replace with
 -- whatever your app uses. LuaSocket's sleep works just fine.
 -- It is allowed to idle for less than t; the empty function will
--- result in a busy wait. Defaults to execution of Linux's "sleep" command.
+-- result in a busy wait. Defaults to execution of Linux's "sleep" command
+-- or the Windows ping hack.
 -- @param t time to idle
-M.idle = function (t)
-	local ret = os.execute('sleep '..t) 
-	if _VERSION =='Lua 5.1' and ret ~= 0 
-	or _VERSION =='Lua 5.2' and ret ~= true then 
-		os.exit() 
-	end
-end
+M.idle = require 'lumen.lib.idle'
+
 
 local cycleready = {}
 
