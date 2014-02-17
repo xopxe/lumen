@@ -2,7 +2,7 @@
 -- Streams are similar to @{pipes}, but specialized for strings. They serve
 -- the same purpose as LTN12, i.e. typically processing input from a socket.
 -- @module stream
--- @usage local stream = require 'stream'
+-- @usage local stream = require 'lumen.stream'
 -- @alias M
 
 local sched = require 'lumen.sched'
