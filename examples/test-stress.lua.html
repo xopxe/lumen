@@ -70,12 +70,12 @@
 </span><span class="comment">--See how fast it can run.
 </span>
 <span class="comment">--look for packages one folder up.
-</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
+</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../../?.lua;../../?/init.lua"</span>
 
 <span class="comment">--require "strict"
 </span><span class="comment">--require "profiler"
 </span>
-<span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
+<span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"lumen.sched"</span>
 
 <span class="keyword">local</span> i=<span class="number">0</span>
 

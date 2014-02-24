@@ -70,12 +70,12 @@
 </span><span class="comment">-- to a function.
 </span>
 <span class="comment">--look for packages one folder up.
-</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
+</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../../?.lua;../../?/init.lua"</span>
 
 <span class="comment">--require "strict"
-</span>
-<span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
-<span class="keyword">local</span> mutex = <span class="global">require</span> <span class="string">"mutex"</span>
+</span><span class="keyword">local</span> lumen = <span class="global">require</span> <span class="string">'lumen'</span>
+<span class="keyword">local</span> sched = lumen.sched
+<span class="keyword">local</span> mutex = lumen.mutex
 
 <span class="keyword">local</span> mx = mutex.new()
 

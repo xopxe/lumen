@@ -133,10 +133,6 @@
 	<td class="summary">Pause a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#idle">idle&nbsp;(t)</a></td>
-	<td class="summary">Idle function.</td>
-	</tr>
-	<tr>
 	<td class="name" nowrap><a href="#kill">kill&nbsp;(taskd)</a></td>
 	<td class="summary">Finishes a task.</td>
 	</tr>
@@ -186,6 +182,10 @@
 	<tr>
 	<td class="name" nowrap><a href="#to_clean_up">to_clean_up</a></td>
 	<td class="summary">Control memory collection.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#idle">idle</a></td>
+	<td class="summary">Idle function.</td>
 	</tr>
 </table>
 <h2><a href="#Data_structures">Data structures </a></h2>
@@ -494,30 +494,6 @@
 
 </dd>
     <dt>
-    <a name = "idle"></a>
-    <strong>idle&nbsp;(t)</strong>
-    </dt>
-    <dd>
-    Idle function.
- Function called by the scheduler when there is
- nothing else to do (e.g., all tasks are waiting for a signal).
- This function should idle up to t time units. Replace with
- whatever your app uses. LuaSocket's sleep works just fine.
- It is allowed to idle for less than t; the empty function will
- result in a busy wait. Defaults to execution of Linux's "sleep" command.
-
-    <h3>Parameters:</h3>
-    <ul>
-        <li><span class="parameter">t</span>
-         time to idle</li>
-    </ul>
-
-
-
-
-
-</dd>
-    <dt>
     <a name = "kill"></a>
     <strong>kill&nbsp;(taskd)</strong>
     </dt>
@@ -618,7 +594,7 @@
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"> <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">'sched'</span>
+        <pre class="example"> <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">'lumen.sched'</span>
  sched.run(<span class="keyword">function</span>()
     <span class="comment">--start at least one task
 </span> <span class="keyword">end</span>)
@@ -636,8 +612,7 @@
     </dt>
     <dd>
     Event used for all events
- When included in a <a href="../modules/sched.html#waitd">waitd</a>, will match any event.  This means all events will
- be provided to wait.
+ When included in a <a href="../modules/sched.html#waitd">waitd</a>, will match any event.
 
 
 
@@ -735,6 +710,31 @@
 
 
 </dd>
+    <dt>
+    <a name = "idle"></a>
+    <strong>idle</strong>
+    </dt>
+    <dd>
+    Idle function.
+ Function called by the scheduler when there is
+ nothing else to do (e.g., all tasks are waiting for a signal).
+ This function should idle up to t time units. Replace with
+ whatever your app uses. LuaSocket's sleep works just fine.
+ It is allowed to idle for less than t; the empty function will
+ result in a busy wait. Defaults to execution of Linux's "sleep" command
+ or the Windows ping hack.
+
+    <h3>:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+         time to idle</li>
+    </ul>
+
+
+
+
+
+</dd>
 </dl>
     <h2><a name="Data_structures"></a>Data structures </h2>
         Data structures.
@@ -760,9 +760,8 @@
     <h3>Fields:</h3>
     <ul>
         <li><span class="parameter">array</span>
-         The array part contains the events to wait. Can contain <code>M.EVENT_ANY</code>
- to mark interest in any event. If nil, will
- only return on timeout. </li>
+         The array part contains the events to wait. Can contain <a href="../modules/sched.html#EVENT_ANY">sched.EVENT_ANY</a> <br/>
+ to mark interest in any event. If nil, will only return on timeout.</li>
         <li><span class="parameter">timeout</span>
          optional, time to wait. nil or negative waits for ever.</li>
         <li><span class="parameter">buff_mode</span>

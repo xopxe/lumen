@@ -69,11 +69,11 @@
 </span><span class="comment">-- A demonstration of pipes.
 </span>
 <span class="comment">--look for packages one folder up.
-</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
+</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../../?.lua;../../?/init.lua"</span>
 
-<span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'sched'</span>
+<span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'lumen.sched'</span>
 <span class="comment">--require "log".setlevel('ALL')
-</span><span class="keyword">local</span> pipe=<span class="global">require</span> <span class="string">'pipe'</span>
+</span><span class="keyword">local</span> pipe=<span class="global">require</span> <span class="string">'lumen.pipe'</span>
 
 
 <span class="keyword">local</span> p=pipe.new(<span class="number">2</span>)
