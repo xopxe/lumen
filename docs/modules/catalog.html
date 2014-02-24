@@ -77,7 +77,7 @@
  Catalogs can be strong or weak, ie, they can keep objects from being garbage collected, or not.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"> local tasks = require &apos;catalog&apos;.get_catalog(&apos;tasks&apos;)
+        <pre class="example"> local tasks = require &apos;lumen.catalog&apos;.get_catalog(&apos;tasks&apos;)
 ...
 tasks:register(&apos;a task&apos;, sched.running_task)
 ...
@@ -276,7 +276,7 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"> <span class="keyword">local</span> tasks = <span class="global">require</span> <span class="string">'catalog'</span>.get_catalog(<span class="string">'tasks'</span>)
+        <pre class="example"> <span class="keyword">local</span> tasks = <span class="global">require</span> <span class="string">'lumen.catalog'</span>.get_catalog(<span class="string">'tasks'</span>)
 <span class="keyword">for</span> name, task <span class="keyword">in</span> tasks:iterator() <span class="keyword">do</span>
 	<span class="global">print</span>(name, task)
 <span class="keyword">end</span></pre>

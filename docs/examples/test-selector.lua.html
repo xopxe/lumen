@@ -71,18 +71,18 @@
 </span><span class="comment">-- Should run as root or sudo, for reading /dev/input/mice
 </span>
 <span class="comment">--look for packages one folder up.
-</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../?.lua"</span>
+</span><span class="global">package</span>.path = <span class="global">package</span>.path .. <span class="string">";;;../../?.lua;../../?/init.lua"</span>
 
 <span class="comment">--require "strict"
 </span>
-<span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"sched"</span>
+<span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"lumen.sched"</span>
 
 
 <span class="keyword">local</span> service=arg[<span class="number">1</span>] <span class="keyword">or</span> <span class="string">'luasocket'</span>
 <span class="comment">--local service='nixio'
 </span><span class="global">print</span> (<span class="string">'using service:'</span>, service)
 
-<span class="keyword">local</span> selector = <span class="global">require</span> <span class="string">"tasks/selector"</span>.init({service=service})
+<span class="keyword">local</span> selector = <span class="global">require</span> <span class="string">"lumen.tasks.selector"</span>.init({service=service})
 
 <span class="comment">--sched.sigrun({sched.EVENT_ANY}, function(...) print("?", ...) end)
 </span>
