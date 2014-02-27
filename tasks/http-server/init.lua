@@ -27,11 +27,10 @@ local function backup_response(code_out, header_out)
 end
 
 local populate_cache_control =  function(http_out_header, http_req_path, conf)
-	if not conf.max_age then return end
+	if not conf.max_age then return http_out_header end
 	local extension = http_req_path:match('^%.*([^%.]+)$')
 	local max_age = conf.max_age[extension] 
-	if not max_age then return http_out_header end
-	http_out_header['cache-control'] = 'max-age='..max_age
+	if max_age then http_out_header['cache-control'] = 'max-age='..max_age end
 	return http_out_header
 end
 

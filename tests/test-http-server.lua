@@ -13,7 +13,7 @@ local catalog = lumen.catalog
 
 
 log.setlevel('ALL', 'HTTP')
-log.setlevel('ALL')
+--log.setlevel('ALL')
 
 local selector  = require 'lumen.tasks.selector'
 
