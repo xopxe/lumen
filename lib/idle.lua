@@ -40,4 +40,4 @@ end
 
 -- return success and lsleep.sleep or 
 -- 	os.getenv('OS'):match("^Windows-.") and windows_idle or unix_idle
-return os.getenv('OS'):match("^Windows-.") and windows_idle or unix_idle
+return os.getenv('OS') and os.getenv('OS'):match("^Windows-.") and windows_idle or unix_idle
