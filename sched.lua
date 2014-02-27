@@ -3,7 +3,7 @@
 -- for coroutine based multitasking. Consists of a signal scheduler, 
 -- and that's it.
 -- @module sched
--- @usage local sched = require 'sched'
+-- @usage local sched = require 'lumen.sched'
 -- sched.sigrun({'a signal'}, print)
 -- local task=sched.run(function()
 --   sched.signal('a signal', 'data')
