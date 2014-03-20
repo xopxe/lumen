@@ -228,9 +228,9 @@ M.init = function(conf)
 				local http_req_header  = read_incomming_header()
 				
 				-- handle websockets ----------------------------------------------
-				if conf.ws_enable
-				and http_req_header['connection']=='Upgrade' 
-				and http_req_header['upgrade']=='websocket' then
+				if conf.ws_enable and http_req_header['connection'] and http_req_header['upgrade']
+				and http_req_header['connection']:lower():find('upgrade', 1, true) 
+				and http_req_header['upgrade']:lower()=='websocket' then
 					log('HTTP', 'DEBUG', 'incoming websocket request')
 					websocket.handle_websocket_request(sktd_cli,http_req_header) 
 					-- this should return only when finished
