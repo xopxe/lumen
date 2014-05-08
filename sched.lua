@@ -62,7 +62,7 @@ M.get_time = os.time
 M.tasks = {}
 local new_tasks = {} --hold tasks as created until transferred to main M.tasks (ref. lua looping)
 
---table to keep track tasks waiting for signals
+--table to keep track of tasks waiting for signals
 --waiting[event][waitd] = {taskd}
 --waitd as per reference
 local waiting = {} -- setmetatable({}, weak_key)
