@@ -284,7 +284,11 @@ M.init = function(conf)
       handler = handler,
     })
 		sktd.events = {data=sktd.fd, async_finished={}}
-		if address and port then sktd.fd:connect(address, port) end
+		if address and port then
+      local ok, _, errmsg = sktd.fd:connect(address, port)
+      if not ok then return nil, errmsg end
+    end
+    
 		register_client(sktd)
 		return sktd
 	end
