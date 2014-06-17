@@ -74,9 +74,11 @@ end
 local function handle_incomming(sktd, data)
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler, sktd, data) 
-		if not ok then 
+		if not ok then
+			log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
 			sktd:close()
 		elseif not errcall then 
+			log('SELECTOR', 'DEBUG', 'Handler finished connection')
 			sktd:close()
 		end
 	elseif read_streams[sktd] then
@@ -107,7 +109,7 @@ local register_client = function (sktd)
 			ok,data,code,msg=pcall(polle.it)
 			if ok and data then
 				local block = polle.block
-				if not block or block=='line'  or block == #data then
+				if not block or block=='line' or block == #data then
 					handle_incomming(sktd, data)
 				elseif type(block) == 'number' and block > #data then
 					polle.readbuff = (polle.readbuff or '') .. data
@@ -284,11 +286,10 @@ M.init = function(conf)
       handler = handler,
     })
 		sktd.events = {data=sktd.fd, async_finished={}}
-		if address and port then
-      local ok, _, errmsg = sktd.fd:connect(address, port)
-      if not ok then return nil, errmsg end
-    end
-    
+		if address and port then 
+			local ok, _, errmsg = sktd.fd:connect(address, port)
+      		if not ok then return nil, errmsg end
+    	end
 		register_client(sktd)
 		return sktd
 	end
