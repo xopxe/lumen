@@ -100,5 +100,5 @@ Copyright (C) 2012 Jorge Visca, jvisca@fing.edu.uy
 
 ## Contributors
 
-Andres Starks (@andrewstarks)
+Andrew Starks (@andrewstarks)
 
