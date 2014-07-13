@@ -98,7 +98,7 @@ Same as Lua, see COPYRIGHT.
 Copyright (C) 2012 Jorge Visca, jvisca@fing.edu.uy
 
 
-# Contributions
+## Contributors
 
 Andres Starks (@andrewstarks)
 
