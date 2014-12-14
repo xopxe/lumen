@@ -28,7 +28,7 @@ end
 local function unix_idle  (t)
 
 	local ret = os.execute('sleep '..t) 
-	if _VERSION =='Lua 5.1' and ret ~= 0 or ret ~= true then 
+	if _VERSION =='Lua 5.1' and ret ~= 0 and ret ~= true then
 		os.exit() 
 	end
 end
