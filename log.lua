@@ -176,7 +176,7 @@ function M.setlevel(slevel, ...)
     local mods = {...}
     local nlevel = levels[slevel] or levels['ALL']
     if not levels[slevel] then
-        trace("LOG", "ERROR", "Unknown severity %q, reverting to 'ALL'", tostring(slevel))
+        M.trace("LOG", "ERROR", "Unknown severity %q, reverting to 'ALL'", tostring(slevel))
     end
     if next(mods) then for _, m in pairs(mods) do M.modules[m] = nlevel end
     else M.defaultlevel = nlevel end
