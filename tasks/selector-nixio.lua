@@ -212,6 +212,7 @@ local function send_from_pipe (sktd)
 			if not written and errwrite~=11 then --not EAGAIN
 				handle_incomming_error(sktd, 'error writing:'..tostring(errwrite))
 				sktd:close()
+        sched.signal(sktd.events.async_finished, false)
 				return
 			end
 			
@@ -222,7 +223,7 @@ local function send_from_pipe (sktd)
 		else
 			--emptied the outgoing pipe, stop selecting to write
 			sktd.polle.events=nixio.poll_flags("in", "pri")
-			sched.signal(sktd.events.async_finished)
+			sched.signal(sktd.events.async_finished, true)
 		end
 	end
 end

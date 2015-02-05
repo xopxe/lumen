@@ -125,7 +125,7 @@ M.init = function(conf)
 	--- Asynchronous data send.
 	-- This call return immediatelly. The data transmission will continue in background. Aditional calls
 	-- will queue data. When all data queued for asynchronous transmission is sent, 
-	-- a sktd.events.async\_finished signal is emitted.
+	-- a `sktd.events.async_finished, success` signal is emitted.
 	-- @function send_async
 	-- @param sktd a @{sktd} object
 	-- @param data data to send

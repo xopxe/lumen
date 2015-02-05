@@ -104,6 +104,7 @@ local function send_from_pipe (fd)
 			if err == 'closed' then
 				sktd:close()
 				handle_incomming_error(sktd, 'error writing:'..tostring(err))
+        sched.signal(sktd.events.async_finished, false, err)
 				return
 			end
 			last = last or lasterr
@@ -119,7 +120,7 @@ local function send_from_pipe (fd)
 					break
 				end
 			end
-			sched.signal(sktd.events.async_finished)
+			sched.signal(sktd.events.async_finished, true)
 		end
 	end
 end
