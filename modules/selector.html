@@ -436,7 +436,7 @@ selector.init({service=&apos;luasocket&apos;})</pre>
     Asynchronous data send.
  This call return immediatelly. The data transmission will continue in background. Aditional calls
  will queue data. When all data queued for asynchronous transmission is sent,
- a sktd.events.async_finished signal is emitted.
+ a <code>sktd.events.async_finished, success</code> signal is emitted.
 
     <h3>Parameters:</h3>
     <ul>
