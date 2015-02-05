@@ -74,7 +74,6 @@ local function handle_incomming_error(sktd, err)
 	err = err or 'fd closed'
 	if sktd.handler then 
 		local ok, errcall = pcall(sktd.handler,sktd, nil, err) 
-
 	elseif read_streams[sktd] then
 		read_streams[sktd]:write(nil, err)
 	else
@@ -182,11 +181,12 @@ local step = function (timeout)
 				if type(pattern) == "number" and pattern <= 0 then
 					local data,err,part = fd:receive(CHUNK_SIZE)
 					data = data or part
-					if err=='closed' then
-						sktd:close()
-						handle_incomming_error(sktd, err)
-					elseif data then
+          if data then 
 						handle_incomming(sktd, data)
+					end
+          if err=='closed' then
+						handle_incomming_error(sktd, err)
+						sktd:close()
 					end
 				else
 					local data,err,part = fd:receive(pattern,sktd.partial)
@@ -194,8 +194,8 @@ local step = function (timeout)
 					if data then
 						handle_incomming(sktd, data)
 					elseif err=='closed' then 
-						sktd:close()
 						handle_incomming_error(sktd, err)
+						sktd:close()
 					end
 				end
 			--end
