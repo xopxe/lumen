@@ -188,8 +188,8 @@ local function send_from_pipe (sktd)
 		if blocksize>#data-next_pos then blocksize=#data-blocksize end
 		local written, errwrite =skt:write(data, next_pos, blocksize )
 		if not written and errwrite~=11 then --error, is not EAGAIN
-			sktd:close()
 			handle_incomming_error(sktd, 'error writing:'..tostring(errwrite))
+			sktd:close()
 			return
 		end
 		
@@ -210,8 +210,8 @@ local function send_from_pipe (sktd)
 			if blocksize>#data then blocksize=#data-blocksize end
 			local written, errwrite =skt:write(data, 0, blocksize )
 			if not written and errwrite~=11 then --not EAGAIN
-				sktd:close()
 				handle_incomming_error(sktd, 'error writing:'..tostring(errwrite))
+				sktd:close()
 				return
 			end
 			
