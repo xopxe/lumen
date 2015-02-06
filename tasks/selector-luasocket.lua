@@ -256,8 +256,12 @@ M.init = function()
       handler = handler,
     })
     sktd.events = {data=sktd.fd, async_finished={}}
-    sktd.fd:setsockname(locaddr or '*', locport or 0)
-    sktd.fd:setpeername(address or '*', port)
+    if locaddr or locport then
+      sktd.fd:setsockname(locaddr or '*', locport or 0)
+    end
+    if address or port then
+      sktd.fd:setpeername(address or '*', port)
+    end
 		register_client(sktd)
 		return sktd
 	end
