@@ -56,9 +56,9 @@ local unregister = function (fd)
 	sktds[fd] = nil
 end
 local function handle_incomming(sktd, data)
-	if type(sktd.handler) == 'funtction' then 
-		--local ok, errcall = pcall(sktd.handler, sktd, data) 
-    local ok, errcall = xpcall(function () return sktd.handler(sktd, data) end, debug.traceback)
+	if type(sktd.handler) == 'function' then 
+		local ok, errcall = pcall(sktd.handler, sktd, data) 
+    --local ok, errcall = xpcall(function () return sktd.handler(sktd, data) end, debug.traceback)
 		if not ok then 
 			log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
 			sktd:close()
