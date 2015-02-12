@@ -244,6 +244,11 @@ M.init = function()
     })
     sktd.events = {data=sktd.fd, async_finished={}}
     if sktd.pattern=='*l' and handler == 'stream' then sktd.pattern=nil end
+    if handler=='stream' then
+      local s = streams.new()
+      read_streams[sktd] = s
+      sktd.stream = s
+    end
 		register_client(sktd)
 		return sktd
 	end
