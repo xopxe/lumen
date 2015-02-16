@@ -62,7 +62,8 @@ local function handle_incomming(sktd, data)
 		if not ok then 
 			log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
 			sktd:close()
-		elseif not errcall then 
+		elseif errcall==false then 
+      log('SELECTOR', 'DETAIL', 'Handler finished connection')
 			sktd:close()
 		end
 	elseif read_streams[sktd] then
@@ -74,7 +75,8 @@ end
 local function handle_incomming_error(sktd, err)
 	err = err or 'fd closed'
 	if sktd.handler then 
-		local ok, errcall = pcall(sktd.handler,sktd, nil, err) 
+    local ok, errcall = xpcall(function () return sktd.handler(sktd, nil, err) end, debug.traceback)
+		--local ok, errcall = pcall(sktd.handler,sktd, nil, err)
 	elseif read_streams[sktd] then
 		read_streams[sktd]:write(nil, err)
 	else

@@ -77,8 +77,8 @@ local function handle_incomming(sktd, data)
 		if not ok then
 			log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
 			sktd:close()
-		elseif not errcall then 
-			log('SELECTOR', 'DEBUG', 'Handler finished connection')
+		elseif errcall==false then 
+			log('SELECTOR', 'DETAIL', 'Handler finished connection')
 			sktd:close()
 		end
 	elseif read_streams[sktd] then
