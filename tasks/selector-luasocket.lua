@@ -226,10 +226,13 @@ end
 M.init = function()
 	M.new_tcp_server = function (locaddr, locport, pattern, handler)
 		--address, port, backlog, pattern)
+    local fd, errmsg = socket.bind(locaddr, locport)
+		if not fd then return nil, errmsg end
+    
 		local sktd=init_sktd({
-      fd=assert(socket.bind(locaddr, locport)),
+      fd = fd,
       --task=module_task,
-      pattern=normalize_pattern(pattern),
+      pattern = normalize_pattern(pattern),
       handler = handler,
     })
     sktd.events = {accepted=sktd.fd}
@@ -239,12 +242,16 @@ M.init = function()
 	end
 	M.new_tcp_client = function (address, port, locaddr, locport, pattern, handler)
 		--address, port, locaddr, locport, pattern)
+    local fd, errmsg = socket.connect(address, port, locaddr, locport)
+		if not fd then return nil, errmsg end
+
 		local sktd=init_sktd({
-      fd=assert(socket.connect(address, port, locaddr, locport)),
+      fd = fd,
       --task=module_task,
-      pattern=normalize_pattern(pattern),
+      pattern = normalize_pattern(pattern),
       handler = handler,
     })
+    
     sktd.events = {data=sktd.fd, async_finished={}}
     if sktd.pattern=='*l' and handler == 'stream' then sktd.pattern=nil end
     if handler=='stream' then
