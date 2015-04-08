@@ -25,6 +25,22 @@ table.pack=table.pack or function (...)
 	return {n=select('#',...),...}
 end
 
+local os_time = os.time
+
+-- attmpt to get a better clock than os.clock
+local has_nixio, nixio = pcall(require, 'nixio')
+if has_nixio then
+	os_time = function()
+		local sec, usec = nixio.gettimeofday()
+		return sec + usec/1000000
+	end
+else
+	local has_luasocket, luasocket = pcall(require, 'socket')
+	if has_luasocket then
+		os_time = luasocket.gettime
+	end
+end
+
 local M = {}
 
 -------------------------------------------------------------------------------
@@ -99,6 +115,7 @@ M.storelogger = nil
 --
 -- - %l => the actual log (given in 3rd argument when calling log() function)
 -- - %t => the current date
+-- - %T => the current timestamp
 -- - %m => module name
 -- - %s => log level (severity)
 --
@@ -148,7 +165,8 @@ function M.trace(module, severity, fmt, ...)
         local function sub(p)
             if     p=="l" then return s
             elseif p=="t" then t = t or tostring(os.date(M.timestampformat)) return t
-            elseif p=="m" then return module
+            elseif p=="T" then t = t or tostring(os_time()) return t
+						elseif p=="m" then return module
             elseif p=="s" then return severity
             else return p end
         end
