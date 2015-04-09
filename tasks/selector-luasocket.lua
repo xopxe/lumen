@@ -74,7 +74,7 @@ local function handle_incomming(sktd, data)
 end
 local function handle_incomming_error(sktd, err)
   err = err or 'fd closed'
-  if sktd.handler then 
+  if type(sktd.handler) == 'function' then 
     local ok, errcall = xpcall(function () return sktd.handler(sktd, nil, err) end, debug.traceback)
     --local ok, errcall = pcall(sktd.handler,sktd, nil, err)
   elseif read_streams[sktd] then
@@ -150,8 +150,8 @@ local register_client = function (sktd)
   recvt[#recvt+1]=sktd.fd
 end
 local step = function (timeout)
-  local recvt_ready, sendt_ready, err_accept = socket.select(recvt, sendt, timeout)
-  if err_accept~='timeout' then
+  local recvt_ready, sendt_ready, err_select = socket.select(recvt, sendt, timeout)
+  if err_select~='timeout' then
     for _, fd in ipairs(sendt_ready) do
       send_from_pipe(fd)
     end
@@ -161,6 +161,7 @@ local step = function (timeout)
       local pattern=sktd.pattern
       if sktd.isserver then 
         local client, err=fd:accept()
+			  log('SELECTOR', 'DEBUG', 'Connection accepted: %s with err "%s"', tostring(client), tostring(err))
         if client then
           local skt_table_client = {
             fd=client,
