@@ -316,7 +316,7 @@ M.run = function ( task, ... )
 		taskd = task
 	end
 	--M.set_pause(taskd, false)
-	step_task(taskd, ...)  --FIXME can get the task killed: still in new_tasks
+	--step_task(taskd, ...)  --FIXME can get the task killed: still in new_tasks
 	return taskd
 end
 
