@@ -241,10 +241,19 @@ M.init = function()
     register_server(sktd)
     return sktd
   end
-  M.new_tcp_client = function (address, port, locaddr, locport, pattern, handler)
+  M.new_tcp_client = function (address, port, locaddr, locport, pattern, handler, timeout)
     --address, port, locaddr, locport, pattern)
-    local fd, errmsg = socket.connect(address, port, locaddr, locport)
-    if not fd then return nil, errmsg end
+    local now = sched.get_time()
+    local fd = socket.tcp()
+    --FIXME timeout handling for connecting should be made within main select()
+    timeout = timeout or 20 -- a default value
+    fd:settimeout(0)
+    local ok, errmsg
+    repeat
+        ok, errmsg = fd:connect(address, port, locaddr, locport)
+        if not ok then sched.sleep(0.1) end
+    until ok or sched.get_time()-now>timeout
+    if not ok then return nil, errmsg end
 
     local sktd=init_sktd({
       fd = fd,
