@@ -11,21 +11,13 @@ local sched   = lumen.sched
 local stream  = lumen.stream
 local catalog = lumen.catalog
 
-
 log.setlevel('ALL', 'HTTP')
 --log.setlevel('ALL')
 
 local selector  = require 'lumen.tasks.selector'
 
-selector.init({service=service})
-
-
-
---require "strict"
-
 local service = _G.arg [1] or 'luasocket'
-
-
+selector.init({service=service})
 
 local http_server = require "lumen.tasks.http-server"
 
