@@ -161,7 +161,7 @@ local step = function (timeout)
       local pattern=sktd.pattern
       if sktd.isserver then 
         local client, err=fd:accept()
-			  log('SELECTOR', 'DEBUG', 'Connection accepted: %s with err "%s"', tostring(client), tostring(err))
+			  log('SELECTOR', 'DEBUG', 'Connection accepted: %s with err "%s" from select err "%s"', tostring(client), tostring(err), tostring(err_select))
         if client then
           local skt_table_client = {
             fd=client,
