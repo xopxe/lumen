@@ -51,7 +51,7 @@ local request_handlers = M.request_handlers
 -- @param callback the callback function. Must have a _method, path, http\_params, http\_header_ 
 -- signature, where _http\_params, http\_header_ are tables. If callback is nil, a handler with matching
 -- method and pattern will  be removed. The callback must return a number 
--- (an http error code), followed by an array with headers, and a string (the content).
+-- (an http error code), followed by an array with headers, and a string or stream (the content).
 M.set_request_handler = function ( method, pattern, callback )
 	for i = 1,  #request_handlers do
 		local handler = request_handlers[i]
@@ -104,7 +104,7 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 			local file, err = io.open(abspath, "r")
 			if file then 
 				local extension = path:match('%.(%a+)$') or 'other'
-			        local mime = http_util.mime_types[extension] or 'text/plain'
+        local mime = http_util.mime_types[extension] or 'text/plain'
 				local content = file:read('*all')
 				file:close()
 				if content then 
@@ -142,7 +142,7 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 			local sktd, err = selector.new_fd (abspath, {"rdonly"}, nil, stream_file)
 			if sktd then 
 				local extension = path:match('%.(%a+)$') or 'other'
-			        local mime = http_util.mime_types[extension] or 'text/plain'
+        local mime = http_util.mime_types[extension] or 'text/plain'
 				local fsize  = nixio.fs.stat(abspath, 'size')
 				if fsize then 
 					return 200, {['content-type']=mime, ['content-length']=fsize}, stream_file
@@ -156,6 +156,31 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 		end
 	)
 end
+
+--- Serve static files from a table.
+-- This helper function calls @{set_request_handler} with a handler for providing content from a table.  
+-- @param webroot the root of the url where the content will be served. 
+-- @param content File contents to serve will be looked-up in this table.
+M.serve_static_content_from_table = function (webroot, content)
+	M.set_request_handler(
+		'GET', 
+		webroot,
+		function(method, path, http_params, http_header)
+			path = path:sub(#webroot)
+			--if path:sub(-1) == '/' then path=path..'index.html' end
+      local extension = path:match('%.(%a+)$') or 'other'
+      local mime = http_util.mime_types[extension] or 'text/plain'      
+      local content = content[path]
+      if content then 
+        return 200, {['content-type']=mime, ['content-length']=#content}, content
+      else
+        log('HTTP', 'WARN', 'Error opening file %s: Not in content', path)
+        return 404
+      end
+		end
+	)
+end
+
 
 local function find_matching_handler(method, url)
 	local max_depth, best_handler = 0
@@ -276,7 +301,10 @@ M.init = function(conf)
 				local response_header = http_util.build_http_header(http_out_code, http_out_header, response, conf)
 				sktd_cli:send_async(response_header)
 				if type(response) == 'string' then
-					sktd_cli:send_async(response)
+					--sktd_cli:send_async(response)
+          sched.run(function()
+            sktd_cli:send_sync(response)
+          end)
 				else --stream
 					if not http_out_header["content-length"] then
 						need_flush = true
