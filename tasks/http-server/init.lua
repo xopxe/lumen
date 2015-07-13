@@ -13,7 +13,7 @@ local stream 	= 	lumen.stream
 
 local selector 	= require 'lumen.tasks.selector'
 local http_util = require 'lumen.tasks.http-server.http-util'
-local websocket = require 'lumen.tasks.http-server.websocket'
+local websocket -- only loaded if enabled in conf: = require 'lumen.tasks.http-server.websocket'
 
 local function backup_response(code_out, header_out)
 	local httpstatus = tostring(code_out).." "..http_util.http_error_code[code_out]
@@ -72,20 +72,6 @@ M.set_request_handler = function ( method, pattern, callback )
 		depth=depth,
 	}
 end
-
-
-
---- Register a websocket protocol.
--- The configuration flag _ws_enable_ must be set (see @{conf})
--- @function set_websocket_protocol
--- @param protocol the protocol name
--- @param handler a handler function. This function will be called when a new connection requesting
--- the protocol arrives. It will be pased a websocket object. If the handler parameter is nil, the protocol will be 
--- removed.
--- @param keep_clients when handler is nil, or changing an already present protocol, wether to kill the 
--- already running connections or leave them.
-M.set_websocket_protocol = websocket.set_websocket_protocol
-
 
 --- Serve static files from a folder (using ram).
 -- This helper function calls @{set_request_handler} with a handler for providing static content.  
@@ -209,6 +195,21 @@ end
 -- @param conf the configuration table (see @{conf}).
 M.init = function(conf)
 	conf = conf or  {}
+
+	if conf.ws_enable then
+		websocket = require 'lumen.tasks.http-server.websocket'
+		--- Register a websocket protocol.
+		-- The configuration flag _ws_enable_ must be set (see @{conf})
+		-- @function set_websocket_protocol
+		-- @param protocol the protocol name
+		-- @param handler a handler function. This function will be called when a new connection requesting
+		-- the protocol arrives. It will be pased a websocket object. If the handler parameter is nil, the protocol will be 
+		-- removed.
+		-- @param keep_clients when handler is nil, or changing an already present protocol, wether to kill the 
+		-- already running connections or leave them.
+		M.set_websocket_protocol = websocket.set_websocket_protocol
+	end
+
 	local ip = conf.ip or '*'
 	local port = conf.port or 8080
 	local attached = conf.kill_on_close
