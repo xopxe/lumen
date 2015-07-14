@@ -158,7 +158,7 @@ M.serve_static_content_from_table = function (webroot, content)
       local mime = http_util.mime_types[extension] or 'text/plain'      
       local content = content[path]
       if content then 
-        local start=tonumber(http_params[s])
+        local start=tonumber(http_params['s'])
         if start and start>1 then
           content = content:sub(start)
         end
