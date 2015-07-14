@@ -18,7 +18,7 @@ local M = {}
 -- Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read([len])
 -- @param streamd the the stream descriptor to read from.
 -- @param length optional length of string to be returned.
--- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
+-- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err, partial_ if
 -- stream is closed and empty (_err_ is the additinal error parameter provided on @{write} when closing).
 M.read = function (streamd, length)
 	if length == 0 then return '' end
@@ -35,7 +35,9 @@ M.read = function (streamd, length)
     streamd.rblocked = false
 		if not ev then return nil, 'timeout' end
 		if streamd.closed and (streamd.len<length or streamd.len==0) then --and #streamd.buff_data == 0 then
-			return nil, 'closed', streamd.closed
+      local partial = table.concat(buff_data)
+      buff_data = nil
+			return nil, 'closed', streamd.closed, partial
 		end
 	end
 	
