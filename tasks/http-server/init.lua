@@ -228,7 +228,8 @@ M.init = function(conf)
 		-- run the connection in a separated task
 		sched.run(function()
 			local instream = sktd_cli.stream
-			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', sktd_cli:getpeername())
+			local peerip, peerport = sktd_cli:getpeername()
+			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', tostring(peerip), tostring(peerport))
       
 			local read_incomming_header = function()
         --FIXME According to RFC-2616, section 4.2:	Header fields can be extended over multiple 
