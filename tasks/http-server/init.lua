@@ -40,6 +40,8 @@ local M = {}
 -- Defaults to 15s.
 M.HTTP_TIMEOUT = 15 --how long keep connections open
 
+M.EVENT_DATA_TRANSFERRED = {}
+
 -- Derived from Orbit & Orbiter
 M.request_handlers = {}
 local request_handlers = M.request_handlers
@@ -99,7 +101,7 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 					return 500
 				end
 			else
-				log('HTTP', 'WARN', 'Error opening file %s: %s', abspath, err)
+				log('HTTP', 'DETAIL', 'Error opening file %s: %s', abspath, err)
 				return 404
 			end
 		end
@@ -136,7 +138,7 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 					return 500
 				end
 			else
-				log('HTTP', 'WARN', 'Error opening file %s', err)
+				log('HTTP', 'DETAIL', 'Error opening file %s', err)
 				return 404
 			end
 		end
@@ -164,7 +166,7 @@ M.serve_static_content_from_table = function (webroot, content)
         end
         return 200, {['content-type']=mime, ['content-length']=#content}, content
       else
-        log('HTTP', 'WARN', 'Error opening file %s: Not in content', path)
+        log('HTTP', 'DETAIL', 'Error opening file %s: Not in content', path)
         return 404
       end
 		end
@@ -226,7 +228,8 @@ M.init = function(conf)
 		-- run the connection in a separated task
 		sched.run(function()
 			local instream = sktd_cli.stream
-			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', sktd_cli:getpeername())
+			local peerip, peerport = sktd_cli:getpeername()
+			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', tostring(peerip), tostring(peerport))
       
 			local read_incomming_header = function()
         --FIXME According to RFC-2616, section 4.2:	Header fields can be extended over multiple 
@@ -251,7 +254,7 @@ M.init = function(conf)
 				local http_req_method,http_req_path, http_req_params, http_req_version = 
 					string.match(request, '^([A-Z]+) ([%/%.%d%w%-_]+)[%?]?(%S*) HTTP/(.+)$')
 				
-				log('HTTP', 'DEBUG', 'incommig request %s %s %s %s', 
+				log('HTTP', 'DETAIL', 'incommig request %s %s %s %s', 
 					http_req_method, http_req_path, http_req_params, http_req_version)
 				
 				-- read header ---------------------------------------------------------
@@ -261,7 +264,7 @@ M.init = function(conf)
 				if conf.ws_enable and http_req_header['connection'] and http_req_header['upgrade']
 				and http_req_header['connection']:lower():find('upgrade', 1, true) 
 				and http_req_header['upgrade']:lower()=='websocket' then
-					log('HTTP', 'DEBUG', 'incoming websocket request')
+					log('HTTP', 'DETAIL', 'incoming websocket request')
 					websocket.handle_websocket_request(sktd_cli,http_req_header) 
 					-- this should return only when finished
 					return
@@ -286,7 +289,8 @@ M.init = function(conf)
 				else
 					local callback = find_matching_handler(http_req_method, http_req_path)
 					if callback then 
-						http_out_code, http_out_header, response = callback(http_req_method, http_req_path, http_params, http_req_header)
+						http_out_code, http_out_header, response
+              = callback(http_req_method, http_req_path, http_params, http_req_header)
 					else
 						http_out_code = 404
 					end
@@ -300,27 +304,35 @@ M.init = function(conf)
 				end
 				
 				-- write response ------------------------------------------------------------
-				log('HTTP', 'DEBUG', 'sending response %s', tostring(http_out_code))
+				log('HTTP', 'DETAIL', 'sending response %s', tostring(http_out_code))
 				local need_flush
-				
+				local done, err, bytes
+        
 				local response_header = http_util.build_http_header(http_out_code, http_out_header, response, conf)
-				sktd_cli:send_async(response_header)
-				if type(response) == 'string' then
-					--sktd_cli:send_async(response)
-          sched.run(function()
-            sktd_cli:send_sync(response)
-          end)
-				else --stream
-					if not http_out_header["content-length"] then
-						need_flush = true
-					end
-					while true do
-						--TODO share streams?
-						local s, _ = response:read()
-						if not s then break end
-						sktd_cli:send_async(s)
-					end
-				end
+				done, err, bytes = sktd_cli:send_sync(response_header)
+        if done then 
+          if type(response) == 'string' then
+            --sktd_cli:send_async(response)
+            sched.run(function()
+              done, err, bytes = sktd_cli:send_sync(response)
+              sched.signal(M.EVENT_DATA_TRANSFERRED, http_req_path, http_out_code, done, err, bytes)
+            end)
+          else --stream
+            if not http_out_header["content-length"] then
+              need_flush = true
+            end
+            while true do
+              --TODO share streams?
+              local s, _ = response:read()
+              if not s then break end
+              done, err, bytes = sktd_cli:send_sync(s)
+              if not done then break end
+            end
+            sched.signal(M.EVENT_DATA_TRANSFERRED, http_req_path, http_out_code, done, err, bytes)
+          end
+        else
+          sched.signal(M.EVENT_DATA_TRANSFERRED, http_req_path, http_out_code, done, err, bytes)
+        end
 				
         --handle socket closing when appropiate
 				if (http_req_version== '1.0' and http_req_header['connection']~='Keep-Alive')
