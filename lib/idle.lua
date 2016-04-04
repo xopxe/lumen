@@ -7,11 +7,16 @@ local success, lsleep = pcall(require, 'lsleep')
 --]]
 
 local function unix_idle  (t)
-	local ret = os.execute('sleep '..t) 
-	if _VERSION =='Lua 5.1' and ret ~= 0
-	or _VERSION ~='Lua 5.1' and ret ~= true then
-		os.exit() 
-	end
+	local ret = os.execute('sleep '..t)
+  --[[
+  if _VERSION =='Lua 5.1' and type(jit) ~= 'table' and ret ~= 0
+  or _VERSION =='Lua 5.1' and type(jit) == 'table' and ret ~= true 
+  or _VERSION ~='Lua 5.1' and ret ~= true then
+  --]]
+  if ret == 0 or ret == true then
+      return
+  end
+  os.exit()
 end
 
 local function windows_idle  (t)
