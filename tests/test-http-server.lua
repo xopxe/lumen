@@ -12,7 +12,7 @@ local stream  = lumen.stream
 local catalog = lumen.catalog
 
 log.setlevel('ALL', 'HTTP')
---log.setlevel('ALL')
+log.setlevel('ALL')
 
 local selector  = require 'lumen.tasks.selector'
 
@@ -22,7 +22,8 @@ selector.init({service=service})
 local http_server = require "lumen.tasks.http-server"
 
 http_server.serve_static_content_from_ram('/', '../tasks/http-server/www')
---http_server.serve_static_content_from_stream('/', '/home/xopxe')
+
+http_server.serve_static_content_from_table('/big/', {['/file.txt']=string.rep('x',10000000)})
 
 if service=='nixio' then
 	http_server.serve_static_content_from_stream('/docs/', '../docs')
