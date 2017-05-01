@@ -13,6 +13,8 @@ local setmetatable, ipairs, table, type = setmetatable, ipairs, table, type
 
 local CHUNK_SIZE = 1480 --65536
 
+local SLEEP_ON_RETRY_CONNECT = 0.1 --pause between reconnect attempts
+
 local recvt, sendt={}, {}
 
 local sktds = setmetatable({}, { __mode = 'k' })
@@ -227,11 +229,16 @@ end
 M.init = function()
   M.new_tcp_server = function (locaddr, locport, pattern, handler)
     --address, port, backlog, pattern)
-    local fd, errmsg = socket.bind(locaddr, locport)
-    if not fd then return nil, errmsg end
+    local master = socket.tcp()
+    master:setoption('reuseaddr', true)
+    local ok, errmsg
+    ok, errmsg = master:bind(locaddr, locport)
+    if not ok then return nil, errmsg end
+    ok, errmsg = master:listen()
+    if not ok then return nil, errmsg end
 
     local sktd=init_sktd({
-      fd = fd,
+      fd = master,
       --task=module_task,
       pattern = normalize_pattern(pattern),
       handler = handler,
@@ -248,10 +255,12 @@ M.init = function()
     --FIXME timeout handling for connecting should be made within main select()
     timeout = timeout or 20 -- a default value
     fd:settimeout(0)
+    fd:setoption('reuseaddr', true)
     local ok, errmsg
     repeat
         ok, errmsg = fd:connect(address, port, locaddr, locport)
-        if not ok then sched.sleep(0.1) end
+        --if running in a task and fails to connect, ad a small sleep
+        if not ok and sched.running_task then sched.sleep(SLEEP_ON_RETRY_CONNECT) end
     until ok or sched.get_time()-now>timeout
     if not ok then return nil, errmsg end
 
