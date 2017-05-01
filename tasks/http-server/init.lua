@@ -218,6 +218,7 @@ end
 
 --- Start the http server.
 -- @param conf the configuration table (see @{conf}).
+-- @return _true_ on success, _nil, err_ on failure
 M.init = function(conf)
 	conf = conf or  {}
 
@@ -232,7 +233,8 @@ M.init = function(conf)
 	local port = conf.port or 8080
 	local attached = conf.kill_on_close
 	
-	local tcp_server = assert(selector.new_tcp_server(ip, port, 0, 'stream'))
+	local tcp_server, errmsg = selector.new_tcp_server(ip, port, 0, 'stream')
+  if not tcp_server then return nil, errmsg end
 
 	local waitd_accept={tcp_server.events.accepted}
 	log('HTTP', 'INFO', 'http-server accepting connections on %s:%s', tcp_server:getsockname())
@@ -355,6 +357,7 @@ M.init = function(conf)
 			end
 		end, attached)
 	end)
+  return true
 end
 
 --- Configuration Table.

@@ -152,10 +152,10 @@ local high, low
       pos,high,low = 9,bytes_to_int(encoded:sub(1,4)),bytes_to_int(encoded:sub(5,8))
       payload = high*2^32 + low
       if payload < 0xffff or payload > 2^53 then
-        assert(false,'INVALID PAYLOAD '..payload)
+        error('INVALID PAYLOAD '..payload)
       end
     else
-      assert(false,'INVALID PAYLOAD '..payload)
+      error('INVALID PAYLOAD '..payload)
     end
     encoded = ssub(encoded,pos)
     bytes = bytes + pos - 1
