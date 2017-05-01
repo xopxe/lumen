@@ -8,8 +8,6 @@ local lumen = require'lumen'
 
 local log     = lumen.log
 local sched   = lumen.sched
-local stream  = lumen.stream
-local catalog = lumen.catalog
 
 log.setlevel('ALL', 'HTTP')
 log.setlevel('ALL')
