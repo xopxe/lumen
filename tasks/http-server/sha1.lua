@@ -238,7 +238,7 @@ local function sha1(msg)
 	local chunks = #msg / 64
 
 	local W = { }
-	local start, A, B, C, D, E, f, K, TEMP
+	local start, A, B, C, D, E, f, K
 	local chunk = 0
 
 	while chunk < chunks do
@@ -288,8 +288,8 @@ local function sha1(msg)
 		-- Let H0 = H0 + A, H1 = H1 + B, H2 = H2 + C, H3 = H3 + D, H4 = H4 + E.
 		H0,H1,H2,H3,H4 = w32_add(H0, A),w32_add(H1, B),w32_add(H2, C),w32_add(H3, D),w32_add(H4, E)
 	end
-	local f = w32_to_hexstring
-	return f(H0) .. f(H1) .. f(H2) .. f(H3) .. f(H4)
+	return w32_to_hexstring(H0) .. w32_to_hexstring(H1) .. w32_to_hexstring(H2) 
+      .. w32_to_hexstring(H3) .. w32_to_hexstring(H4)
 end
 
 local function hex_to_binary(hex)
