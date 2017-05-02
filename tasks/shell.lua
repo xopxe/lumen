@@ -109,7 +109,6 @@ local function handle_shellbuffer ( shell )
 		if background then -- create task that will push into out pipe
 			shell.pipe_out:write(shell.prompt_ready, 'In background: '..tostring(task_command))
 			sched.sigrunonce(waitd_command, function(event, ...) 
-        print ('xxxxxx', event, ...) 
 				sched.running_task:set_as_attached()
 				if event == task_command.EVENT_FINISH then
 					shell.pipe_out:write(nil, 'Background finished: '..tostring(task_command))
@@ -121,7 +120,6 @@ local function handle_shellbuffer ( shell )
 			end)
 		else -- wait until command finishes
 			local function read_signal(event, ...)
-        print ('yyyyyy', event, task_command, ...) 
 				if event == task_command.EVENT_FINISH then
 					shell.pipe_out:write(shell.prompt_ready, printer(...))
 				else
