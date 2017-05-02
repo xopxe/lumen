@@ -8,8 +8,9 @@ package.path = package.path .. ";;;../../?.lua;../../?/init.lua"
 local service = 'luasocket' --arg [1] or 'luasocket'
 
 local sched = require "lumen.sched"
---local selector = require 'lumen.tasks.selector'.init({service=service})
-local selector = require "lumen.tasks.selector".init({service=service})
+local selector = require "lumen.tasks.selector"
+
+selector.init({service=service})
 
 local shell = require "lumen.tasks.shell"
 
