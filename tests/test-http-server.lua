@@ -71,5 +71,7 @@ print ('http server listening on', conf.ip, conf.port)
 for _, h in pairs (http_server.request_handlers) do
 	print ('url:', h.pattern)
 end
+print('TIP: access http://'..conf.ip..':'..conf.port..'/shell.html for a websocket-based interactive console')
+
 
 sched.loop()
