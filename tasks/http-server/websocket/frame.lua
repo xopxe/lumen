@@ -31,7 +31,7 @@ local bit_0_6 = bits(0,1,2,3,4,5,6)
 
 --from http://stackoverflow.com/questions/5241799/lua-dealing-with-non-ascii-byte-streams-byteorder-change
 --adapted for fixed 4 byte bigendian unsigned ints.
-function int_to_bytes(num)
+local function int_to_bytes(num, endian)
     local res={}
     local n = 4 --math.ceil(select(2,math.frexp(num))/8) -- number of bytes to be used.
     for k=n,1,-1 do -- 256 = 2^8 bits per char.
@@ -41,19 +41,26 @@ function int_to_bytes(num)
     end
     assert(num==0)
     if endian == "big" then
-        local t={}
-        for k=1,n do
-            t[k]=res[n-k+1]
-        end
-        res=t
+      local t={}
+      for k=1,n do
+        t[k]=res[n-k+1]
+      end
+      res=t
     end
     return string.char(unpack(res))
 end
-function bytes_to_int(str,endian)
+local function bytes_to_int(str,endian)
     local t={str:byte(1,4)}
+    if endian=="big" then --reverse bytes
+      local tt={}
+      for k=1,#t do
+        tt[#t-k+1]=t[k]
+      end
+      t=tt
+    end
     local n=0
     for k=1,#t do
-        n=n+t[#t-k+1]*2^((k-1)*8)
+      n=n+t[#t-k+1]*2^((k-1)*8)
     end
     return n
 end
