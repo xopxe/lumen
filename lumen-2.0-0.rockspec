@@ -8,7 +8,7 @@ description = {
     license = "MIT"
 }
 dependencies = {
-    "lua >= 5.1",
+    "lua >= 5.1, <= 5.3",
     "nixio 0.3-1",
     "luasocket 3.0rc1-2"
 }
