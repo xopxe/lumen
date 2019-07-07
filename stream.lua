@@ -7,10 +7,11 @@
 
 local sched = require 'lumen.sched'
 local log=require 'lumen.log'
-local queue=require 'lumen.lib.queue'
+--local queue=require 'lumen.lib.queue'
 
 --get locals for some useful things
-local setmetatable, tostring = setmetatable, tostring
+local setmetatable, tostring, tonumber, t_concat, s_find 
+    = setmetatable, tostring, tonumber, table.concat, string.find
 
 local M = {}
 
@@ -41,7 +42,7 @@ M.read = function (streamd, length)
 	
 	if #buff_data > 1 then
 		--slow path
-		local s = table.concat(buff_data)
+		local s = t_concat(buff_data)
 		streamd.buff_data = {[1] = s}
 		buff_data = streamd.buff_data
 	end
@@ -84,7 +85,7 @@ M.read_line = function (streamd)
 
 	local line_available, new_line_last
 	for i=1, #buff_data do
-		line_available, new_line_last = string.find (buff_data[i] , '\r?\n')
+		line_available, new_line_last = s_find (buff_data[i] , '\r?\n')
 		if line_available then break end
 	end
 	if streamd.closed and not line_available then
@@ -96,7 +97,7 @@ M.read_line = function (streamd)
 		local ev = sched.wait(streamd.waitd_data)
     streamd.rblocked = false
 		if not ev then return nil, 'timeout' end
-		line_available, new_line_last = string.find (buff_data[#buff_data] or '', '\r?\n')
+		line_available, new_line_last = s_find (buff_data[#buff_data] or '', '\r?\n')
 		if streamd.closed and not line_available then
 			return nil, 'closed', streamd.closed
 		end
@@ -104,10 +105,10 @@ M.read_line = function (streamd)
 
 	if #buff_data > 1 then
 		--slow path
-		local s = table.concat(buff_data)
+		local s = t_concat(buff_data)
 		streamd.buff_data = {[1] = s}
 		buff_data = streamd.buff_data
-		line_available, new_line_last = string.find(s, '\r?\n')  --TODO keep count of positions to avoid rescanning
+		line_available, new_line_last = s_find(s, '\r?\n')  --TODO keep count of positions to avoid rescanning
 	end
 	
 	local s = buff_data[1]
