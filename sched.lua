@@ -14,12 +14,12 @@
 local log=require 'lumen.log'
 local queue3 = require 'lumen.lib.queue3'
 local weak_key = {__mode='k'}
-local weak_value = {__mode='v'}
-local weak_keyvalue = {__mode='kv'}
+--local weak_value = {__mode='v'}
+--local weak_keyvalue = {__mode='kv'}
 local setmetatable, coroutine, type, tostring, select, pairs, unpack, assert, next =
-      setmetatable, coroutine, type, tostring, select, pairs, unpack or table.unpack, assert, next
+setmetatable, coroutine, type, tostring, select, pairs, unpack or table.unpack, assert, next
 table.pack = table.pack or function (...)
-	return {n=select('#',...),...}
+  return {n=select('#',...),...}
 end
 
 
@@ -35,7 +35,7 @@ M.running_task = false
 -- @usage --prints each time a task dies
 --sched.sigrun({sched.EVENT_DIE}, print)
 M.EVENT_DIE = setmetatable({}, {__tostring=function() return "event: DIE" end})
-  
+
 --- Task finished event.
 -- This event will be emited when a task finishes normally.
 -- The parameters are the output of the task's function.
@@ -46,7 +46,7 @@ M.EVENT_FINISH = setmetatable({}, {__tostring=function() return "event: FINISH" 
 --- Event used for all events
 -- When included in a @{waitd}, will match any event.
 M.EVENT_ANY = {}
-  
+
 --TODO
 M.STEP = {}
 
@@ -70,80 +70,84 @@ local signal_queue = queue3:new()
 local next_waketime
 
 local step_task
-local function emit_signal ( event, packed, ... ) --FIXME
-  local function walk_waitd(waitd, event, ...)
-    for taskd, _ in pairs(waitd.tasks) do
-      --if not taskd then print (debug.traceback()) end
-      if type(taskd)~='table' then print (debug.traceback()) end
-      if taskd.waitingfor == waitd and taskd.status=='ready' then
-        taskd.waketime, taskd.waitingfor = nil, nil
-        step_task(taskd, event, ...)
-        if M.running_task and M.running_task.status == 'dead' then 
-          -- the task was killed from a triggered task
-          --print('the task was killed from a triggered task')
-          --print (debug.traceback())
-          --return --FIXME
-          M.wait()
-        end
-      else
-        --TODO buffering
-        if waitd.buff_mode == 'keep_last' or
-        waitd.buff_mode == 'keep_first' and not waitd.buff_event then
-          waitd.buff_event = event
-          --print ('buff', select('#',...), ...)
-          local n = select('#',...)
-          if packed then 
-            waitd.signal_packed, waitd.buff_parameter = true, select(1, ...)
-          elseif n == 0 then
-            waitd.signal_packed, waitd.buff_parameter = nil, nil
-          elseif n == 1 then
-            waitd.signal_packed, waitd.buff_parameter = false, select(1, ...)
-          else
-            waitd.signal_packed, waitd.buff_parameter = true, {n=n,...}
-          end
+local function walk_waitd(waitd, event, packed, ...)
+  for taskd, _ in pairs(waitd.tasks) do
+    --if not taskd then print (debug.traceback()) end
+    if type(taskd)~='table' then print (debug.traceback()) end
+    if taskd.waitingfor == waitd and taskd.status=='ready' then
+      taskd.waketime, taskd.waitingfor = nil, nil
+      step_task(taskd, event, ...)
+      if M.running_task and M.running_task.status == 'dead' then 
+        -- the task was killed from a triggered task
+        --print('the task was killed from a triggered task')
+        --print (debug.traceback())
+        --return --FIXME
+        M.wait()
+      end
+    else
+      --TODO buffering
+      if waitd.buff_mode == 'keep_last' or
+      waitd.buff_mode == 'keep_first' and not waitd.buff_event then
+        waitd.buff_event = event
+        --print ('buff', select('#',...), ...)
+        local n = select('#',...)
+        if packed then 
+          waitd.signal_packed, waitd.buff_parameter = true, select(1, ...)
+        elseif n == 0 then
+          waitd.signal_packed, waitd.buff_parameter = nil, nil
+        elseif n == 1 then
+          waitd.signal_packed, waitd.buff_parameter = false, select(1, ...)
+        else
+          waitd.signal_packed, waitd.buff_parameter = true, {n=n,...}
         end
       end
     end
   end
+end
+local function emit_signal ( event, packed, ... ) --FIXME
   if waiting[event] then 
+    local currently = {}
     for waitd, _ in pairs(waiting[event]) do
-      walk_waitd(waitd, event, ...)
+      currently[waitd] = true
+    end
+    for waitd, _ in pairs(currently) do
+      walk_waitd(waitd, event, packed, ...)
     end
   end
   if waiting[M.EVENT_ANY] then 
     for waitd, _ in pairs(waiting[M.EVENT_ANY]) do
-      walk_waitd(waitd, event, ...)
+      walk_waitd(waitd, event, packed, ...)
     end
   end
 end
 
 
 step_task = function (taskd, ...)
-	if taskd.status=='ready' then
-		local check = function(ok, ...)
-			if coroutine.status(taskd.co)=='dead' then
-				M.tasks[taskd]=nil
-				if ok then 
-					log('SCHED', 'DETAIL', '%s returning %d parameters', tostring(taskd), select('#',...))
-					emit_signal(taskd.EVENT_FINISH, false, ...) --per task
-					emit_signal(M.EVENT_FINISH, false, taskd, ...) --global
-				else
-					log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
-						, tostring(taskd), select('#',...), tostring(...))
+  if taskd.status=='ready' then
+    local check = function(ok, ...)
+      if coroutine.status(taskd.co)=='dead' then
+        M.tasks[taskd]=nil
+        if ok then 
+          log('SCHED', 'DETAIL', '%s returning %d parameters', tostring(taskd), select('#',...))
+          emit_signal(taskd.EVENT_FINISH, false, ...) --per task
+          emit_signal(M.EVENT_FINISH, false, taskd, ...) --global
+        else
+          log('SCHED', 'WARNING', '%s die on error, returning %d parameters: %s'
+            , tostring(taskd), select('#',...), tostring(...))
           emit_signal(taskd.EVENT_DIE, false, ...) --per task
-					emit_signal(M.EVENT_DIE, false, taskd, ...) --global
-				end
-				for child, _ in pairs(taskd.attached) do
-					M.kill(child)
-				end
-				taskd.status='dead'
-			end
-		end
-		local previous_task = M.running_task
-		M.running_task = taskd
-		check(coroutine.resume(taskd.co, ...))
-		M.running_task = previous_task
-	end
+          emit_signal(M.EVENT_DIE, false, taskd, ...) --global
+        end
+        for child, _ in pairs(taskd.attached) do
+          M.kill(child)
+        end
+        taskd.status='dead'
+      end
+    end
+    local previous_task = M.running_task
+    M.running_task = taskd
+    check(coroutine.resume(taskd.co, ...))
+    M.running_task = previous_task
+  end
 end 
 
 --- Control memory collection.
@@ -152,14 +156,14 @@ end
 M.to_clean_up = 1000
 
 local clean_up = function()
-	--clean up waiting table
-	log('SCHED', 'DEBUG', 'collecting garbage')
+  --clean up waiting table
+  log('SCHED', 'DEBUG', 'collecting garbage')
   for ev, waitds in pairs(waiting) do
     if next(waitds)==nil then
       waiting[ev]=nil
     end
   end
-	collectgarbage ('collect')
+  collectgarbage ('collect')
 end
 
 local waitd_count = 0
@@ -170,24 +174,24 @@ local waitd_count = 0
 -- @return a wait descriptor object.
 M.new_waitd = function(waitd_table)
   if not M.running_task then print (debug.traceback()) end
-   assert(M.running_task)
+  assert(M.running_task)
   if not waitd_table.tasks then 
     -- first task to use a waitd
     setmetatable(waitd_table, { __index=M })
-    waitd_table.tasks = setmetatable({[M.running_task]=true}, {__mode='k'})
+    waitd_table.tasks = setmetatable({[M.running_task]=true}, weak_key)
     for i=1, #waitd_table do
       local ev = waitd_table[i]
       waiting[ev] = waiting[ev] or setmetatable({}, weak_key)
       waiting[ev][waitd_table] = true --setmetatable({}, weak_key)
     end
-		log('SCHED', 'DETAIL', 'task %s created waitd %s', tostring(M.running_task), tostring(waitd_table))
+    log('SCHED', 'DETAIL', 'task %s created waitd %s', tostring(M.running_task), tostring(waitd_table))
     waitd_count = waitd_count + 1
     if waitd_count % M.to_clean_up == 0 then clean_up() end
   else
     log('SCHED', 'DETAIL', 'task %s using existing waitd %s', tostring(M.running_task), tostring(waitd_table))
-		waitd_table.tasks[M.running_task] = true
+    waitd_table.tasks[M.running_task] = true
   end
-  
+
   return waitd_table
 end
 
@@ -210,7 +214,7 @@ M.wait = function ( waitd )
       waitd=M.new_waitd(waitd)
       M.running_task.waitds[waitd] = true
     end
-     
+
     -- feed from buffer if present
     if waitd.buff_event then
       local event, parameter = waitd.buff_event, waitd.buff_parameter
@@ -223,7 +227,7 @@ M.wait = function ( waitd )
         return event
       end
     end
-    
+
     local timeout = waitd.timeout
     if timeout and timeout>=0 then
       local t = timeout + M.get_time()
@@ -234,36 +238,36 @@ M.wait = function ( waitd )
 
     M.running_task.waitingfor = waitd
   end
-	return coroutine.yield( M.running_task.co )
+  return coroutine.yield( M.running_task.co )
 end
 
 --- Sleeps the task for t time units.
 -- Time computed according to @\{get_time}.
 -- @param timeout time to sleep
 M.sleep = function (timeout)
-	local sleep_waitd = M.running_task.sleep_waitd
-	sleep_waitd.timeout=timeout
-	M.wait(sleep_waitd)
+  local sleep_waitd = M.running_task.sleep_waitd
+  sleep_waitd.timeout=timeout
+  M.wait(sleep_waitd)
 end
 
 --M.new_task = function ( f )
 local function new_task ( f )
-	local co = coroutine.create( f )
-	local taskd = setmetatable({
-		status='ready', --'paused',
-		created_by=M.running_task,
-		co=co,
-		attached=setmetatable({}, weak_key),
-    waitds=setmetatable({}, weak_key),
-		sleep_waitd={}, --see M.sleep()
-    EVENT_DIE = setmetatable({}, {__tostring=function() return "event: DIE"..tostring(f) end}),
-    EVENT_FINISH = setmetatable({}, {__tostring=function() return "event: FINISH"..tostring(f) end}),
-	}, {
-		__index=M, --OO-styled access
-	})
-	--M.tasks[taskd] = true
+  local co = coroutine.create( f )
+  local taskd = setmetatable({
+      status='ready', --'paused',
+      created_by=M.running_task,
+      co=co,
+      attached=setmetatable({}, weak_key),
+      waitds=setmetatable({}, weak_key),
+      sleep_waitd={}, --see M.sleep()
+      EVENT_DIE = setmetatable({}, {__tostring=function() return "event: DIE"..tostring(f) end}),
+      EVENT_FINISH = setmetatable({}, {__tostring=function() return "event: FINISH"..tostring(f) end}),
+      }, {
+      __index=M, --OO-styled access
+    })
+  --M.tasks[taskd] = true
   new_tasks[taskd] = true
-	return taskd
+  return taskd
 end
 --- Create a task.
 -- The task is created in paused mode. To run the created task,
@@ -285,9 +289,9 @@ M.new_task = new_task
 -- @param taskd_child The child (attached) task.
 -- @return the modified taskd.
 M.attach = function (taskd, taskd_child)
-	taskd.attached[taskd_child] = true
-	log('SCHED', 'DETAIL', '%s is attached to %s', tostring(taskd_child), tostring(taskd))
-	return taskd
+  taskd.attached[taskd_child] = true
+  log('SCHED', 'DETAIL', '%s is attached to %s', tostring(taskd_child), tostring(taskd))
+  return taskd
 end
 
 --- Set a task as attached to the creator task.
@@ -297,8 +301,8 @@ end
 -- @param taskd The child (attached) task.
 -- @return the modified taskd.
 M.set_as_attached = function(taskd)
-	if taskd.created_by then M.attach(taskd.created_by, taskd) end
-	return taskd
+  if taskd.created_by then M.attach(taskd.created_by, taskd) end
+  return taskd
 end
 
 --- Run a task.
@@ -309,15 +313,15 @@ end
 -- @param ... parameters passed to the task upon first run.
 -- @return a task in the scheduler (see @{taskd}).
 M.run = function ( task, ... )
-	local taskd
-	if type(task)=='function' then
-		taskd = new_task( task )
-	else
-		taskd = task
-	end
-	--M.set_pause(taskd, false)
-	--step_task(taskd, ...)  --FIXME can get the task killed: still in new_tasks
-	return taskd
+  local taskd
+  if type(task)=='function' then
+    taskd = new_task( task )
+  else
+    taskd = task
+  end
+  --M.set_pause(taskd, false)
+  --step_task(taskd, ...)  --FIXME can get the task killed: still in new_tasks
+  return taskd
 end
 
 --- Create and run a task that listens for a signal.
@@ -328,14 +332,14 @@ end
 -- @param attached if true, the new task will run in attached mode
 -- @return task in the scheduler (see @{taskd}).
 M.sigrun = function( waitd, f, attached)
-	--local taskd = M.new_sigrun_task( waitd, f )
- 	local taskd = new_task( function()
-		while true do
-			f(M.wait(waitd))
-		end
-	end)
-	if attached then taskd:set_as_attached() end
-	return M.run(taskd)
+  --local taskd = M.new_sigrun_task( waitd, f )
+  local taskd = new_task( function()
+      while true do
+        f(M.wait(waitd))
+      end
+    end)
+  if attached then taskd:set_as_attached() end
+  return M.run(taskd)
 end
 
 --- Create and run a task that listens for a signal, once.
@@ -346,11 +350,11 @@ end
 -- @param attached if true, the new task will run in attached more
 -- @return task in the scheduler (see @{taskd}).
 M.sigrunonce = function( waitd, f, attached)
-	local taskd = new_task( function()
-		f(M.wait(waitd))
-	end )
-	if attached then taskd:set_as_attached() end
-	return M.run(taskd)
+  local taskd = new_task( function()
+      f(M.wait(waitd))
+    end )
+  if attached then taskd:set_as_attached() end
+  return M.run(taskd)
 end
 
 --- Pause a task.
@@ -361,20 +365,20 @@ end
 -- @param pause mode, true to pause, false to unpause
 -- @return the modified taskd on success or _nil, errormessage_ on failure.
 M.set_pause = function(taskd, pause)
-	log('SCHED', 'DEBUG', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
-	if taskd.status=='dead' then
-		log('SCHED', 'WARNING', '%s toggling pause on dead %s', tostring(M.running_task), tostring(taskd))
-		return nil, 'task is dead'
-	end
-	if pause then
-		taskd.status='paused'
-		if M.running_task==taskd then
-			M.wait()
-		end
-	else
-		taskd.status='ready'
-	end
-	return taskd
+  log('SCHED', 'DEBUG', '%s setting pause on %s to %s', tostring(M.running_task), tostring(taskd), tostring(pause))
+  if taskd.status=='dead' then
+    log('SCHED', 'WARNING', '%s toggling pause on dead %s', tostring(M.running_task), tostring(taskd))
+    return nil, 'task is dead'
+  end
+  if pause then
+    taskd.status='paused'
+    if M.running_task==taskd then
+      M.wait()
+    end
+  else
+    taskd.status='ready'
+  end
+  return taskd
 end
 
 --- Idle function.
@@ -409,15 +413,15 @@ end
 -- invoked as taskd:kill().
 -- @param taskd task to terminate (see @{taskd}).
 M.kill = function ( taskd )
-	log('SCHED', 'DETAIL', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
-	M.tasks[taskd] = nil
-	
-	for child, _ in pairs(taskd.attached) do
-		M.kill(child)
-	end
+  log('SCHED', 'DETAIL', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
+  M.tasks[taskd] = nil
+
+  for child, _ in pairs(taskd.attached) do
+    M.kill(child)
+  end
   emit_signal(taskd.EVENT_DIE, false, 'killed') --per task
   emit_signal(M.EVENT_DIE, false, taskd, 'killed') --global
-	taskd.status = 'dead'
+  taskd.status = 'dead'
 end
 
 --- Emit a signal.
@@ -426,8 +430,8 @@ end
 -- @param event event of the signal. Can be of any type.
 -- @param ... further parameters to be sent with the signal.
 M.signal = function ( event, ... )
-	log('SCHED', 'DEBUG', 'task %s emitting event %s with %d parameters', 
-		tostring(M.running_task), tostring(event), select('#', ...))
+  log('SCHED', 'DEBUG', 'task %s emitting event %s with %d parameters', 
+    tostring(M.running_task), tostring(event), select('#', ...))
   emit_signal(event, false, ...)  
 end
 
@@ -441,8 +445,8 @@ end
 -- @param ... further parameters to be sent with the signal.
 M.schedule_signal = function ( event, ... )
   local n = select('#', ...)
-	log('SCHED', 'DEBUG', '%s echeduling event %s with %d parameters', 
-		tostring(M.running_task), tostring(event), n)
+  log('SCHED', 'DEBUG', '%s echeduling event %s with %d parameters', 
+    tostring(M.running_task), tostring(event), n)
   if n == 0 then
     signal_queue:pushright(event, nil, nil)  
   elseif n==1 then 
@@ -457,44 +461,44 @@ end
 -- means it will be 0 if there are active tasks.
 M.step = function ()
   next_waketime = nil
-    
+
   -- emit scheduled signals
   while signal_queue:len()>0 do
     local event, packed, parameter = signal_queue:popleft() 
     emit_signal(event, packed, parameter) --FIXME avoid repacking when buffering
   end
-  
+
   -- transfer recently created tasks to main table
   for k, _ in pairs(new_tasks) do
     new_tasks[k]=nil
     M.tasks[k]=true
   end
-  
+
   --register all ready&not waiting to run
   --if find one waiting&timeouting, wake it --and finish
-	for taskd, _ in pairs (M.tasks) do
-		if taskd.status=='ready' then
-			if taskd.waitingfor then
-				local waketime = taskd.waketime
-				if waketime then
-					next_waketime = next_waketime or waketime
-					if waketime <= M.get_time() then
+  for taskd, _ in pairs (M.tasks) do
+    if taskd.status=='ready' then
+      if taskd.waitingfor then
+        local waketime = taskd.waketime
+        if waketime then
+          next_waketime = next_waketime or waketime
+          if waketime <= M.get_time() then
             --emit_timeout
             taskd.waketime, taskd.waitingfor = nil, nil
             step_task(taskd, nil, 'timeout')
             --return 0
-					end
-					if waketime < next_waketime then
-						next_waketime = waketime
-					end
-				end
-			else
-				cycleready[#cycleready+1]=taskd
-			end
-		end
-	end
+          end
+          if waketime < next_waketime then
+            next_waketime = waketime
+          end
+        end
+      else
+        cycleready[#cycleready+1]=taskd
+      end
+    end
+  end
 
-  
+
   --wake all ready tasks
   local function compute_available_time()
     local available_time
@@ -506,11 +510,11 @@ M.step = function ()
   end
   local remaining -- available idle time to be returned
 
-	if #cycleready==0 then
-		if next_waketime then
-			remaining = next_waketime-M.get_time()
-			if remaining < 0 then remaining = 0 end
-		end
+  if #cycleready==0 then
+    if next_waketime then
+      remaining = next_waketime-M.get_time()
+      if remaining < 0 then remaining = 0 end
+    end
   elseif #cycleready==1 then
     local available_time = compute_available_time()
     step_task( cycleready[1], M.STEP, available_time, available_time )
@@ -522,9 +526,9 @@ M.step = function ()
       cycleready[i]=nil
     end
     remaining = 0
-	end
-  
-	return remaining
+  end
+
+  return remaining
 end
 
 --- Wait for the scheduler to finish.
@@ -538,14 +542,14 @@ end
 -- --potentially free any resources before finishing here  
 --
 M.loop = function ()
-	log('SCHED', 'INFO', 'Started.')
-	repeat
-		local idle_time = M.step()
-		if idle_time and idle_time>0 then
-			M.idle( idle_time )
-		end
-	until not idle_time
-	log('SCHED', 'INFO', 'Finished.')
+  log('SCHED', 'INFO', 'Started.')
+  repeat
+    local idle_time = M.step()
+    if idle_time and idle_time>0 then
+      M.idle( idle_time )
+    end
+  until not idle_time
+  log('SCHED', 'INFO', 'Finished.')
 end
 
 --- Data structures.
