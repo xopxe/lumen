@@ -105,19 +105,19 @@ local function walk_waitd(waitd, event, packed, ...)
   end
 end
 local function emit_signal ( event, packed, ... ) --FIXME
+  local currently = {}
   if waiting[event] then 
-    local currently = {}
     for waitd, _ in pairs(waiting[event]) do
       currently[waitd] = true
-    end
-    for waitd, _ in pairs(currently) do
-      walk_waitd(waitd, event, packed, ...)
     end
   end
   if waiting[M.EVENT_ANY] then 
     for waitd, _ in pairs(waiting[M.EVENT_ANY]) do
-      walk_waitd(waitd, event, packed, ...)
+      currently[waitd] = true
     end
+  end
+  for waitd, _ in pairs(currently) do
+    walk_waitd(waitd, event, packed, ...)
   end
 end
 
