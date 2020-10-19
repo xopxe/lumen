@@ -13,8 +13,6 @@ Tasks that interface with LuaSocket and nixio for socket and async file I/O supp
 Lumen's [API reference](http://xopxe.github.com/lumen/) is available online. Notice that this is a second 
 generation API (2.0). If you come from the past and are interested in the old Lumen, check the "v1.0" branch.
 
-WARNING: Lumen is under heavy development, and API changes happen rather 
-frequently, as other weird breakages.
 
 ## How does it look?
 
