@@ -37,29 +37,29 @@
 
 
 <h2>Modules</h2>
-<ul>
-  <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/log.html">log</a></li>
-  <li><a href="../modules/mutex.html">mutex</a></li>
-  <li><a href="../modules/pipes.html">pipes</a></li>
-  <li><a href="../modules/proxy.html">proxy</a></li>
+<ul class="nowrap">
   <li><a href="../modules/sched.html">sched</a></li>
-  <li><a href="../modules/selector.html">selector</a></li>
-  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><strong>stream</strong></li>
+  <li><a href="../modules/log.html">log</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
 </ul>
 <h2>Topics</h2>
-<ul>
-  <li><a href="../topics/README.md.html">README.md</a></li>
+<ul class="">
+  <li><a href="../topics/README.md.html">README</a></li>
 </ul>
 <h2>Examples</h2>
-<ul>
-  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
-  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
-  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
-  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
-  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+<ul class="nowrap">
   <li><a href="../examples/test.lua.html">test.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
 </ul>
 
 </div>
@@ -67,36 +67,36 @@
 <div id="content">
 
 <h1>Module <code>stream</code></h1>
-
 <p>String streams.</p>
 <p> Streams are similar to <a href="../modules/pipes.html#">pipes</a>, but specialized for strings. They serve
  the same purpose as LTN12, i.e. typically processing input from a socket.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example">local stream = require &apos;lumen.stream&apos;</pre>
+        <pre class="example">local stream = require &apos;lumen.stream&apos;
+</pre>
     </ul>
 
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#read">read&nbsp;(streamd, length)</a></td>
+	<td class="name" nowrap><a href="#read">read (streamd, length)</a></td>
 	<td class="summary">Read from a stream.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#read_line">read_line&nbsp;(streamd)</a></td>
+	<td class="name" nowrap><a href="#read_line">read_line (streamd)</a></td>
 	<td class="summary">Read a line from a stream.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#write">write&nbsp;(streamd, s, err)</a></td>
+	<td class="name" nowrap><a href="#write">write (streamd, s, err)</a></td>
 	<td class="summary">Write to a stream.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#set_timeout">set_timeout&nbsp;(streamd, read_timeout, write_timeout)</a></td>
+	<td class="name" nowrap><a href="#set_timeout">set_timeout (streamd, read_timeout, write_timeout)</a></td>
 	<td class="summary">Change the timeout settings.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new">new&nbsp;(size, read_timeout, write_timeout)</a></td>
+	<td class="name" nowrap><a href="#new">new (size, read_timeout, write_timeout)</a></td>
 	<td class="summary">Create a new stream.</td>
 	</tr>
 </table>
@@ -105,22 +105,26 @@
 <br/>
 
 
-    <h2><a name="Functions"></a>Functions</h2>
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
     <dl class="function">
     <dt>
     <a name = "read"></a>
-    <strong>read&nbsp;(streamd, length)</strong>
+    <strong>read (streamd, length)</strong>
     </dt>
     <dd>
     Read from a stream.
  Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read([len])
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">streamd</span>
-         the the stream descriptor to read from.</li>
+         the the stream descriptor to read from.
+        </li>
         <li><span class="parameter">length</span>
-         optional length of string to be returned.</li>
+         optional length of string to be returned.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -136,16 +140,18 @@
 </dd>
     <dt>
     <a name = "read_line"></a>
-    <strong>read_line&nbsp;(streamd)</strong>
+    <strong>read_line (streamd)</strong>
     </dt>
     <dd>
     Read a line from a stream.
  Will block if there is not a whole line to return, until it arrives. Also accessible as streamd:read_line()
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">streamd</span>
-         the the stream descriptor to read from.</li>
+         the the stream descriptor to read from.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -162,20 +168,24 @@
 </dd>
     <dt>
     <a name = "write"></a>
-    <strong>write&nbsp;(streamd, s, err)</strong>
+    <strong>write (streamd, s, err)</strong>
     </dt>
     <dd>
     Write to a stream.
  Will block when writing to a full stream. Also accessible as streamd:write(s ,err)
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">streamd</span>
-         the the stream descriptor to write to.</li>
+         the the stream descriptor to write to.
+        </li>
         <li><span class="parameter">s</span>
-         the string to write to the stream. false or nil closes the stream.</li>
+         the string to write to the stream. false or nil closes the stream.
+        </li>
         <li><span class="parameter">err</span>
-         optional error message to register on stream closing.</li>
+         optional error message to register on stream closing.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -191,20 +201,24 @@
 </dd>
     <dt>
     <a name = "set_timeout"></a>
-    <strong>set_timeout&nbsp;(streamd, read_timeout, write_timeout)</strong>
+    <strong>set_timeout (streamd, read_timeout, write_timeout)</strong>
     </dt>
     <dd>
     Change the timeout settings.
  Can be invoked as streamd:set_timeout(read_timeout, write_timeout)
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">streamd</span>
-         the the stream descriptor to configure.</li>
+         the the stream descriptor to configure.
+        </li>
         <li><span class="parameter">read_timeout</span>
-         timeout for blocking on stream reading operations. -1 or nil wait forever</li>
+         timeout for blocking on stream reading operations. -1 or nil wait forever
+        </li>
         <li><span class="parameter">write_timeout</span>
-         timeout for blocking on stream writing operations. -1 or nil wait forever</li>
+         timeout for blocking on stream writing operations. -1 or nil wait forever
+        </li>
     </ul>
 
 
@@ -214,21 +228,25 @@
 </dd>
     <dt>
     <a name = "new"></a>
-    <strong>new&nbsp;(size, read_timeout, write_timeout)</strong>
+    <strong>new (size, read_timeout, write_timeout)</strong>
     </dt>
     <dd>
     Create a new stream.
+
 
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">size</span>
          When the buffered string length surpases this value, following attempts to
- write will block. nil means no limit.</li>
+ write will block. nil means no limit.
+        </li>
         <li><span class="parameter">read_timeout</span>
          timeout for blocking on stream reading operations. -1 or nil wait forever
- timeout</li>
+ timeout
+        </li>
         <li><span class="parameter">write_timeout</span>
-         timeout for blocking on stream writing operations. -1 or nil wait forever</li>
+         timeout for blocking on stream writing operations. -1 or nil wait forever
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -247,7 +265,8 @@
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.3.12</a></i>
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2021-05-02 12:48:52 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>

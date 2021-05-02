@@ -40,29 +40,29 @@
 
 
 <h2>Modules</h2>
-<ul>
-  <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/log.html">log</a></li>
-  <li><a href="../modules/mutex.html">mutex</a></li>
-  <li><a href="../modules/pipes.html">pipes</a></li>
-  <li><a href="../modules/proxy.html">proxy</a></li>
+<ul class="nowrap">
   <li><strong>sched</strong></li>
-  <li><a href="../modules/selector.html">selector</a></li>
-  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/stream.html">stream</a></li>
+  <li><a href="../modules/log.html">log</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
 </ul>
 <h2>Topics</h2>
-<ul>
-  <li><a href="../topics/README.md.html">README.md</a></li>
+<ul class="">
+  <li><a href="../topics/README.md.html">README</a></li>
 </ul>
 <h2>Examples</h2>
-<ul>
-  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
-  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
-  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
-  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
-  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+<ul class="nowrap">
   <li><a href="../examples/test.lua.html">test.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
 </ul>
 
 </div>
@@ -70,86 +70,86 @@
 <div id="content">
 
 <h1>Module <code>sched</code></h1>
-
 <p>Lumen cooperative scheduler.</p>
 <p> Lumen (Lua Multitasking Environment) is a simple environment
  for coroutine based multitasking. Consists of a signal scheduler,
  and that's it.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"> local sched = require &apos;lumen.sched&apos;
- sched.sigrun({&apos;a signal&apos;}, print)
- local task=sched.run(function()
-   sched.signal(&apos;a signal&apos;, &apos;data&apos;)
-   sched.sleep(1)
- end)</pre>
+        <pre class="example">local sched = require &apos;lumen.sched&apos;
+sched.sigrun({&apos;a signal&apos;}, print)
+local task=sched.run(function()
+  sched.signal(&apos;a signal&apos;, &apos;data&apos;)
+  sched.sleep(1)
+end)
+</pre>
     </ul>
 
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#get_time">get_time&nbsp;()</a></td>
+	<td class="name" nowrap><a href="#get_time">get_time ()</a></td>
 	<td class="summary">Function used by the scheduler to get current time.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_waitd">new_waitd&nbsp;(waitd_table)</a></td>
+	<td class="name" nowrap><a href="#new_waitd">new_waitd (waitd_table)</a></td>
 	<td class="summary">Create a Wait Descriptor.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#wait">wait&nbsp;(waitd)</a></td>
+	<td class="name" nowrap><a href="#wait">wait (waitd)</a></td>
 	<td class="summary">Wait for a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sleep">sleep&nbsp;(timeout)</a></td>
+	<td class="name" nowrap><a href="#sleep">sleep (timeout)</a></td>
 	<td class="summary">Sleeps the task for t time units.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_task">new_task&nbsp;(f)</a></td>
+	<td class="name" nowrap><a href="#new_task">new_task (f)</a></td>
 	<td class="summary">Create a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#attach">attach&nbsp;(taskd, taskd_child)</a></td>
+	<td class="name" nowrap><a href="#attach">attach (taskd, taskd_child)</a></td>
 	<td class="summary">Attach a task to another.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#set_as_attached">set_as_attached&nbsp;(taskd)</a></td>
+	<td class="name" nowrap><a href="#set_as_attached">set_as_attached (taskd)</a></td>
 	<td class="summary">Set a task as attached to the creator task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#run">run&nbsp;(task, ...)</a></td>
+	<td class="name" nowrap><a href="#run">run (task, ...)</a></td>
 	<td class="summary">Run a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sigrun">sigrun&nbsp;(waitd, f, attached)</a></td>
+	<td class="name" nowrap><a href="#sigrun">sigrun (waitd, f, attached)</a></td>
 	<td class="summary">Create and run a task that listens for a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#sigrunonce">sigrunonce&nbsp;(waitd, f, attached)</a></td>
+	<td class="name" nowrap><a href="#sigrunonce">sigrunonce (waitd, f, attached)</a></td>
 	<td class="summary">Create and run a task that listens for a signal, once.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#set_pause">set_pause&nbsp;(taskd, pause)</a></td>
+	<td class="name" nowrap><a href="#set_pause">set_pause (taskd, pause)</a></td>
 	<td class="summary">Pause a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#kill">kill&nbsp;(taskd)</a></td>
+	<td class="name" nowrap><a href="#kill">kill (taskd)</a></td>
 	<td class="summary">Finishes a task.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#signal">signal&nbsp;(event, ...)</a></td>
+	<td class="name" nowrap><a href="#signal">signal (event, ...)</a></td>
 	<td class="summary">Emit a signal.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#schedule_signal">schedule_signal&nbsp;(event, ...)</a></td>
+	<td class="name" nowrap><a href="#schedule_signal">schedule_signal (event, ...)</a></td>
 	<td class="summary">Emit a signal lazily.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#step">step&nbsp;()</a></td>
+	<td class="name" nowrap><a href="#step">step ()</a></td>
 	<td class="summary">Runs a single step of the scheduler.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#loop">loop&nbsp;()</a></td>
+	<td class="name" nowrap><a href="#loop">loop ()</a></td>
 	<td class="summary">Wait for the scheduler to finish.</td>
 	</tr>
 </table>
@@ -204,11 +204,12 @@
 <br/>
 
 
-    <h2><a name="Functions"></a>Functions</h2>
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
     <dl class="function">
     <dt>
     <a name = "get_time"></a>
-    <strong>get_time&nbsp;()</strong>
+    <strong>get_time ()</strong>
     </dt>
     <dd>
     Function used by the scheduler to get current time.
@@ -220,20 +221,23 @@
 
 
 
+
 </dd>
     <dt>
     <a name = "new_waitd"></a>
-    <strong>new_waitd&nbsp;(waitd_table)</strong>
+    <strong>new_waitd (waitd_table)</strong>
     </dt>
     <dd>
     Create a Wait Descriptor.
  Creates <a href="../modules/sched.html#waitd">waitd</a> object in the scheduler. Notice that buffering waitds
  start buffering as soon they are created.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">waitd_table</span>
-         a table to convert into a wait descriptor.</li>
+         a table to convert into a wait descriptor.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -248,7 +252,7 @@
 </dd>
     <dt>
     <a name = "wait"></a>
-    <strong>wait&nbsp;(waitd)</strong>
+    <strong>wait (waitd)</strong>
     </dt>
     <dd>
     Wait for a signal.
@@ -260,10 +264,12 @@
  in cooperative multitasking)
  Can be invoked as waitd:wait().
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">waitd</span>
-         a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+         a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -279,16 +285,18 @@
 </dd>
     <dt>
     <a name = "sleep"></a>
-    <strong>sleep&nbsp;(timeout)</strong>
+    <strong>sleep (timeout)</strong>
     </dt>
     <dd>
     Sleeps the task for t time units.
  Time computed according to @{get_time}.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">timeout</span>
-         time to sleep</li>
+         time to sleep
+        </li>
     </ul>
 
 
@@ -298,7 +306,7 @@
 </dd>
     <dt>
     <a name = "new_task"></a>
-    <strong>new_task&nbsp;(f)</strong>
+    <strong>new_task (f)</strong>
     </dt>
     <dd>
     Create a task.
@@ -309,10 +317,12 @@
  If there is a error, the task will emit a <em>sched.EVENT_DIE, false, err</em> were
  err is the error message.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">f</span>
-         function for the task</li>
+         function for the task
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -327,7 +337,7 @@
 </dd>
     <dt>
     <a name = "attach"></a>
-    <strong>attach&nbsp;(taskd, taskd_child)</strong>
+    <strong>attach (taskd, taskd_child)</strong>
     </dt>
     <dd>
     Attach a task to another.
@@ -335,12 +345,15 @@
  the parent task is finished (returns, errors or is killed). Can be
  invoked as taskd:attach(taskd_child).
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">taskd</span>
-         The parent task</li>
+         The parent task
+        </li>
         <li><span class="parameter">taskd_child</span>
-         The child (attached) task.</li>
+         The child (attached) task.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -355,7 +368,7 @@
 </dd>
     <dt>
     <a name = "set_as_attached"></a>
-    <strong>set_as_attached&nbsp;(taskd)</strong>
+    <strong>set_as_attached (taskd)</strong>
     </dt>
     <dd>
     Set a task as attached to the creator task.
@@ -363,10 +376,12 @@
  the parent task (the task that created it) is finished (returns, errors or is killed).
  Can be invoked as taskd:set_as_attached().
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">taskd</span>
-         The child (attached) task.</li>
+         The child (attached) task.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -381,7 +396,7 @@
 </dd>
     <dt>
     <a name = "run"></a>
-    <strong>run&nbsp;(task, ...)</strong>
+    <strong>run (task, ...)</strong>
     </dt>
     <dd>
     Run a task.
@@ -389,12 +404,15 @@
  If provided a taskd, will run it. If provided a function, will use <a href="../modules/sched.html#new_task">new_task</a>
  to create a task first. This call yields control to the new task immediatelly.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">task</span>
-         wither a <a href="../modules/sched.html#taskd">taskd</a> or function for the task.</li>
+         wither a <a href="../modules/sched.html#taskd">taskd</a> or function for the task.
+        </li>
         <li><span class="parameter">...</span>
-         parameters passed to the task upon first run.</li>
+         parameters passed to the task upon first run.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -409,21 +427,25 @@
 </dd>
     <dt>
     <a name = "sigrun"></a>
-    <strong>sigrun&nbsp;(waitd, f, attached)</strong>
+    <strong>sigrun (waitd, f, attached)</strong>
     </dt>
     <dd>
     Create and run a task that listens for a signal.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">waitd</span>
-         a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+         a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)
+        </li>
         <li><span class="parameter">f</span>
          function to be called when the signal appears. The signal
  is passed to f as parameter.The signal will be provided as
- <em>event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+ <em>event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a>
+        </li>
         <li><span class="parameter">attached</span>
-         if true, the new task will run in attached mode</li>
+         if true, the new task will run in attached mode
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -438,21 +460,25 @@
 </dd>
     <dt>
     <a name = "sigrunonce"></a>
-    <strong>sigrunonce&nbsp;(waitd, f, attached)</strong>
+    <strong>sigrunonce (waitd, f, attached)</strong>
     </dt>
     <dd>
     Create and run a task that listens for a signal, once.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">waitd</span>
-         a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+         a Wait Descriptor for the signal (see <a href="../modules/sched.html#waitd">waitd</a>)
+        </li>
         <li><span class="parameter">f</span>
          function to be called when the signal appears. The signal
  is passed to f as parameter. The signal will be provided as
- <em>event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a></li>
+ <em>event, parameters</em>, just as the result of a <a href="../modules/sched.html#wait">wait</a>
+        </li>
         <li><span class="parameter">attached</span>
-         if true, the new task will run in attached more</li>
+         if true, the new task will run in attached more
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -467,7 +493,7 @@
 </dd>
     <dt>
     <a name = "set_pause"></a>
-    <strong>set_pause&nbsp;(taskd, pause)</strong>
+    <strong>set_pause (taskd, pause)</strong>
     </dt>
     <dd>
     Pause a task.
@@ -475,12 +501,15 @@
  won't respond to signals. Signals on unbuffered waitds will get lost. Task's buffered
  waitds will still buffer events. Can be invoked as taskd:set_pause(pause)
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">taskd</span>
-         Task to pause (see <a href="../modules/sched.html#taskd">taskd</a>).</li>
+         Task to pause (see <a href="../modules/sched.html#taskd">taskd</a>).
+        </li>
         <li><span class="parameter">pause</span>
-         mode, true to pause, false to unpause</li>
+         mode, true to pause, false to unpause
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -495,17 +524,19 @@
 </dd>
     <dt>
     <a name = "kill"></a>
-    <strong>kill&nbsp;(taskd)</strong>
+    <strong>kill (taskd)</strong>
     </dt>
     <dd>
     Finishes a task.
  The killed task will emit a signal <em>sched.EVENT_DIE, 'killed'</em>. Can be
  invoked as taskd:kill().
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">taskd</span>
-         task to terminate (see <a href="../modules/sched.html#taskd">taskd</a>).</li>
+         task to terminate (see <a href="../modules/sched.html#taskd">taskd</a>).
+        </li>
     </ul>
 
 
@@ -515,19 +546,22 @@
 </dd>
     <dt>
     <a name = "signal"></a>
-    <strong>signal&nbsp;(event, ...)</strong>
+    <strong>signal (event, ...)</strong>
     </dt>
     <dd>
     Emit a signal.
  Will give control immediatelly to tasks that are waiting on
  event, to regain it when they finish/block.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">event</span>
-         event of the signal. Can be of any type.</li>
+         event of the signal. Can be of any type.
+        </li>
         <li><span class="parameter">...</span>
-         further parameters to be sent with the signal.</li>
+         further parameters to be sent with the signal.
+        </li>
     </ul>
 
 
@@ -537,7 +571,7 @@
 </dd>
     <dt>
     <a name = "schedule_signal"></a>
-    <strong>schedule_signal&nbsp;(event, ...)</strong>
+    <strong>schedule_signal (event, ...)</strong>
     </dt>
     <dd>
     Emit a signal lazily.
@@ -547,12 +581,15 @@
  Scheduled signals from multiple tasks will be
  emitted in order.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">event</span>
-         event of the signal. Can be of any type.</li>
+         event of the signal. Can be of any type.
+        </li>
         <li><span class="parameter">...</span>
-         further parameters to be sent with the signal.</li>
+         further parameters to be sent with the signal.
+        </li>
     </ul>
 
 
@@ -562,10 +599,11 @@
 </dd>
     <dt>
     <a name = "step"></a>
-    <strong>step&nbsp;()</strong>
+    <strong>step ()</strong>
     </dt>
     <dd>
     Runs a single step of the scheduler.
+
 
 
     <h3>Returns:</h3>
@@ -581,7 +619,7 @@
 </dd>
     <dt>
     <a name = "loop"></a>
-    <strong>loop&nbsp;()</strong>
+    <strong>loop ()</strong>
     </dt>
     <dd>
     Wait for the scheduler to finish.
@@ -592,19 +630,21 @@
 
 
 
+
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"> <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">'lumen.sched'</span>
- sched.run(<span class="keyword">function</span>()
-    <span class="comment">--start at least one task
-</span> <span class="keyword">end</span>)
- sched.loop()
- --potentially free any resources before finishing here  </pre>
+        <pre class="example"><span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">'lumen.sched'</span>
+sched.run(<span class="keyword">function</span>()
+   <span class="comment">--start at least one task
+</span><span class="keyword">end</span>)
+sched.loop()
+<span class="comment">--potentially free any resources before finishing here  </span></pre>
     </ul>
 
 </dd>
 </dl>
-    <h2><a name="Tables"></a>Tables</h2>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
     <dl class="function">
     <dt>
     <a name = "EVENT_ANY"></a>
@@ -613,6 +653,7 @@
     <dd>
     Event used for all events
  When included in a <a href="../modules/sched.html#waitd">waitd</a>, will match any event.
+
 
 
 
@@ -632,6 +673,7 @@
 
 
 
+
     <h3>Usage:</h3>
     <ul>
         <pre class="example"><span class="keyword">for</span> taskd, _ <span class="keyword">in</span> <span class="global">pairs</span> (sched.tasks) <span class="keyword">do</span> <span class="global">print</span>(taskd) <span class="keyword">end</span></pre>
@@ -639,7 +681,8 @@
 
 </dd>
 </dl>
-    <h2><a name="Fields"></a>Fields</h2>
+    <h2 class="section-header "><a name="Fields"></a>Fields</h2>
+
     <dl class="function">
     <dt>
     <a name = "running_task"></a>
@@ -648,6 +691,7 @@
     <dd>
     Currently running task.
  The task descriptor from current task.
+
 
 
 
@@ -668,6 +712,7 @@
 
 
 
+
     <h3>Usage:</h3>
     <ul>
         <pre class="example"><span class="comment">--prints each time a task dies
@@ -683,6 +728,7 @@
     Task finished event.
  This event will be emited when a task finishes normally.
  The parameters are the output of the task's function.
+
 
 
 
@@ -709,6 +755,7 @@
 
 
 
+
 </dd>
     <dt>
     <a name = "idle"></a>
@@ -724,10 +771,11 @@
  result in a busy wait. Defaults to execution of Linux's "sleep" command
  or the Windows ping hack.
 
-    <h3>:</h3>
+
     <ul>
         <li><span class="parameter">t</span>
-         time to idle</li>
+         time to idle
+        </li>
     </ul>
 
 
@@ -736,9 +784,11 @@
 
 </dd>
 </dl>
-    <h2><a name="Data_structures"></a>Data structures </h2>
-        Data structures.
- Main structures used.
+    <h2 class="section-header has-description"><a name="Data_structures"></a>Data structures </h2>
+
+          <div class="section-description">
+           Main structures used.
+          </div>
     <dl class="function">
     <dt>
     <a name = "waitd"></a>
@@ -757,17 +807,21 @@
  Besides the following fields, provides methods for
  the sched functions that have a waitd as first parameter.
 
+
     <h3>Fields:</h3>
     <ul>
         <li><span class="parameter">array</span>
-         The array part contains the events to wait. Can contain <a href="../modules/sched.html#EVENT_ANY">sched.EVENT_ANY</a> <br/>
- to mark interest in any event. If nil, will only return on timeout.</li>
+         The array part contains the events to wait. Can contain <a href="../modules/sched.html#EVENT_ANY">sched.EVENT_ANY</a>
+ to mark interest in any event. If nil, will only return on timeout.
+        </li>
         <li><span class="parameter">timeout</span>
-         optional, time to wait. nil or negative waits for ever.</li>
+         optional, time to wait. nil or negative waits for ever.
+        </li>
         <li><span class="parameter">buff_mode</span>
          Specifies how to behave when inserting in a full buffer.
  'keep last' means replace with the new arrived signal. 'keep first'
- will skip the insertion in a full buffer. nil disables buffering</li>
+ will skip the insertion in a full buffer. nil disables buffering
+        </li>
     </ul>
 
 
@@ -784,22 +838,29 @@
  Handler of a task. Besides the following fields, provides methods for
  the sched functions that have a taskd as first parameter.
 
+
     <h3>Fields:</h3>
     <ul>
         <li><span class="parameter">status</span>
-         Status of the task, can be 'ready', 'paused' or 'dead'</li>
+         Status of the task, can be 'ready', 'paused' or 'dead'
+        </li>
         <li><span class="parameter">waitingfor</span>
          If the the task is waiting for a signal, this is the
- Wait Descriptor (see <a href="../modules/sched.html#waitd">waitd</a>)</li>
+ Wait Descriptor (see <a href="../modules/sched.html#waitd">waitd</a>)
+        </li>
         <li><span class="parameter">waketime</span>
          The time at which to task will be forced to wake-up (due
- to a timeout on a wait)</li>
+ to a timeout on a wait)
+        </li>
         <li><span class="parameter">created_by</span>
-         The task that started this one.</li>
+         The task that started this one.
+        </li>
         <li><span class="parameter">attached</span>
-         Table containing attached tasks.</li>
+         Table containing attached tasks.
+        </li>
         <li><span class="parameter">co</span>
-         The coroutine of the task</li>
+         The coroutine of the task
+        </li>
     </ul>
 
 
@@ -813,7 +874,8 @@
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.3.12</a></i>
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2021-05-02 12:48:52 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>

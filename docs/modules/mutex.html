@@ -37,29 +37,29 @@
 
 
 <h2>Modules</h2>
-<ul>
-  <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/log.html">log</a></li>
-  <li><strong>mutex</strong></li>
-  <li><a href="../modules/pipes.html">pipes</a></li>
-  <li><a href="../modules/proxy.html">proxy</a></li>
+<ul class="nowrap">
   <li><a href="../modules/sched.html">sched</a></li>
-  <li><a href="../modules/selector.html">selector</a></li>
-  <li><a href="../modules/shell.html">shell</a></li>
+  <li><strong>mutex</strong></li>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/stream.html">stream</a></li>
+  <li><a href="../modules/log.html">log</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
 </ul>
 <h2>Topics</h2>
-<ul>
-  <li><a href="../topics/README.md.html">README.md</a></li>
+<ul class="">
+  <li><a href="../topics/README.md.html">README</a></li>
 </ul>
 <h2>Examples</h2>
-<ul>
-  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
-  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
-  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
-  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
-  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+<ul class="nowrap">
   <li><a href="../examples/test.lua.html">test.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
 </ul>
 
 </div>
@@ -67,7 +67,6 @@
 <div id="content">
 
 <h1>Module <code>mutex</code></h1>
-
 <p>Mutex operations.</p>
 <p> Mutexes are used to ensure portions of code are accessed by a single
  task at a time. Said portions are called "critical sections", and are delimited by
@@ -79,35 +78,36 @@
  sched.sleep(), sched.signal() or sched.wait().</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"> local mutex = require &apos;lumen.mutex&apos;
-local mx = mutex.new()
+        <pre class="example">local mutex = require &apos;lumen.mutex&apos;
+ocal mx = mutex.new()
 
-local function critical()
-  mx:acquire()
-  ...
-  mx:release()
-end
+ocal function critical()
+ mx:acquire()
+ ...
+ mx:release()
+nd
 
-local critical = mx:synchronize(function() ... end) --other method</pre>
+ocal critical = mx:synchronize(function() ... end) --other method
+</pre>
     </ul>
 
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#new">new&nbsp;()</a></td>
+	<td class="name" nowrap><a href="#new">new ()</a></td>
 	<td class="summary">Create a new mutex.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#acquire">acquire&nbsp;(mutexd)</a></td>
+	<td class="name" nowrap><a href="#acquire">acquire (mutexd)</a></td>
 	<td class="summary">Acquire a lock.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#release">release&nbsp;(mutexd)</a></td>
+	<td class="name" nowrap><a href="#release">release (mutexd)</a></td>
 	<td class="summary">Releases a lock.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#synchronize">synchronize&nbsp;(mutexd, f)</a></td>
+	<td class="name" nowrap><a href="#synchronize">synchronize (mutexd, f)</a></td>
 	<td class="summary">Generate a synchronizzed version of a function.</td>
 	</tr>
 </table>
@@ -116,14 +116,16 @@ local critical = mx:synchronize(function() ... end) --other method</pre>
 <br/>
 
 
-    <h2><a name="Functions"></a>Functions</h2>
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
     <dl class="function">
     <dt>
     <a name = "new"></a>
-    <strong>new&nbsp;()</strong>
+    <strong>new ()</strong>
     </dt>
     <dd>
     Create a new mutex.
+
 
 
     <h3>Returns:</h3>
@@ -138,7 +140,7 @@ local critical = mx:synchronize(function() ... end) --other method</pre>
 </dd>
     <dt>
     <a name = "acquire"></a>
-    <strong>acquire&nbsp;(mutexd)</strong>
+    <strong>acquire (mutexd)</strong>
     </dt>
     <dd>
     Acquire a lock.
@@ -146,10 +148,12 @@ local critical = mx:synchronize(function() ... end) --other method</pre>
  holds it releases the lock or finishes. Can be invoked in OO fashion
  as <em>mutexd:acquire()</em>.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">mutexd</span>
-         a mutexd object.</li>
+         a mutexd object.
+        </li>
     </ul>
 
 
@@ -159,7 +163,7 @@ local critical = mx:synchronize(function() ... end) --other method</pre>
 </dd>
     <dt>
     <a name = "release"></a>
-    <strong>release&nbsp;(mutexd)</strong>
+    <strong>release (mutexd)</strong>
     </dt>
     <dd>
     Releases a lock.
@@ -167,10 +171,12 @@ local critical = mx:synchronize(function() ... end) --other method</pre>
  error is triggered. If a task finishes or is killed, all locks it held will be released automatically.
  Can be invoked in OO fashion as <em>mutexd:release()</em>.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">mutexd</span>
-         a mutexd object.</li>
+         a mutexd object.
+        </li>
     </ul>
 
 
@@ -180,7 +186,7 @@ local critical = mx:synchronize(function() ... end) --other method</pre>
 </dd>
     <dt>
     <a name = "synchronize"></a>
-    <strong>synchronize&nbsp;(mutexd, f)</strong>
+    <strong>synchronize (mutexd, f)</strong>
     </dt>
     <dd>
     Generate a synchronizzed version of a function.
@@ -188,12 +194,15 @@ local critical = mx:synchronize(function() ... end) --other method</pre>
  the mutex.
  Can be invoked in OO fashion as <em>mutexd:synchronize(f)</em>.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">mutexd</span>
-         a mutexd object.</li>
+         a mutexd object.
+        </li>
         <li><span class="parameter">f</span>
-         function to be locked.</li>
+         function to be locked.
+        </li>
     </ul>
 
 
@@ -207,7 +216,8 @@ local critical = mx:synchronize(function() ... end) --other method</pre>
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.3.12</a></i>
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2021-05-02 12:48:52 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>

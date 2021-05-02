@@ -37,29 +37,29 @@
 
 
 <h2>Modules</h2>
-<ul>
-  <li><strong>catalog</strong></li>
-  <li><a href="../modules/log.html">log</a></li>
-  <li><a href="../modules/mutex.html">mutex</a></li>
-  <li><a href="../modules/pipes.html">pipes</a></li>
-  <li><a href="../modules/proxy.html">proxy</a></li>
+<ul class="nowrap">
   <li><a href="../modules/sched.html">sched</a></li>
-  <li><a href="../modules/selector.html">selector</a></li>
-  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><strong>catalog</strong></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/stream.html">stream</a></li>
+  <li><a href="../modules/log.html">log</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/selector.html">selector</a></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
 </ul>
 <h2>Topics</h2>
-<ul>
-  <li><a href="../topics/README.md.html">README.md</a></li>
+<ul class="">
+  <li><a href="../topics/README.md.html">README</a></li>
 </ul>
 <h2>Examples</h2>
-<ul>
-  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
-  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
-  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
-  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
-  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+<ul class="nowrap">
   <li><a href="../examples/test.lua.html">test.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
 </ul>
 
 </div>
@@ -67,7 +67,6 @@
 <div id="content">
 
 <h1>Module <code>catalog</code></h1>
-
 <p>A general purpose Catalog.</p>
 <p> The catalog is used to give objects well known names for sharing purposes.
  It also allows synchronization, by blocking the requester until the object
@@ -77,38 +76,39 @@
  Catalogs can be strong or weak, ie, they can keep objects from being garbage collected, or not.</p>
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"> local tasks = require &apos;lumen.catalog&apos;.get_catalog(&apos;tasks&apos;)
-...
-tasks:register(&apos;a task&apos;, sched.running_task)
-...
-local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
+        <pre class="example">local tasks = require &apos;lumen.catalog&apos;.get_catalog(&apos;tasks&apos;)
+..
+asks:register(&apos;a task&apos;, sched.running_task)
+..
+ocal a_task=tasks:waitfor(&apos;a task&apos;)
+</pre>
     </ul>
 
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#register">register&nbsp;(catalogd, name, object, force)</a></td>
+	<td class="name" nowrap><a href="#register">register (catalogd, name, object, force)</a></td>
 	<td class="summary">Give a name to an object.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#unregister">unregister&nbsp;(catalogd, name)</a></td>
+	<td class="name" nowrap><a href="#unregister">unregister (catalogd, name)</a></td>
 	<td class="summary">Removes an entry from the catalog.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#waitfor">waitfor&nbsp;(catalogd, name, timeout)</a></td>
+	<td class="name" nowrap><a href="#waitfor">waitfor (catalogd, name, timeout)</a></td>
 	<td class="summary">Retrieve a object with a given name.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#namefor">namefor&nbsp;(catalogd, object)</a></td>
+	<td class="name" nowrap><a href="#namefor">namefor (catalogd, object)</a></td>
 	<td class="summary">Find the name of a given object.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#get_catalog">get_catalog&nbsp;(name, strong)</a></td>
+	<td class="name" nowrap><a href="#get_catalog">get_catalog (name, strong)</a></td>
 	<td class="summary">Retrieve a catalog.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#iterator">iterator&nbsp;(catalogd)</a></td>
+	<td class="name" nowrap><a href="#iterator">iterator (catalogd)</a></td>
 	<td class="summary">Iterator for registered objects.</td>
 	</tr>
 </table>
@@ -117,25 +117,31 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 <br/>
 
 
-    <h2><a name="Functions"></a>Functions</h2>
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
     <dl class="function">
     <dt>
     <a name = "register"></a>
-    <strong>register&nbsp;(catalogd, name, object, force)</strong>
+    <strong>register (catalogd, name, object, force)</strong>
     </dt>
     <dd>
     Give a name to an object.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">catalogd</span>
-         the catalog to use.</li>
+         the catalog to use.
+        </li>
         <li><span class="parameter">name</span>
-         a name for the object.</li>
+         a name for the object.
+        </li>
         <li><span class="parameter">object</span>
-         the object to name.</li>
+         the object to name.
+        </li>
         <li><span class="parameter">force</span>
-         forces the renaming of the object if already present.</li>
+         forces the renaming of the object if already present.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -151,17 +157,20 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 </dd>
     <dt>
     <a name = "unregister"></a>
-    <strong>unregister&nbsp;(catalogd, name)</strong>
+    <strong>unregister (catalogd, name)</strong>
     </dt>
     <dd>
     Removes an entry from the catalog.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">catalogd</span>
-         the catalog to use.</li>
+         the catalog to use.
+        </li>
         <li><span class="parameter">name</span>
-         a name for the object.</li>
+         a name for the object.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -176,20 +185,24 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 </dd>
     <dt>
     <a name = "waitfor"></a>
-    <strong>waitfor&nbsp;(catalogd, name, timeout)</strong>
+    <strong>waitfor (catalogd, name, timeout)</strong>
     </dt>
     <dd>
     Retrieve a object with a given name.
  Can wait up to timeout until it appears.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">catalogd</span>
-         the catalog to use.</li>
+         the catalog to use.
+        </li>
         <li><span class="parameter">name</span>
-         name of the object</li>
+         name of the object
+        </li>
         <li><span class="parameter">timeout</span>
-         time to wait. nil or negative waits for ever.</li>
+         time to wait. nil or negative waits for ever.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -204,17 +217,20 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 </dd>
     <dt>
     <a name = "namefor"></a>
-    <strong>namefor&nbsp;(catalogd, object)</strong>
+    <strong>namefor (catalogd, object)</strong>
     </dt>
     <dd>
     Find the name of a given object.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">catalogd</span>
-         the catalog to use.</li>
+         the catalog to use.
+        </li>
         <li><span class="parameter">object</span>
-         the object to lookup.</li>
+         the object to lookup.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -229,18 +245,21 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 </dd>
     <dt>
     <a name = "get_catalog"></a>
-    <strong>get_catalog&nbsp;(name, strong)</strong>
+    <strong>get_catalog (name, strong)</strong>
     </dt>
     <dd>
     Retrieve a catalog.
  Catalogs are created on demand.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">name</span>
-         the name of the catalog.</li>
+         the name of the catalog.
+        </li>
         <li><span class="parameter">strong</span>
-         if true catalog will hold a reference to the object and avoid it from being garbage collected.</li>
+         if true catalog will hold a reference to the object and avoid it from being garbage collected.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -255,15 +274,17 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 </dd>
     <dt>
     <a name = "iterator"></a>
-    <strong>iterator&nbsp;(catalogd)</strong>
+    <strong>iterator (catalogd)</strong>
     </dt>
     <dd>
     Iterator for registered objects.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">catalogd</span>
-         the catalog to use.</li>
+         the catalog to use.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -276,10 +297,10 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 
     <h3>Usage:</h3>
     <ul>
-        <pre class="example"> <span class="keyword">local</span> tasks = <span class="global">require</span> <span class="string">'lumen.catalog'</span>.get_catalog(<span class="string">'tasks'</span>)
-<span class="keyword">for</span> name, task <span class="keyword">in</span> tasks:iterator() <span class="keyword">do</span>
-	<span class="global">print</span>(name, task)
-<span class="keyword">end</span></pre>
+        <pre class="example"><span class="keyword">local</span> tasks = <span class="global">require</span> <span class="string">'lumen.catalog'</span>.get_catalog(<span class="string">'tasks'</span>)
+<span class="keyword">or</span> name, task <span class="keyword">in</span> tasks:iterator() <span class="keyword">do</span>
+<span class="global">print</span>(name, task)
+nd</pre>
     </ul>
 
 </dd>
@@ -289,7 +310,8 @@ local a_task=tasks:waitfor(&apos;a task&apos;)</pre>
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.3.12</a></i>
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2021-05-02 12:48:52 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>

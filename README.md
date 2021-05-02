@@ -10,8 +10,7 @@ The API was inspired by a brief description of [Sierra's scheduler](https://gith
 Lumen has no external dependencies nor C code, and runs on unmodified Lua (works with Lua 5.1, 5.2 and LuaJIT).
 Tasks that interface with LuaSocket and nixio for socket and async file I/O support are provided.
 
-Lumen's [API reference](http://xopxe.github.com/lumen/) is available online. Notice that this is a second 
-generation API (2.0). If you come from the past and are interested in the old Lumen, check the "v1.0" branch.
+Lumen's API reference is available in the `docs/` directory, or [online](https://www.fing.edu.uy/~jvisca/lumen_api/).
 
 
 ## How does it look?

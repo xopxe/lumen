@@ -39,29 +39,29 @@
 
 
 <h2>Modules</h2>
-<ul>
-  <li><a href="../modules/catalog.html">catalog</a></li>
-  <li><a href="../modules/log.html">log</a></li>
-  <li><a href="../modules/mutex.html">mutex</a></li>
-  <li><a href="../modules/pipes.html">pipes</a></li>
-  <li><a href="../modules/proxy.html">proxy</a></li>
+<ul class="nowrap">
   <li><a href="../modules/sched.html">sched</a></li>
-  <li><strong>selector</strong></li>
-  <li><a href="../modules/shell.html">shell</a></li>
+  <li><a href="../modules/mutex.html">mutex</a></li>
+  <li><a href="../modules/catalog.html">catalog</a></li>
+  <li><a href="../modules/pipes.html">pipes</a></li>
   <li><a href="../modules/stream.html">stream</a></li>
+  <li><a href="../modules/log.html">log</a></li>
+  <li><a href="../modules/shell.html">shell</a></li>
+  <li><strong>selector</strong></li>
+  <li><a href="../modules/proxy.html">proxy</a></li>
 </ul>
 <h2>Topics</h2>
-<ul>
-  <li><a href="../topics/README.md.html">README.md</a></li>
+<ul class="">
+  <li><a href="../topics/README.md.html">README</a></li>
 </ul>
 <h2>Examples</h2>
-<ul>
-  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
-  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
-  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
-  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
-  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+<ul class="nowrap">
   <li><a href="../examples/test.lua.html">test.lua</a></li>
+  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
+  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
+  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
+  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
+  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
 </ul>
 
 </div>
@@ -69,7 +69,6 @@
 <div id="content">
 
 <h1>Module <code>selector</code></h1>
-
 <p>Module suporting asynchronous access to sockets and files.</p>
 <p> Selector integrates Lumen with a select/poll-like mechanism. <br/>
  Backends luasocket and nixio are supported. <br/>
@@ -78,58 +77,59 @@
     <h3>Usage:</h3>
     <ul>
         <pre class="example">local selector = require &apos;lumen.selector&apos;
-selector.init({service=&apos;luasocket&apos;})</pre>
+selector.init({service=&apos;luasocket&apos;})
+</pre>
     </ul>
 
 
 <h2><a href="#Functions">Functions</a></h2>
 <table class="function_list">
 	<tr>
-	<td class="name" nowrap><a href="#init">init&nbsp;(conf)</a></td>
+	<td class="name" nowrap><a href="#init">init (conf)</a></td>
 	<td class="summary">Start the service.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_tcp_server">new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</a></td>
+	<td class="name" nowrap><a href="#new_tcp_server">new_tcp_server (locaddr, locport, pattern, handler)</a></td>
 	<td class="summary">Creates a TCP server socket.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_tcp_client">new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler)</a></td>
+	<td class="name" nowrap><a href="#new_tcp_client">new_tcp_client (address, port, locaddr, locport, pattern, handler)</a></td>
 	<td class="summary">Creates a TCP client socket.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_udp">new_udp&nbsp;(address, port, locaddr, locport, pattern, handler)</a></td>
+	<td class="name" nowrap><a href="#new_udp">new_udp (address, port, locaddr, locport, pattern, handler)</a></td>
 	<td class="summary">Creates a UDP socket.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#new_fd">new_fd&nbsp;(filename, flags, pattern, handler)</a></td>
+	<td class="name" nowrap><a href="#new_fd">new_fd (filename, flags, pattern, handler)</a></td>
 	<td class="summary">Opens a file.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#grab_stdout">grab_stdout&nbsp;(command, pattern, handler)</a></td>
+	<td class="name" nowrap><a href="#grab_stdout">grab_stdout (command, pattern, handler)</a></td>
 	<td class="summary">Grab the output of a command.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#close">close&nbsp;(sktd)</a></td>
+	<td class="name" nowrap><a href="#close">close (sktd)</a></td>
 	<td class="summary">Closes a socket/file.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#send_sync">send_sync&nbsp;(sktd, data)</a></td>
+	<td class="name" nowrap><a href="#send_sync">send_sync (sktd, data)</a></td>
 	<td class="summary">Synchronous data send.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#send">send&nbsp;()</a></td>
+	<td class="name" nowrap><a href="#send">send ()</a></td>
 	<td class="summary">Alias for send_sync.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#send_async">send_async&nbsp;(sktd, data)</a></td>
+	<td class="name" nowrap><a href="#send_async">send_async (sktd, data)</a></td>
 	<td class="summary">Asynchronous data send.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#getsockname">getsockname&nbsp;(sktd)</a></td>
+	<td class="name" nowrap><a href="#getsockname">getsockname (sktd)</a></td>
 	<td class="summary">Get the local address of a socket.</td>
 	</tr>
 	<tr>
-	<td class="name" nowrap><a href="#getpeername">getpeername&nbsp;(sktd)</a></td>
+	<td class="name" nowrap><a href="#getpeername">getpeername (sktd)</a></td>
 	<td class="summary">Get the remote address of a socket.</td>
 	</tr>
 </table>
@@ -160,19 +160,22 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 <br/>
 
 
-    <h2><a name="Functions"></a>Functions</h2>
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
     <dl class="function">
     <dt>
     <a name = "init"></a>
-    <strong>init&nbsp;(conf)</strong>
+    <strong>init (conf)</strong>
     </dt>
     <dd>
     Start the service.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">conf</span>
-         the configuration table (see <a href="../modules/selector.html#conf">conf</a>).</li>
+         the configuration table (see <a href="../modules/selector.html#conf">conf</a>).
+        </li>
     </ul>
 
 
@@ -182,25 +185,30 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "new_tcp_server"></a>
-    <strong>new_tcp_server&nbsp;(locaddr, locport, pattern, handler)</strong>
+    <strong>new_tcp_server (locaddr, locport, pattern, handler)</strong>
     </dt>
     <dd>
     Creates a TCP server socket.
  Emits a <em>sktd.events.accepted, client_sktd</em> signal on new connections.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">locaddr</span>
-         Local IP address or '<em>' (defaults to '</em>')</li>
+         Local IP address or '<em>' (defaults to '</em>')
+        </li>
         <li><span class="parameter">locport</span>
-         Local port (defaults to 0)</li>
+         Local port (defaults to 0)
+        </li>
         <li><span class="parameter">pattern</span>
-         Any of nixio or luasocket patterns.</li>
+         Any of nixio or luasocket patterns.
+        </li>
         <li><span class="parameter">handler</span>
          Optional,  a handler function or 'stream'. Will be used
  when creating new client sockets.  See <a href="../modules/selector.html#new_tcp_client">new_tcp_client</a>.
  'stream' mean a new stream will be created, and provided in
- the <a href="../modules/selector.html#sktd">sktd</a> object.</li>
+ the <a href="../modules/selector.html#sktd">sktd</a> object.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -215,25 +223,31 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "new_tcp_client"></a>
-    <strong>new_tcp_client&nbsp;(address, port, locaddr, locport, pattern, handler)</strong>
+    <strong>new_tcp_client (address, port, locaddr, locport, pattern, handler)</strong>
     </dt>
     <dd>
     Creates a TCP client socket.
  Can be set up to use a handler function, write to a stream, or emit signals
  (<em>sktd.events.data, data</em> signal on incommig data, and <em>sktd.events.data, nil, err</em> on errors).
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">address</span>
-         Remote IP address.</li>
+         Remote IP address.
+        </li>
         <li><span class="parameter">port</span>
-         Remote port ()</li>
+         Remote port ()
+        </li>
         <li><span class="parameter">locaddr</span>
-         Local IP address or '<em>' (defaults to '</em>')</li>
+         Local IP address or '<em>' (defaults to '</em>')
+        </li>
         <li><span class="parameter">locport</span>
-         Local port (defaults to 0)</li>
+         Local port (defaults to 0)
+        </li>
         <li><span class="parameter">pattern</span>
-         Any of nixio or luasocket patterns.</li>
+         Any of nixio or luasocket patterns.
+        </li>
         <li><span class="parameter">handler</span>
          Optional, either a handler function or a stream. <br/>
  The handler function must have a (sktd, data, err, part) signature.
@@ -241,13 +255,14 @@ selector.init({service=&apos;luasocket&apos;})</pre>
  as soon as it returns (or errors). <br/>
  When a stream it will be used to push data as it arrives. On socket closing, the stream
  will be closed with the error message as provided by the socket. <br/>
- If the handler parameter is nil, the socket object will emit signals. </li>
+ If the handler parameter is nil, the socket object will emit signals.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
     <ol>
 
-        a <a href="../modules/selector.html#sktd">sktd</a> object on success, <em>nil, err</em> on fauilure
+        a <a href="../modules/selector.html#sktd">sktd</a> object on success, <em>nil, err</em> on failure
     </ol>
 
 
@@ -256,25 +271,31 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "new_udp"></a>
-    <strong>new_udp&nbsp;(address, port, locaddr, locport, pattern, handler)</strong>
+    <strong>new_udp (address, port, locaddr, locport, pattern, handler)</strong>
     </dt>
     <dd>
     Creates a UDP socket.
  Can be set up to use a handler function, write to a stream, or emit signals
  (<em>sktd.events.data, data</em> signal on incommig data, and <em>sktd.events.data, nil, err</em> on errors).
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">address</span>
-         Remote IP address.</li>
+         Remote IP address.
+        </li>
         <li><span class="parameter">port</span>
-         Remote port ()</li>
+         Remote port ()
+        </li>
         <li><span class="parameter">locaddr</span>
-         Local IP address or '<em>' (defaults to '</em>')</li>
+         Local IP address or '<em>' (defaults to '</em>')
+        </li>
         <li><span class="parameter">locport</span>
-         Local port (defaults to 0)</li>
+         Local port (defaults to 0)
+        </li>
         <li><span class="parameter">pattern</span>
-         Any of nixio or luasocket patterns.</li>
+         Any of nixio or luasocket patterns.
+        </li>
         <li><span class="parameter">handler</span>
          Optional, either a handler function or a stream.
  The handler function must have a (sktd, data, err, part) signature.
@@ -282,7 +303,8 @@ selector.init({service=&apos;luasocket&apos;})</pre>
  as soon as it returns (or errors). <br/>
  When a stream it will be used to push data as it arrives. On socket closing, the stream
  will be closed with the error message as provided by the socket. <br/>
- If the handler parameter is nil, the socket object will emit signals.  </li>
+ If the handler parameter is nil, the socket object will emit signals.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -297,31 +319,36 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "new_fd"></a>
-    <strong>new_fd&nbsp;(filename, flags, pattern, handler)</strong>
+    <strong>new_fd (filename, flags, pattern, handler)</strong>
     </dt>
     <dd>
     Opens a file.
  Can be set up to use a handler function, write to a stream, or emit signals
  (<em>sktd.events.data, data</em> signal on incommig data, and <em>sktd.events.data, nil, err</em> on errors).
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">filename</span>
 
 
-</li>
+
+        </li>
         <li><span class="parameter">flags</span>
-         ATM as specified for nixio.open()</li>
+         ATM as specified for nixio.open()
+        </li>
         <li><span class="parameter">pattern</span>
-         Any of nixio or luasocket patterns.</li>
+         Any of nixio or luasocket patterns.
+        </li>
         <li><span class="parameter">handler</span>
          Optional, either a handler function or a stream.
  The handler function must have a (sktd, data, err, part) signature.
- The handler must return true to keep the socket open, otherwised the socket will b e closed
+ The handler must return true to keep the socket open, otherwised the socket will be closed
  as soon as it returns (or errors). <br/>
  When a stream it will be used to push data as it arrives. On socket closing, the stream
  will be closed with the error message as provided by the socket. <br/>
- If the handler parameter is nil, the socket object will emit signals. </li>
+ If the handler parameter is nil, the socket object will emit signals.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -336,7 +363,7 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "grab_stdout"></a>
-    <strong>grab_stdout&nbsp;(command, pattern, handler)</strong>
+    <strong>grab_stdout (command, pattern, handler)</strong>
     </dt>
     <dd>
     Grab the output of a command.
@@ -344,12 +371,15 @@ selector.init({service=&apos;luasocket&apos;})</pre>
  Can be set up to use a handler function, write to a stream, or emit signals
  (<em>sktd.events.data, data</em> signal on incommig data, and <em>sktd.events.data, nil, err</em> on errors).
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">command</span>
-         command whose ouput capture</li>
+         command whose ouput capture
+        </li>
         <li><span class="parameter">pattern</span>
-         Any of nixio or luasocket patterns.</li>
+         Any of nixio or luasocket patterns.
+        </li>
         <li><span class="parameter">handler</span>
          Optional, either a handler function or a stream.
  The handler function must have a (sktd, data, err, part) signature.
@@ -357,7 +387,8 @@ selector.init({service=&apos;luasocket&apos;})</pre>
  as soon as it returns (or errors). <br/>
  When a stream it will be used to push data as it arrives. On socket closing, the stream
  will be closed with the error message as provided by the socket. <br/>
- If the handler parameter is nil, the socket object will emit signals. </li>
+ If the handler parameter is nil, the socket object will emit signals.
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -372,15 +403,17 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "close"></a>
-    <strong>close&nbsp;(sktd)</strong>
+    <strong>close (sktd)</strong>
     </dt>
     <dd>
     Closes a socket/file.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">sktd</span>
-         a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+         a <a href="../modules/selector.html#sktd">sktd</a> object
+        </li>
     </ul>
 
 
@@ -390,18 +423,21 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "send_sync"></a>
-    <strong>send_sync&nbsp;(sktd, data)</strong>
+    <strong>send_sync (sktd, data)</strong>
     </dt>
     <dd>
     Synchronous data send.
  The task calling this function will block until all data is sent.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">sktd</span>
-         a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+         a <a href="../modules/selector.html#sktd">sktd</a> object
+        </li>
         <li><span class="parameter">data</span>
-         data to send</li>
+         data to send
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -416,7 +452,7 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "send"></a>
-    <strong>send&nbsp;()</strong>
+    <strong>send ()</strong>
     </dt>
     <dd>
     Alias for send_sync.
@@ -427,10 +463,11 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 
 
 
+
 </dd>
     <dt>
     <a name = "send_async"></a>
-    <strong>send_async&nbsp;(sktd, data)</strong>
+    <strong>send_async (sktd, data)</strong>
     </dt>
     <dd>
     Asynchronous data send.
@@ -438,12 +475,15 @@ selector.init({service=&apos;luasocket&apos;})</pre>
  will queue data. When all data queued for asynchronous transmission is sent,
  a <code>sktd.events.async_finished, success</code> signal is emitted.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">sktd</span>
-         a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+         a <a href="../modules/selector.html#sktd">sktd</a> object
+        </li>
         <li><span class="parameter">data</span>
-         data to send</li>
+         data to send
+        </li>
     </ul>
 
 
@@ -453,15 +493,17 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "getsockname"></a>
-    <strong>getsockname&nbsp;(sktd)</strong>
+    <strong>getsockname (sktd)</strong>
     </dt>
     <dd>
     Get the local address of a socket.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">sktd</span>
-         a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+         a <a href="../modules/selector.html#sktd">sktd</a> object
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -476,15 +518,17 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </dd>
     <dt>
     <a name = "getpeername"></a>
-    <strong>getpeername&nbsp;(sktd)</strong>
+    <strong>getpeername (sktd)</strong>
     </dt>
     <dd>
     Get the remote address of a socket.
 
+
     <h3>Parameters:</h3>
     <ul>
         <li><span class="parameter">sktd</span>
-         a <a href="../modules/selector.html#sktd">sktd</a> object</li>
+         a <a href="../modules/selector.html#sktd">sktd</a> object
+        </li>
     </ul>
 
     <h3>Returns:</h3>
@@ -498,7 +542,8 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 
 </dd>
 </dl>
-    <h2><a name="Tables"></a>Tables</h2>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
     <dl class="function">
     <dt>
     <a name = "sktd"></a>
@@ -508,12 +553,15 @@ selector.init({service=&apos;luasocket&apos;})</pre>
     Socket/File descriptor.
  Provides OO-styled access to methods, such as sktd:send(data) and sktd:close()
 
+
     <h3>Fields:</h3>
     <ul>
         <li><span class="parameter">task</span>
-         task that will emit signal related to this object</li>
+         task that will emit signal related to this object
+        </li>
         <li><span class="parameter">stream</span>
-         If asigned a <a href="../modules/stream.html#">stream</a> object, will write data into it (in addittion to signals)</li>
+         If asigned a <a href="../modules/stream.html#">stream</a> object, will write data into it (in addittion to signals)
+        </li>
     </ul>
 
 
@@ -528,10 +576,12 @@ selector.init({service=&apos;luasocket&apos;})</pre>
     <dd>
     Configuration Table.
 
+
     <h3>Fields:</h3>
     <ul>
         <li><span class="parameter">service</span>
-         backend to use: 'nixio' or 'luasocket' (default)</li>
+         backend to use: 'nixio' or 'luasocket' (default)
+        </li>
     </ul>
 
 
@@ -540,7 +590,8 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 
 </dd>
 </dl>
-    <h2><a name="Fields"></a>Fields</h2>
+    <h2 class="section-header "><a name="Fields"></a>Fields</h2>
+
     <dl class="function">
     <dt>
     <a name = "task"></a>
@@ -548,6 +599,7 @@ selector.init({service=&apos;luasocket&apos;})</pre>
     </dt>
     <dd>
     Task that emits signals.
+
 
 
 
@@ -568,6 +620,7 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 
 
 
+
 </dd>
 </dl>
 
@@ -575,7 +628,8 @@ selector.init({service=&apos;luasocket&apos;})</pre>
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.3.12</a></i>
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2021-05-02 12:48:52 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
