@@ -127,7 +127,7 @@ step_task = function (taskd, ...)
     local check = function(ok, ...)
       if coroutine.status(taskd.co)=='dead' then
         M.tasks[taskd]=nil
-        M.new_tasks[taskd] = nil
+        new_tasks[taskd] = nil
         if ok then 
           log('SCHED', 'DETAIL', '%s returning %d parameters', tostring(taskd), select('#',...))
           emit_signal(taskd.EVENT_FINISH, false, ...) --per task
@@ -415,7 +415,7 @@ end
 M.kill = function ( taskd )
   log('SCHED', 'DETAIL', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
   M.tasks[taskd] = nil
-  M.new_tasks[taskd] = nil
+  new_tasks[taskd] = nil
 
   for child, _ in pairs(taskd.attached) do
     M.kill(child)
