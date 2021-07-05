@@ -127,6 +127,7 @@ step_task = function (taskd, ...)
     local check = function(ok, ...)
       if coroutine.status(taskd.co)=='dead' then
         M.tasks[taskd]=nil
+        M.new_tasks[taskd] = nil
         if ok then 
           log('SCHED', 'DETAIL', '%s returning %d parameters', tostring(taskd), select('#',...))
           emit_signal(taskd.EVENT_FINISH, false, ...) --per task
@@ -270,8 +271,7 @@ local function new_task ( f )
   return taskd
 end
 --- Create a task.
--- The task is created in paused mode. To run the created task,
--- use @{run} or @{set_pause}.
+-- The task is created in ready mode.
 -- The task will emit a _sched.EVENT\_FINISH, true, params..._
 -- signal upon normal finalization, were params are the returns of f.
 -- If there is a error, the task will emit a _sched.EVENT\_DIE, false, err_ were
@@ -320,7 +320,7 @@ M.run = function ( task, ... )
     taskd = task
   end
   --M.set_pause(taskd, false)
-  --step_task(taskd, ...)  --FIXME can get the task killed: still in new_tasks
+  step_task(taskd, ...)  --FIXME can get the task killed: still in new_tasks
   return taskd
 end
 
@@ -415,6 +415,7 @@ end
 M.kill = function ( taskd )
   log('SCHED', 'DETAIL', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
   M.tasks[taskd] = nil
+  M.new_tasks[taskd] = nil
 
   for child, _ in pairs(taskd.attached) do
     M.kill(child)

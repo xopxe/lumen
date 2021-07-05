@@ -55,6 +55,7 @@ local M = {}
 -- - 'DEBUG'
 -- - 'ALL'
 --
+-- @table M.levels
 -------------------------------------------------------------------------------
 local levels = {}
 for k,v in pairs{ 'NONE', 'ERROR', 'WARNING', 'INFO', 'DETAIL', 'DEBUG', 'ALL' } do
@@ -79,10 +80,9 @@ M.modules = {}
 -------------------------------------------------------------------------------
 M.timestampformat = '%Y/%m/%d %H:%M:%S'--nil
 
--------------------------------------------------------------------------------
+
 -- logger functions, will be called if non nil
 -- the loggers are called with following params (module, severity, logvalue)
--------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 -- Default logger for instant display.
@@ -200,9 +200,8 @@ function M.setlevel(slevel, ...)
     else M.defaultlevel = nlevel end
 end
 
--------------------------------------------------------------------------------
+
 -- Make the module callable, so the user can call log(x) instead of log.trace(x)
--------------------------------------------------------------------------------
 setmetatable(M, {__call = function(_, ...) return M.trace(...) end })
 
 return M
