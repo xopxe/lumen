@@ -89,7 +89,7 @@ local function handle_incomming(sktd, data)
 end
 local function handle_incomming_error(sktd, err)
   err = err or 'fd closed'
-  if sktd.handler then 
+  if type(sktd.handler) == 'function' then 
     local ok, errcall = pcall(sktd.handler,sktd, nil, err) 
     if not ok then
       log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
@@ -142,9 +142,8 @@ local register_client = function (sktd)
   polle.fd:setblocking(false)
   sktd.polle=polle
   if sktd.handler == 'stream' then
-    local s = streams.new()
-    read_streams[sktd] = s
-    sktd.stream = s
+    sktd.stream = sktd.stream or streams.new()
+    read_streams[sktd] = sktd.stream
   end
   pollt[#pollt+1]=polle
 end
@@ -158,12 +157,9 @@ local register_server = function (sktd) --, block, backlog)
       pattern=sktd.pattern,
     }
     local insktd = init_sktd(skt_table_client)
+    insktd.handler = sktd.handler
     if sktd.handler=='stream' then
-      local s = streams.new()
-      insktd.handler = s
-      insktd.stream = s
-    else
-      insktd.handler = sktd.handler
+      insktd.stream = streams.new()
     end
     sched.signal(sktd.events.accepted, insktd)
     register_client(insktd)
