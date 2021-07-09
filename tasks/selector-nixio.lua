@@ -72,7 +72,7 @@ local unregister = function (fd)
   end
 end
 local function handle_incomming(sktd, data)
-  if sktd.handler then 
+  if type(sktd.handler) == 'function' then 
     local ok, errcall = pcall(sktd.handler, sktd, data) 
     if not ok then
       log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
@@ -141,9 +141,10 @@ local register_client = function (sktd)
   end
   polle.fd:setblocking(false)
   sktd.polle=polle
-  if type (sktd.handler) == 'table' then --is a stream
-    read_streams[sktd] = sktd.handler
-    sktd.handler = nil
+  if sktd.handler == 'stream' then
+    local s = streams.new()
+    read_streams[sktd] = s
+    sktd.stream = s
   end
   pollt[#pollt+1]=polle
 end
