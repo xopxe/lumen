@@ -312,7 +312,7 @@ M.init = function(conf)
       if pid > 0 then 
         --parent
         fdo:close()
-        return fdi
+        return fdi, pid
       else
         --child
         nixio.dup(fdo, nixio.stdout)
@@ -330,7 +330,7 @@ M.init = function(conf)
     sktd.events = {data=sktd.fd}
     if sktd.pattern=='*l' and handler == 'stream' then sktd.pattern=nil end
     register_client(sktd)
-    return sktd
+    return sktd, pid
   end
   M.close = function(sktd)
     --sktd.polle.do_not_read = true
