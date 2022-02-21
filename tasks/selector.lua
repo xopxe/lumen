@@ -102,6 +102,7 @@ M.init = function(conf)
 	-- will be closed with the error message as provided by the socket.  
 	-- If the handler parameter is nil, the socket object will emit signals. 
 	-- @return a @{sktd} object
+	-- @return the Process ID (PID) of the spawned process
 	M.grab_stdout = native.grab_stdout 
 	
 	--- Closes a socket/file.
