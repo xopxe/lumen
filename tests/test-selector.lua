@@ -11,8 +11,8 @@ package.path = package.path .. ";;;../../?.lua;../../?/init.lua"
 local sched = require "lumen.sched"
 
 
-local service=arg[1] or 'luasocket'
---local service='nixio'
+--local service=arg[1] or 'luasocket'
+local service='nixio'
 print ('using service:', service)
 
 local selector = require "lumen.tasks.selector".init({service=service})

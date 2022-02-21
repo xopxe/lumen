@@ -142,8 +142,10 @@ local register_client = function (sktd)
   polle.fd:setblocking(false)
   sktd.polle=polle
   if sktd.handler == 'stream' then
-    sktd.stream = sktd.stream or streams.new()
+    sktd.stream = streams.new()
     read_streams[sktd] = sktd.stream
+  elseif type(sktd.handler) == 'table' then
+    read_streams[sktd] = sktd.handler
   end
   pollt[#pollt+1]=polle
 end
@@ -291,12 +293,11 @@ M.init = function(conf)
     register_client(sktd)
     return sktd
   end
-  M.new_fd = function ( filename, flags, pattern, handler, stream )
+  M.new_fd = function ( filename, flags, pattern, handler )
     local sktd=init_sktd({
       flags = flags  or {},
       pattern =  normalize_pattern(pattern),
       handler = handler,
-      stream = stream,
     })
     local err, errmsg
     sktd.fd, err, errmsg = nixio.open(filename, nixio.open_flags(unpack(flags)))
@@ -306,13 +307,14 @@ M.init = function(conf)
     return sktd
   end
   M.grab_stdout = function ( command, pattern, handler )
+    local pid
     local function run_shell_nixio(command)
       local fdi, fdo = nixio.pipe()
-      local pid = nixio.fork()
+      pid = nixio.fork()
       if pid > 0 then 
         --parent
         fdo:close()
-        return fdi, pid
+        return fdi
       else
         --child
         nixio.dup(fdo, nixio.stdout)
