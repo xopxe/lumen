@@ -7,16 +7,16 @@
 -- with strings as keys are supported.
 -- This module depends on the selector task, which must be started
 -- separataly.
--- @usage  local proxy = require 'lumen.proxy'
+-- @usage local proxy = require 'lumen.proxy'
 --
 -- --for accepting connections
 -- proxy.init({ip='*', port=1985}) 
--- 
+--
 -- --connect to a remote node
--- local waitd = proxy.new_remote_waitd('192.1681.1', 1985, 
+-- local waitd = proxy.new_remote_waitd('192.168.1.1', 1985, 
 --   {'a_event_name', 'other_event_name'})
--- sched.wait(waitd, function(_, eventname, ...)
--- 	print ('received signal', eventname, ...)
+--   sched.wait(waitd, function(_, eventname, ...)
+--   print ('received signal', eventname, ...)
 -- end)
 -- @module proxy
 -- @alias M
@@ -32,8 +32,6 @@ local http_util = require 'lumen.tasks.http-server.http-util'
 local websocket = require 'lumen.tasks.http-server.websocket'
 
 local unpack = unpack or table.unpack
-
-
 
 local encode_f
 local decode_f
@@ -66,11 +64,10 @@ end
 -- in the catalogs.
 -- The obtained waitd will react with a non null event, followed by the event name 
 -- (as put in the waitd_table), followed by the parameters of the original event.
--- On timeout, returns _nil, 'timeout'_.
 -- @param ip ip of the remote proxy module.
 -- @param port port of the remote proxy module.
 -- @param waitd_table a wait descriptor.
--- @return a waitd object
+-- @return waitd object on success. _nil, err_ on failure
 M.new_remote_waitd = function(ip, port, waitd_table)
 	-- the timeout will be applied on the proxy's side
 	local timeout = waitd_table.timeout
@@ -91,19 +88,21 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 				sched.signal(incomming_signal, encodeable_to_vararg(decoded)) 
 			else
 				log('PROXY', 'ERROR', 'failed to bdecode buff  with length %s with error "%s"', 
-          tostring(#buff), tostring(index).." "..tostring(e))
+					tostring(#buff), tostring(index).." "..tostring(e))
 			end
 			return true
 		end
 	end
 
-	local sktd_client = selector.new_tcp_client(ip, port, nil, nil, nil, get_incomming_handler())
+	local sktd_client, err = selector.new_tcp_client(ip, port, nil, nil, nil, get_incomming_handler())
+	if err then
+		return nil, 'could not create remote waitd:'..err
+	end
 	sktd_client:send_sync(encoded)
 	local remote_waitd = {
 		incomming_signal,
 		timeout = timeout,
 	}
-	
 	return remote_waitd
 end
 
@@ -141,13 +140,13 @@ M.init = function(conf)
 						local nwaitd, rnames = {}, rwaitd.events
 						for i=1, #rnames do
 							local evname = rnames[i]
-              local event = events_catalog:waitfor(evname, name_timeout)
-              log('PROXY', 'DETAIL', 'event "%s" recovered from catalog:  "%s"', 
-									tostring(evname), tostring(event))              
-              if event then 
-                nwaitd[#nwaitd+1] = event
-                event_to_name[event] = evname
-              end
+							local event = events_catalog:waitfor(evname, name_timeout)
+							log('PROXY', 'DETAIL', 'event "%s" recovered from catalog:  "%s"', 
+								tostring(evname), tostring(event))              
+							if event then 
+								nwaitd[#nwaitd+1] = event
+								event_to_name[event] = evname
+							end
 						end
 						
 						sched.sigrun(nwaitd, function(ev,...)
