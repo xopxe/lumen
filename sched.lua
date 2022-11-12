@@ -126,6 +126,7 @@ step_task = function (taskd, ...)
   if taskd.status=='ready' then
     local check = function(ok, ...)
       if coroutine.status(taskd.co)=='dead' then
+        taskd.status='dead'
         M.tasks[taskd]=nil
         new_tasks[taskd] = nil
         if ok then 
@@ -141,7 +142,6 @@ step_task = function (taskd, ...)
         for child, _ in pairs(taskd.attached) do
           M.kill(child)
         end
-        taskd.status='dead'
       end
     end
     local previous_task = M.running_task
