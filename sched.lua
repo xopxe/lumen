@@ -79,10 +79,7 @@ local function walk_waitd(waitd, event, packed, ...)
       step_task(taskd, event, ...)
       if M.running_task and M.running_task.status == 'dead' then 
         -- the task was killed from a triggered task
-        --print('the task was killed from a triggered task')
-        --print (debug.traceback())
-        --return --FIXME
-        M.wait()
+        return
       end
     else
       --TODO buffering
