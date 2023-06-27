@@ -19,15 +19,8 @@ end
 
 -- lua 5.3+
 do
-  local function from_ops()
-    return {
-      bnot = function (a) return ~a end,
-      band = function (a, b) return a & b end,
-      bor  = function (a, b) return a | b end,
-      bxor = function (a, b) return a ~ b end,
-    }
-  end
-  local has_ops,bit = pcall(from_ops)
+  --local bit = require 'lumen.tasks.http-server.websocket.bit53'
+  local has_ops,bit = pcall(require, 'lumen.tasks.http-server.websocket.bit53')
   if has_ops then
     return bit
   end
