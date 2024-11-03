@@ -17,7 +17,7 @@ local selector 	= require 'lumen.tasks.selector'
 local http_util = require 'lumen.tasks.http-server.http-util'
 local websocket 
 if WEBSOCKET_SUPPORT then
-  websocket = require 'lumen.tasks.http-server.websocket'
+  	websocket = require 'lumen.tasks.http-server.websocket'
 end
 
 
@@ -25,7 +25,8 @@ local function backup_response(code_out, header_out)
 	local httpstatus = tostring(code_out).." "..http_util.http_error_code[code_out]
 	header_out = header_out or {}
 	
-	local response = "<html><head><title>"..httpstatus.."</title></head><body><h3>"..httpstatus.."</h3><hr><small>Lumen http-server</small></body></html>"
+	local response = "<html><head><title>"..httpstatus.."</title></head><body><h3>"
+		  ..httpstatus.."</h3><hr><small>Lumen http-server</small></body></html>"
 	header_out["content-type"] = 'text/html'
 	header_out["content-length"] = #response
 	
@@ -223,11 +224,11 @@ M.init = function(conf)
 	conf = conf or  {}
 
 	if conf.ws_enable then
-    assert(WEBSOCKET_SUPPORT,'WEBSOCKET_SUPPORT not enabled in http-server')
-  else
-    M.set_websocket_protocol = nil
+		assert(WEBSOCKET_SUPPORT,'WEBSOCKET_SUPPORT not enabled in http-server')
+  	else
+    	M.set_websocket_protocol = nil
 		websocket = nil
-  end
+  	end
 
 	local ip = conf.ip or '*'
 	local port = conf.port or 8080
@@ -246,12 +247,12 @@ M.init = function(conf)
 			log('HTTP', 'DETAIL', 'http-server accepted connection from %s:%s', tostring(peerip), tostring(peerport))
       
 			local read_incomming_header = function()
-        --FIXME According to RFC-2616, section 4.2:	Header fields can be extended over multiple 
-        --lines by preceding each	extra line with at least one SP or HT. 
+				--FIXME According to RFC-2616, section 4.2:	Header fields can be extended over multiple 
+				--lines by preceding each	extra line with at least one SP or HT. 
 				local http_req_header  = {}
 				while true do
 					local line = instream:read_line()
-					if not line then sktd_cli:close(); return end
+					if not line then sktd_cli:close(); break end
 					if line=='' then break end
 					local key, value=string.match(line, '^(.-):%s*(.-)$')
 					--print ('HEADER', key, value)
