@@ -122,7 +122,7 @@ end
 -- @param fileroot the path to the root folder where the content to be served is found.
 -- @param buffer_size the reccmended ammount of RAM to use as buffer (defauls to 100kb)
 M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
-	buffer_size = buffer_size or 100*1024
+	buffer_size = buffer_size or (100*1024)
 	local nixio = require 'nixio'
 	M.set_request_handler(
 		'GET', 
@@ -194,7 +194,7 @@ end
 
 
 local function find_matching_handler(method, url)
-	local max_depth, best_handler = 0
+	local max_depth, best_handler = 0, nil
 	for i = 1,  #request_handlers do
 		local handler = request_handlers[i]
 		if handler.method == '*' or handler.method == method then
@@ -322,7 +322,7 @@ M.init = function(conf)
 				local need_flush
 				local done, err, bytes
         
-				local response_header = http_util.build_http_header(http_out_code, http_out_header, response, conf)
+				local response_header = http_util.build_http_header(http_out_code, http_out_header, response)
 				done, err, bytes = sktd_cli:send_sync(response_header)
         if done then 
           if type(response) == 'string' then

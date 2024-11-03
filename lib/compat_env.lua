@@ -105,8 +105,8 @@ else -- >= Lua 5.2
       end
       f = debug.getinfo(f+2, 'f').func
     elseif type(f) ~= 'function' then
-      error(("bad argument #1 to '%s' (number expected, got %s)")
-            :format(type(name, f)), 2)
+      error(("bad type for '%s' (function expected, got %s)")
+            :format(name, type(f)), 2)
     end
     return f
   end
