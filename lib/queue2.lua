@@ -26,7 +26,7 @@ function M.popleft (list)
 	local v1, v2 = list.data1[first], list.data2[first]
 	list.data1[first], list.data2[first] = nil, nil -- to allow garbage collection
 	list.first = first + 1
-	return v1, v2, v3
+	return v1, v2
 end
 
 function M.popright (list)

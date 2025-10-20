@@ -171,7 +171,6 @@ local waitd_count = 0
 -- @param waitd_table a table to convert into a wait descriptor.
 -- @return a wait descriptor object.
 M.new_waitd = function(waitd_table)
-  if not M.running_task then print (debug.traceback()) end
   assert(M.running_task)
   if not waitd_table.tasks then 
     -- first task to use a waitd
@@ -258,8 +257,8 @@ local function new_task ( f )
       attached=setmetatable({}, weak_key),
       waitds=setmetatable({}, weak_key),
       sleep_waitd={}, --see M.sleep()
-      EVENT_DIE = setmetatable({}, {__tostring=function() return "event: DIE"..tostring(f) end}),
-      EVENT_FINISH = setmetatable({}, {__tostring=function() return "event: FINISH"..tostring(f) end}),
+      EVENT_DIE = setmetatable({}, {__tostring=function() return "event: DIE["..tostring(f).."]" end}),
+      EVENT_FINISH = setmetatable({}, {__tostring=function() return "event: FINISH["..tostring(f).."]" end}),
       }, {
       __index=M, --OO-styled access
     })
