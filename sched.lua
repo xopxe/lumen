@@ -76,7 +76,11 @@ local function walk_waitd(waitd, event, packed, ...)
     if type(taskd)~='table' then print (debug.traceback()) end
     if taskd.waitingfor == waitd and taskd.status=='ready' then
       taskd.waketime, taskd.waitingfor = nil, nil
-      step_task(taskd, event, ...)
+      if packed then
+        step_task(taskd, event, unpack(...))
+      else
+        step_task(taskd, event, ...)
+      end
       if M.running_task and M.running_task.status == 'dead' then 
         -- the task was killed from a triggered task
         return
