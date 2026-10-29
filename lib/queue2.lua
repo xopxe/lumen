@@ -32,7 +32,7 @@ end
 function M.popright (list)
 	local last = list.last
 	if list.first > last then error("list is empty") end
-	local v1, v2 = list.data[1][last], list.data[2][last]
+	local v1, v2 = list.data1[last], list.data2[last]
 	list.data1[last], list.data2[last] = nil, nil -- to allow garbage collection
 	list.last = last - 1
 	return v1, v2
