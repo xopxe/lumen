@@ -41,6 +41,15 @@ local populate_cache_control =  function(http_out_header, http_req_path, conf)
 	return http_out_header
 end
 
+-- Returns path if it is safe to append to a file root, nil if it
+-- contains a '..' segment that could escape it.
+local function safe_path(path)
+	for segment in path:gmatch('[^/]+') do
+		if segment == '..' then return nil end
+	end
+	return path
+end
+
 local M = {}
 
 --- How long keep a http session open.
@@ -93,9 +102,13 @@ M.serve_static_content_from_ram = function (webroot, fileroot)
 		webroot,
 		function(method, path, http_params, http_header)
 			path = path:sub(#webroot)
+			if not safe_path(path) then
+				log('HTTP', 'WARNING', 'Rejected path traversal attempt: %s', path)
+				return 400
+			end
 			if path:sub(-1) == '/' then path=path..'index.html' end
 			local abspath=fileroot..path
-			
+
 			local file, err = io.open(abspath, "r")
 			if file then 
 				local extension = path:match('%.(%a+)$') or 'other'
@@ -130,9 +143,13 @@ M.serve_static_content_from_stream = function (webroot, fileroot, buffer_size)
 		webroot,
 		function(method, path, http_params, http_header)
 			path = path:sub(#webroot)
+			if not safe_path(path) then
+				log('HTTP', 'WARNING', 'Rejected path traversal attempt: %s', path)
+				return 400
+			end
 			if path:sub(-1) == '/' then path=path..'index.html' end
 			local abspath=fileroot..path
-			
+
 			local stream_file = stream.new(buffer_size)
 			local sktd, err = selector.new_fd (abspath, {"rdonly"}, nil, stream_file)
 			if sktd then 
