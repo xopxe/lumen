@@ -58,6 +58,8 @@ M.register = function ( catalogd, name, object, force )
 	end
 	log('CATALOG', 'DETAIL', '%s registered in catalog %s as "%s"', 
 		tostring(object), tostring(catalogd), tostring(name))
+	local old_name = reverse[object]
+	if old_name ~= nil then direct[old_name] = nil end -- clear old name
 	direct[name] = object
 	reverse[object] = name
 	
