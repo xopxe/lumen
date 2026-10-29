@@ -413,6 +413,7 @@ end
 -- invoked as taskd:kill().
 -- @param taskd task to terminate (see @{taskd}).
 M.kill = function ( taskd )
+  if taskd.status == 'dead' then return end
   log('SCHED', 'DETAIL', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
   M.tasks[taskd] = nil
   new_tasks[taskd] = nil
@@ -420,9 +421,9 @@ M.kill = function ( taskd )
   for child, _ in pairs(taskd.attached) do
     M.kill(child)
   end
+  taskd.status = 'dead'
   emit_signal(taskd.EVENT_DIE, false, 'killed') --per task
   emit_signal(M.EVENT_DIE, false, taskd, 'killed') --global
-  taskd.status = 'dead'
 end
 
 --- Emit a signal.
