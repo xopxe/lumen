@@ -202,7 +202,7 @@ end
 -- @param conf the configuration table (see @{conf}).
 M.init = function(conf)
 	conf = conf or  {}
-	local ip = conf.ip or '*'
+	local ip = conf.ip or '127.0.0.1'
 	local port = conf.port or 2012
 		
 	local tcp_server = selector.new_tcp_server(ip, port, 'line')

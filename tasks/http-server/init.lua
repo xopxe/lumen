@@ -230,7 +230,7 @@ M.init = function(conf)
 		websocket = nil
   	end
 
-	local ip = conf.ip or '*'
+	local ip = conf.ip or '127.0.0.1'
 	local port = conf.port or 8080
 	local attached = conf.kill_on_close
 	
