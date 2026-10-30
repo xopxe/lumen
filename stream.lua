@@ -143,9 +143,11 @@ end
 -- @return _true_ on success, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
 -- stream is closed
 M.write         = function(streamd, s, err)
-	if not s then                                                     --closing stream
+	if not s then          --closing stream
 		streamd.closed = err or true
-		if streamd.rblocked then sched.signal(streamd.pipe_data_signal) end -- unlock readers
+		if streamd.rblocked then -- unlock readers
+			sched.signal(streamd.pipe_data_signal)
+		end
 		return true
 	end
 	if streamd.closed then --closing stream
