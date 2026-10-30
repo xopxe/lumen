@@ -539,6 +539,8 @@ M.step = function ()
 
   --wake all ready tasks
   local function compute_available_time()
+    -- signals scheduled while stepping tasks are emitted on next step, do not idle
+    if signal_queue:len()>0 then return 0 end
     local available_time
     if next_waketime then
       available_time=next_waketime-M.get_time()
@@ -549,10 +551,7 @@ M.step = function ()
   local remaining -- available idle time to be returned
 
   if #cycleready==0 then
-    if next_waketime then
-      remaining = next_waketime-M.get_time()
-      if remaining < 0 then remaining = 0 end
-    end
+    remaining = compute_available_time()
   elseif #cycleready==1 then
     local available_time = compute_available_time()
     step_task( cycleready[1], M.STEP, available_time, available_time )
