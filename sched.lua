@@ -71,10 +71,12 @@ local next_waketime
 
 local step_task
 local function walk_waitd(waitd, emitter, event, packed, ...)
+  local delivered = false
   for taskd, _ in pairs(waitd.tasks) do
     --if not taskd then print (debug.traceback()) end
     if type(taskd)~='table' then print (debug.traceback()) end
     if taskd.waitingfor == waitd and taskd.status=='ready' then
+      delivered = true
       taskd.waketime, taskd.waitingfor = nil, nil
       if packed then
         step_task(taskd, event, unpack(...))
@@ -85,23 +87,23 @@ local function walk_waitd(waitd, emitter, event, packed, ...)
         -- the emitting task was killed from a triggered task
         return true
       end
+    end
+  end
+  -- buffer only if no task got the signal; the buffer is shared by all the
+  -- tasks using the waitd, so buffering a delivered signal would duplicate it
+  if not delivered and (waitd.buff_mode == 'keep_last' or
+  waitd.buff_mode == 'keep_first' and not waitd.buff_event) then
+    waitd.buff_event = event
+    --print ('buff', select('#',...), ...)
+    local n = select('#',...)
+    if packed then 
+      waitd.signal_packed, waitd.buff_parameter = true, select(1, ...)
+    elseif n == 0 then
+      waitd.signal_packed, waitd.buff_parameter = nil, nil
+    elseif n == 1 then
+      waitd.signal_packed, waitd.buff_parameter = false, select(1, ...)
     else
-      --TODO buffering
-      if waitd.buff_mode == 'keep_last' or
-      waitd.buff_mode == 'keep_first' and not waitd.buff_event then
-        waitd.buff_event = event
-        --print ('buff', select('#',...), ...)
-        local n = select('#',...)
-        if packed then 
-          waitd.signal_packed, waitd.buff_parameter = true, select(1, ...)
-        elseif n == 0 then
-          waitd.signal_packed, waitd.buff_parameter = nil, nil
-        elseif n == 1 then
-          waitd.signal_packed, waitd.buff_parameter = false, select(1, ...)
-        else
-          waitd.signal_packed, waitd.buff_parameter = true, {n=n,...}
-        end
-      end
+      waitd.signal_packed, waitd.buff_parameter = true, {n=n,...}
     end
   end
 end
