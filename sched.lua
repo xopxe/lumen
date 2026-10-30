@@ -211,6 +211,19 @@ M.new_waitd = function(waitd_table)
   return waitd_table
 end
 
+-- Remove and return the buffered signal of a waitd, as event, parameters...
+local function pop_buffer(waitd)
+  local event, parameter = waitd.buff_event, waitd.buff_parameter
+  waitd.buff_event, waitd.buff_parameter = nil, nil
+  if waitd.signal_packed==true then
+    return event, unpack(parameter, 1, parameter.n)
+  elseif waitd.signal_packed==false then
+    return event, parameter
+  else --nil
+    return event
+  end
+end
+
 --- Wait for a signal.
 -- Pauses the task until (one of) the specified signal(s) is available.
 -- If there is a signal in the buffer, will return it immediately.
@@ -233,15 +246,7 @@ M.wait = function ( waitd )
 
     -- feed from buffer if present
     if waitd.buff_event then
-      local event, parameter = waitd.buff_event, waitd.buff_parameter
-      waitd.buff_event, waitd.buff_parameter = nil, nil
-      if waitd.signal_packed==true then
-        return event, unpack(parameter, 1, parameter.n)
-      elseif waitd.signal_packed==false then
-        return event, parameter
-      else --nil
-        return event
-      end
+      return pop_buffer(waitd)
     end
 
     local timeout = waitd.timeout
@@ -376,7 +381,8 @@ end
 --- Pause a task.
 -- A paused task won't be scheduled for execution. If paused while waiting for a signal, 
 -- won't respond to signals. Signals on unbuffered waitds will get lost. Task's buffered 
--- waitds will still buffer events. Can be invoked as taskd:set_pause(pause)
+-- waitds will still buffer events, and a buffered signal for the waitd the task is waiting
+-- on is delivered when it is unpaused. Can be invoked as taskd:set_pause(pause)
 -- @param taskd Task to pause (see @{taskd}). 
 -- @param pause mode, true to pause, false to unpause
 -- @return the modified taskd on success or _nil, errormessage_ on failure.
@@ -499,7 +505,12 @@ M.step = function ()
   --if find one waiting&timeouting, wake it --and finish
   for taskd, _ in pairs (M.tasks) do
     if taskd.status=='ready' then
-      if taskd.waitingfor then
+      local waitingfor = taskd.waitingfor
+      if waitingfor and waitingfor.buff_event then
+        -- signal buffered while the task could not take it (e.g. was paused)
+        taskd.waketime, taskd.waitingfor = nil, nil
+        step_task(taskd, pop_buffer(waitingfor))
+      elseif waitingfor then
         local waketime = taskd.waketime
         if waketime then
           next_waketime = next_waketime or waketime
