@@ -430,23 +430,29 @@ local wake_up = function (taskd, waitd)
 end
 --]]
 
---- Finishes a task.
--- The killed task will emit a signal _sched.EVENT\_DIE, 'killed'_. Can be
--- invoked as taskd:kill(). If the running task gets killed (by itself, or
--- by a task it woke up), the call that triggered it will not return.
--- @param taskd task to terminate (see @{taskd}).
-M.kill = function ( taskd )
+-- kill a task and its attached children, without yielding
+local function kill_task ( taskd )
   if taskd.status == 'dead' then return end
   log('SCHED', 'DETAIL', 'killing %s from %s', tostring(taskd), tostring(M.running_task))
   M.tasks[taskd] = nil
   new_tasks[taskd] = nil
 
   for child, _ in pairs(taskd.attached) do
-    M.kill(child)
+    kill_task(child)
   end
   taskd.status = 'dead'
   emit_signal(taskd.EVENT_DIE, false, 'killed') --per task
   emit_signal(M.EVENT_DIE, false, taskd, 'killed') --global
+end
+
+--- Finishes a task.
+-- The killed task will emit a signal _sched.EVENT\_DIE, 'killed'_. Can be
+-- invoked as taskd:kill(). If the running task gets killed (by itself, or
+-- by a task it woke up), the call that triggered it will not return.
+-- @param taskd task to terminate (see @{taskd}).
+M.kill = function ( taskd )
+  kill_task(taskd)
+  -- only yield when done, the running task may be one of the killed children
   yield_if_killed()
 end
 
