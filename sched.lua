@@ -127,6 +127,15 @@ local function emit_signal ( event, packed, ... ) --FIXME
 end
 
 
+-- A task can be killed while it is running: by itself, or by a task it woke
+-- up (with a signal or a run). Make sure it does not continue executing.
+local function yield_if_killed()
+  local taskd = M.running_task
+  if taskd and taskd.status == 'dead' and coroutine.running() == taskd.co then
+    coroutine.yield()
+  end
+end
+
 step_task = function (taskd, ...)
   if taskd.status=='ready' then
     local check = function(ok, ...)
@@ -325,6 +334,7 @@ M.run = function ( task, ... )
   end
   --M.set_pause(taskd, false)
   step_task(taskd, ...)  --FIXME can get the task killed: still in new_tasks
+  yield_if_killed()
   return taskd
 end
 
@@ -413,8 +423,9 @@ end
 --]]
 
 --- Finishes a task.
--- The killed task will emit a signal _sched.EVENT\_DIE, 'killed'_. Can be 
--- invoked as taskd:kill().
+-- The killed task will emit a signal _sched.EVENT\_DIE, 'killed'_. Can be
+-- invoked as taskd:kill(). If the running task gets killed (by itself, or
+-- by a task it woke up), the call that triggered it will not return.
 -- @param taskd task to terminate (see @{taskd}).
 M.kill = function ( taskd )
   if taskd.status == 'dead' then return end
@@ -428,6 +439,7 @@ M.kill = function ( taskd )
   taskd.status = 'dead'
   emit_signal(taskd.EVENT_DIE, false, 'killed') --per task
   emit_signal(M.EVENT_DIE, false, taskd, 'killed') --global
+  yield_if_killed()
 end
 
 --- Emit a signal.
@@ -439,6 +451,7 @@ M.signal = function ( event, ... )
   log('SCHED', 'DEBUG', 'task %s emitting event %s with %d parameters', 
     tostring(M.running_task), tostring(event), select('#', ...))
   emit_signal(event, false, ...)  
+  yield_if_killed()
 end
 
 --- Emit a signal lazily.
