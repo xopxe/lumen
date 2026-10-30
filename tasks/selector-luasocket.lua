@@ -163,9 +163,13 @@ end
 local step = function (timeout)
   local recvt_ready, sendt_ready, err_select = socket.select(recvt, sendt, timeout)
   if err_select~='timeout' then
+    -- signals emitted here can run tasks that close sockets, so skip fds that
+    -- got unregistered meanwhile
     for _, fd in ipairs(sendt_ready) do
       local ev_writable = wait_writable[fd]
-      if ev_writable then
+      if not sktds[fd] then
+        -- closed while handling a previous fd
+      elseif ev_writable then
         -- wake a blocked send_sync, keep selecting only if async data is pending
         wait_writable[fd] = nil
         local sktd = sktds[fd]
@@ -179,7 +183,7 @@ local step = function (timeout)
     end
     for _, fd in ipairs(recvt_ready) do
       local sktd = sktds[fd]
-      --if sktd then 
+      if sktd then -- skip if closed while handling a previous fd
       local pattern=sktd.pattern
       if sktd.isserver then 
         local client, err=fd:accept()
@@ -226,7 +230,7 @@ local step = function (timeout)
             sktd:close()
           end
         end
-        --end
+      end
       end
     end
   end
