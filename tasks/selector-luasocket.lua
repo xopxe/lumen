@@ -17,6 +17,10 @@ local SLEEP_ON_RETRY_CONNECT = 0.1 --pause between reconnect attempts
 
 local recvt, sendt={}, {}
 
+-- fds with a send_sync blocked until select() reports them writable,
+-- mapped to the event that wakes the writer
+local wait_writable = setmetatable({}, { __mode = 'k' })
+
 local sktds = setmetatable({}, { __mode = 'k' })
 
 local M = {}
@@ -33,6 +37,23 @@ sched.idle = socket.sleep
 --local write_pipes = setmetatable({}, weak_key)
 --local outstanding_data = setmetatable({}, weak_key)
 
+local add_sendt = function (fd)
+  if not sendt[fd] then
+    sendt[#sendt+1] = fd
+    sendt[fd] = true
+  end
+end
+local remove_sendt = function (fd)
+  if not sendt[fd] then return end
+  for i=1, #sendt do
+    if sendt[i] == fd then
+      table.remove(sendt, i)
+      sendt[fd] = nil
+      break
+    end
+  end
+end
+
 local unregister = function (fd)
   local sktd = sktds[fd]
   if not sktd then return end
@@ -43,13 +64,7 @@ local unregister = function (fd)
     end
   end
   if sendt[fd] then
-    for i=1, #sendt do
-      if sendt[i] == fd then
-        table.remove(sendt, i)
-        sendt[fd] = nil
-        break
-      end
-    end
+    remove_sendt(fd)
     sktd.write_stream = nil
     sktd.outstanding_data = nil
   end
@@ -118,13 +133,7 @@ local function send_from_pipe (fd)
       end
     else
       --emptied the outgoing pipe, stop selecting to write
-      for i=1, #sendt do
-        if sendt[i] == fd then
-          table.remove(sendt, i)
-          sendt[fd] = nil
-          break
-        end
-      end
+      remove_sendt(fd)
       sched.signal(sktd.events.async_finished, true)
     end
   end
@@ -155,7 +164,18 @@ local step = function (timeout)
   local recvt_ready, sendt_ready, err_select = socket.select(recvt, sendt, timeout)
   if err_select~='timeout' then
     for _, fd in ipairs(sendt_ready) do
-      send_from_pipe(fd)
+      local ev_writable = wait_writable[fd]
+      if ev_writable then
+        -- wake a blocked send_sync, keep selecting only if async data is pending
+        wait_writable[fd] = nil
+        local sktd = sktds[fd]
+        if not (sktd and (sktd.write_stream or sktd.outstanding_data)) then
+          remove_sendt(fd)
+        end
+        sched.signal(ev_writable)
+      else
+        send_from_pipe(fd)
+      end
     end
     for _, fd in ipairs(recvt_ready) do
       local sktd = sktds[fd]
@@ -179,8 +199,9 @@ local step = function (timeout)
           else
             skt_table_client.handler = sktd.handler
           end
-          sched.signal(sktd.events.accepted, insktd)
+          -- register first, so the client socket is non-blocking for the handler
           register_client(insktd)
+          sched.signal(sktd.events.accepted, insktd)
         else
           sched.signal(sktd.events.accepted, nil, err)
         end
@@ -300,30 +321,41 @@ M.init = function()
     return sktd
   end
   M.close = function(sktd)
-    unregister(sktd.fd)
-    sktd.fd:close()
+    local fd = sktd.fd
+    local ev_writable = wait_writable[fd]
+    wait_writable[fd] = nil
+    unregister(fd)
+    fd:close()
+    -- a blocked send_sync will retry and get a 'closed' error
+    if ev_writable then sched.signal(ev_writable) end
   end
-  M.send_sync = function(sktd, data)
-    local start, err,done=0, nil, nil
+  M.send_sync = function(sktd, data, timeout)
+    local fd = sktd.fd
+    local deadline = timeout and timeout >= 0 and sched.get_time() + timeout
+    local last, err, partial = 0, nil, nil
     while true do
-      start, err=sktd.fd:send(data,start+1)
-      done = start==#data
-      if done or err then
-        break
+      last, err, partial = fd:send(data, last+1)
+      last = last or partial
+      -- 'timeout' means the socket buffer is full: wait until it is writable
+      if err ~= 'timeout' then break end
+      local waitd = sktd.waitd_writable or {{}}
+      sktd.waitd_writable = waitd
+      if deadline then
+        waitd.timeout = deadline - sched.get_time()
+        if waitd.timeout <= 0 then break end
       else
-        sched.wait()
+        waitd.timeout = nil
       end
+      wait_writable[fd] = waitd[1]
+      add_sendt(fd)
+      if not sched.wait(waitd) then break end -- err is still 'timeout'
     end
-    return done, err, start
+    return last == #data, err, last
   end
   M.send = M.send_sync
   M.send_async = function (sktd, data)
     --make sure we're selecting to write
-    local skt=sktd.fd
-    if not sendt[skt] then 
-      sendt[#sendt+1] = skt
-      sendt[skt]=true
-    end
+    add_sendt(sktd.fd)
     
     local streamd = sktd.write_stream
     

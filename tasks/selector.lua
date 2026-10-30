@@ -115,7 +115,10 @@ M.init = function(conf)
 	-- @function send_sync
 	-- @param sktd a @{sktd} object
 	-- @param data data to send
-	-- @return _true_ on success. _nil, err, partial_ on failure
+	-- @param timeout optional, maximum time to block. nil or negative waits for ever.
+	-- Only supported by the luasocket backend.
+	-- @return _true_ on success. _false, err, last_ on failure, where _last_ is the index
+	-- of the last byte sent. On timeout _err_ is 'timeout'
 	M.send_sync = native.send_sync
 	
 	--- Alias for send\_sync.
