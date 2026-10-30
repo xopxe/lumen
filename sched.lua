@@ -70,7 +70,7 @@ local signal_queue = queue3:new()
 local next_waketime
 
 local step_task
-local function walk_waitd(waitd, event, packed, ...)
+local function walk_waitd(waitd, emitter, event, packed, ...)
   for taskd, _ in pairs(waitd.tasks) do
     --if not taskd then print (debug.traceback()) end
     if type(taskd)~='table' then print (debug.traceback()) end
@@ -81,9 +81,9 @@ local function walk_waitd(waitd, event, packed, ...)
       else
         step_task(taskd, event, ...)
       end
-      if M.running_task and M.running_task.status == 'dead' then 
-        -- the task was killed from a triggered task
-        return
+      if emitter and emitter.status == 'dead' then
+        -- the emitting task was killed from a triggered task
+        return true
       end
     else
       --TODO buffering
@@ -117,8 +117,12 @@ local function emit_signal ( event, packed, ... ) --FIXME
       currently[waitd] = true
     end
   end
+  -- abort delivery if the emitter dies while signaling, but not when
+  -- it is already dead (e.g. emitting its own EVENT_DIE/EVENT_FINISH)
+  local emitter = M.running_task
+  if emitter and emitter.status == 'dead' then emitter = nil end
   for waitd, _ in pairs(currently) do
-    walk_waitd(waitd, event, packed, ...)
+    if walk_waitd(waitd, emitter, event, packed, ...) then return end
   end
 end
 
