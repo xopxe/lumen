@@ -71,10 +71,19 @@ local next_waketime
 
 local step_task
 local function walk_waitd(waitd, emitter, event, packed, ...)
-  local delivered = false
+  -- collect the receivers first: woken tasks can add tasks to waitd.tasks,
+  -- and adding keys to a table while traversing it with pairs is undefined
+  local receivers, count = {}, 0
   for taskd, _ in pairs(waitd.tasks) do
-    --if not taskd then print (debug.traceback()) end
-    if type(taskd)~='table' then print (debug.traceback()) end
+    if taskd.waitingfor == waitd and taskd.status=='ready' then
+      count = count + 1
+      receivers[count] = taskd
+    end
+  end
+  local delivered = false
+  for i = 1, count do
+    local taskd = receivers[i]
+    -- check again, a previously woken task may have killed or paused it
     if taskd.waitingfor == waitd and taskd.status=='ready' then
       delivered = true
       taskd.waketime, taskd.waitingfor = nil, nil
