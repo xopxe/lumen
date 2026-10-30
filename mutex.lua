@@ -30,7 +30,25 @@ table.pack = table.pack or function (...)
 end
 
 --get locals for some useful things
-local setmetatable = setmetatable
+local setmetatable, error, pcall, coroutine = setmetatable, error, pcall, coroutine
+
+-- Lua 5.1 can't yield across pcall, so there we run the function in a
+-- coroutine that passes yields through to the scheduler (as coxpcall does)
+local yieldable_pcall = pcall
+do
+	local co = coroutine.create(function() pcall(coroutine.yield) end)
+	coroutine.resume(co)
+	if coroutine.status(co) ~= 'suspended' then
+		yieldable_pcall = function(f, ...)
+			local co = coroutine.create(f)
+			local ret = table.pack(coroutine.resume(co, ...))
+			while ret[1] and coroutine.status(co) ~= 'dead' do
+				ret = table.pack(coroutine.resume(co, coroutine.yield(unpack(ret, 2, ret.n))))
+			end
+			return unpack(ret, 1, ret.n)
+		end
+	end
+end
 
 local waitd_locks = setmetatable({}, {__mode = "kv"}) 
 
@@ -66,6 +84,9 @@ end
 -- as _mutexd:acquire()_.
 -- @param mutexd a mutexd object.
 M.acquire = function(mutexd)
+	if mutexd.locker == sched.running_task then
+		error('Attempt to acquire an already acquired lock', 2)
+	end
 	while mutexd.locker and mutexd.locker.status~='dead' do
 		sched.wait(get_waitd_lock (mutexd.locker))
 	end
@@ -89,16 +110,17 @@ end
 
 --- Generate a synchronizzed version of a function.
 -- This is a helper that takes a function, and returns a wrapper that is locked with 
--- the mutex.
+-- the mutex. The lock is released even if the function raises an error, which is then re-raised.
 -- Can be invoked in OO fashion as _mutexd:synchronize(f)_.
 -- @param mutexd a mutexd object.
 -- @param f function to be locked.
 M.synchronize = function (mutexd, f)
 	local wrapper = function(...)
 		mutexd:acquire()
-		local ret = table.pack(f(...))
+		local ret = table.pack(yieldable_pcall(f, ...))
 		mutexd:release()
-		return unpack(ret,1, ret.n)
+		if not ret[1] then error(ret[2], 0) end
+		return unpack(ret, 2, ret.n)
 	end
 	log('MUTEX', 'DETAIL', '%s synchronized on mutex %s as %s'
 		, tostring(f), tostring(mutexd), tostring(wrapper))
