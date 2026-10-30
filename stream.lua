@@ -18,121 +18,91 @@ local s_find   = string.find
 
 local M         = {}
 
+-- Remove the first n bytes from the stream and return them (everything if n is
+-- nil), unlocking writers if there is room. The buffer table is always replaced,
+-- so a reader that sees the same table knows nothing was consumed meanwhile.
+local function take(streamd, n)
+	local buff_data = streamd.buff_data
+	local s = buff_data[1]
+	if #buff_data > 1 then
+		--slow path
+		s = t_concat(buff_data)
+	end
+	local rest
+	if n and n < #s then
+		rest = s:sub(n + 1)
+		s = s:sub(1, n)
+	end
+	streamd.buff_data = { rest }
+	streamd.len = rest and #rest or 0
+	if streamd.wblocked > 0 and (not streamd.size or streamd.len <= streamd.size) then
+		sched.signal(streamd.pipe_enable_signal) -- unlock writers
+	end
+	return s
+end
+
 --- Read from a stream.
 -- Will block if there is no (or not enough) data to read, until it appears. Also accessible as streamd:read([len])
 -- @param streamd the the stream descriptor to read from.
 -- @param length optional length of string to be returned.
 -- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
--- stream is closed and empty (_err_ is the additinal error parameter provided on @{write} when closing).
+-- stream is closed and has not enough data (_err_ is the additinal error parameter provided on
+-- @{write} when closing). Data left in a closed stream can still be retrieved with read().
 M.read          = function(streamd, length)
 	if length == 0 then return '' end
 	length = tonumber(length) or -1
 
-	local buff_data = streamd.buff_data
-	if streamd.closed and (streamd.len < length or streamd.len == 0) then
-		return nil, 'closed', streamd.closed
-	end
-
 	while streamd.len == 0 or (length > 0 and streamd.len < length) do
-		streamd.rblocked = true
-		local ev = sched.wait(streamd.waitd_data)
-		streamd.rblocked = false
-		if not ev then return nil, 'timeout' end
-		if streamd.closed and (streamd.len < length or streamd.len == 0) then --and #streamd.buff_data == 0 then
+		if streamd.closed then
 			return nil, 'closed', streamd.closed
 		end
+		streamd.rblocked = streamd.rblocked + 1
+		local ev = sched.wait(streamd.waitd_data)
+		streamd.rblocked = streamd.rblocked - 1
+		if not ev then return nil, 'timeout' end
 	end
 
-	if #buff_data > 1 then
-		--slow path
-		local s = t_concat(buff_data)
-		buff_data = { [1] = s }
-		streamd.buff_data = buff_data
-	end
-
-	local s = buff_data[1]
-
-	if length > 0 then
-		--cut len bytes
-		local rlen = #s - length
-		if rlen > 0 then
-			buff_data[1] = s:sub(-rlen)
-		else
-			buff_data[1] = nil
-		end
-		s = s:sub(1, length)
-		streamd.len = rlen
-		if streamd.wblocked and (not streamd.size or streamd.len <= streamd.size) then
-			sched.signal(streamd.pipe_enable_signal) -- unlock writers
-		end
-	else
-		--return everything
-		buff_data[1] = nil
-		streamd.len = 0
-		if streamd.wblocked then
-			sched.signal(streamd.pipe_enable_signal) -- unlock writers
-		end
-	end
-
-	return s
+	return take(streamd, length > 0 and length or nil)
 end
 
 --- Read a line from a stream.
 -- Will block if there is not a whole line to return, until it arrives. Also accessible as streamd:read_line()
 -- @param streamd the the stream descriptor to read from.
 -- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
--- stream is closed and empty (_err_ is the additinal error parameter provided on @{write} when closing).
+-- stream is closed and has no whole line (_err_ is the additinal error parameter provided on
+-- @{write} when closing). A last unterminated line can still be retrieved with read().
 -- The trailing newline is not included in the returned string.
 M.read_line     = function(streamd)
-	local buff_data = streamd.buff_data
-
+	local buff_data, scanned -- chunks of buff_data already searched for a newline
 	local line_available, new_line_last
-	for i = 1, #buff_data do
-		line_available, new_line_last = s_find(buff_data[i], '\r?\n')
+	while true do
+		if streamd.buff_data ~= buff_data then
+			-- first pass, or another reader consumed data: scan from the start
+			buff_data, scanned = streamd.buff_data, 0
+		end
+		for i = scanned + 1, #buff_data do
+			line_available, new_line_last = s_find(buff_data[i], '\r?\n')
+			if line_available then break end
+		end
 		if line_available then break end
-	end
-	if streamd.closed and not line_available then
-		return nil, 'closed', streamd.closed
-	end
-
-	while not line_available do
-		streamd.rblocked = true
-		local ev = sched.wait(streamd.waitd_data)
-		streamd.rblocked = false
-		if not ev then return nil, 'timeout' end
-		line_available, new_line_last = s_find(buff_data[#buff_data] or '', '\r?\n')
-		if streamd.closed and not line_available then
+		scanned = #buff_data
+		if streamd.closed then
 			return nil, 'closed', streamd.closed
 		end
+		streamd.rblocked = streamd.rblocked + 1
+		local ev = sched.wait(streamd.waitd_data)
+		streamd.rblocked = streamd.rblocked - 1
+		if not ev then return nil, 'timeout' end
 	end
 
 	if #buff_data > 1 then
 		--slow path
 		local s = t_concat(buff_data)
 		streamd.buff_data = { [1] = s }
-		buff_data = streamd.buff_data
-		line_available, new_line_last = s_find(s, '\r?\n') --TODO keep count of positions to avoid rescanning
+		line_available, new_line_last = s_find(s, '\r?\n')
 	end
 
-	local s = buff_data[1]
-	local line = s:sub(1, line_available - 1)
-	local remainder_length = #s - new_line_last
-	if remainder_length > 0 then
-		local remainder = s:sub(-remainder_length)
-		buff_data[1] = remainder
-		streamd.len = remainder_length
-		if streamd.wblocked and (not streamd.size or streamd.len <= streamd.size) then
-			sched.signal(streamd.pipe_enable_signal) -- unlock writers
-		end
-	else
-		buff_data[1] = nil
-		streamd.len = 0
-		if streamd.wblocked then
-			sched.signal(streamd.pipe_enable_signal) -- unlock writers
-		end
-	end
-
-	return line
+	return take(streamd, new_line_last):sub(1, line_available - 1)
 end
 
 --- Write to a stream.
@@ -145,23 +115,29 @@ end
 M.write         = function(streamd, s, err)
 	if not s then          --closing stream
 		streamd.closed = err or true
-		if streamd.rblocked then -- unlock readers
+		if streamd.rblocked > 0 then -- unlock readers
 			sched.signal(streamd.pipe_data_signal)
+		end
+		if streamd.wblocked > 0 then -- unlock writers, so they fail
+			sched.signal(streamd.pipe_enable_signal)
 		end
 		return true
 	end
 	if streamd.closed then --closing stream
 		return nil, 'closed', streamd.closed
 	end
-	if streamd.size and streamd.len > streamd.size then
-		streamd.wblocked = true
+	while streamd.size and streamd.len > streamd.size do
+		streamd.wblocked = streamd.wblocked + 1
 		local ev = sched.wait(streamd.waitd_enable)
-		streamd.wblocked = false
+		streamd.wblocked = streamd.wblocked - 1
 		if not ev then return nil, 'timeout' end
+		if streamd.closed then
+			return nil, 'closed', streamd.closed
+		end
 	end
 	streamd.buff_data[#streamd.buff_data + 1] = s
 	streamd.len = streamd.len + #s
-	if streamd.rblocked then -- unlock readers
+	if streamd.rblocked > 0 then -- unlock readers
 		sched.signal(streamd.pipe_data_signal)
 	end
 	return true
@@ -175,8 +151,8 @@ end
 M.set_timeout   = function(streamd, read_timeout, write_timeout)
 	streamd.waitd_data.timeout = read_timeout
 	streamd.waitd_enable.timeout = write_timeout
-	if streamd.wblocked then sched.signal(streamd.pipe_enable_signal) end
-	if streamd.rblocked then sched.signal(streamd.pipe_data_signal) end
+	if streamd.wblocked > 0 then sched.signal(streamd.pipe_enable_signal) end
+	if streamd.rblocked > 0 then sched.signal(streamd.pipe_data_signal) end
 end
 
 local n_streams = 0
@@ -201,7 +177,7 @@ M.new           = function(size, read_timeout, write_timeout)
 	streamd.pipe_enable_signal = {} --singleton event for pipe control
 	streamd.pipe_data_signal = {} --singleton event for pipe data
 	streamd.len = 0
-	streamd.rblocked, streamd.wblocked = false, false
+	streamd.rblocked, streamd.wblocked = 0, 0 -- number of blocked readers and writers
 	streamd.buff_data = {}
 	streamd.waitd_data = {
 		streamd.pipe_data_signal,

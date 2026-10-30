@@ -28,13 +28,13 @@ local M = {}
 -- @return  _true,..._ if data is available, _nil,'timeout'_ on timeout
 M.read = function (piped)
   while piped.buff_data:len() == 0 do
-    piped.rblocked = true
+    piped.rblocked = piped.rblocked + 1
 		local ev = sched.wait(piped.waitd_data)
-    piped.rblocked = false
+    piped.rblocked = piped.rblocked - 1
 		if not ev then return nil, 'timeout' end
   end
   local packed, ret = piped.buff_data:popleft()
-	if piped.wblocked then
+	if piped.wblocked > 0 then
 		sched.signal(piped.pipe_enable_signal)
 	end
   if packed then
@@ -51,9 +51,9 @@ end
 -- @return _true_ on success, _nil,'timeout'_ on timeout
 M.write = function (piped, ...)
 	while piped.size and piped.buff_data:len() >= piped.size do
-    piped.wblocked = true
+    piped.wblocked = piped.wblocked + 1
 		local ev = sched.wait(piped.waitd_enable)
-    piped.wblocked = false
+    piped.wblocked = piped.wblocked - 1
 		if not ev then return nil, 'timeout' end
 	end
   if select('#', ...) > 1 then
@@ -61,7 +61,7 @@ M.write = function (piped, ...)
   else
     piped.buff_data:pushright(false, select(1, ...))
   end
-  if piped.rblocked then 
+  if piped.rblocked > 0 then 
     sched.signal(piped.pipe_data_signal) 
   end
 	return true
@@ -95,7 +95,7 @@ M.new = function(size, timeout)
 	piped.pipe_enable_signal = {} --singleton event for pipe control
 	piped.pipe_data_signal = {} --singleton event for pipe data
 	piped.buff_data = queue:new()
-  piped.rblocked, piped.wblocked = false, false
+  piped.rblocked, piped.wblocked = 0, 0 -- number of blocked readers and writers
 	piped.waitd_data = {
     piped.pipe_data_signal,
 		timeout=timeout, 
