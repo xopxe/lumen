@@ -67,7 +67,7 @@ There are a few other useful modules, like an integrated remote Lua shell and a 
 
 ## How to try it out?
 
-There several example programs in the examples/ folder. This example has  few tasks exchanging messages, showing off basic functionality:
+There several example programs in the examples/ folder. This example has few tasks exchanging messages, showing off basic functionality:
 
 ```sh
     lua example.lua

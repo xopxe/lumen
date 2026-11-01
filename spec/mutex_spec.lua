@@ -85,20 +85,25 @@ test('a lock is released when the holder finishes or is killed', function(L)
 end)
 
 test('synchronize releases the lock and re-raises on error', function(L)
+  L.allow_errors()
   local sched, mx = L.sched, L.mutex.new()
   local critical = mx:synchronize(function()
     sched.sleep(1)
     error('boom', 0)
   end)
-  local err, reacquired
+  -- the task must die from the error, not just release the lock: Lua 5.1
+  -- can't yield across a pcall here, so check the error through EVENT_DIE
+  local failing = sched.run(critical)
+  local reacquired
   sched.run(function()
-    err = select(2, pcall(critical))
+    sched.sleep(2)
     mx:acquire()
     reacquired = true
     mx:release()
   end)
   L.loop()
-  eq(err, 'boom')
+  eq(failing.status, 'dead')
+  same(L.errors, {'boom'})
   eq(reacquired, true)
   eq(mx.locker, nil)
 end)
