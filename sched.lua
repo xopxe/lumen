@@ -88,7 +88,8 @@ local function walk_waitd(waitd, emitter, event, packed, ...)
       delivered = true
       taskd.waketime, taskd.waitingfor = nil, nil
       if packed then
-        step_task(taskd, event, unpack(...))
+        local parameters = ...
+        step_task(taskd, event, unpack(parameters, 1, parameters.n))
       else
         step_task(taskd, event, ...)
       end
@@ -506,8 +507,12 @@ M.step = function ()
 
   -- emit scheduled signals
   while signal_queue:len()>0 do
-    local event, packed, parameter = signal_queue:popleft() 
-    emit_signal(event, packed, parameter) --FIXME avoid repacking when buffering
+    local event, packed, parameter = signal_queue:popleft()
+    if packed == nil then -- scheduled without parameters
+      emit_signal(event, false)
+    else
+      emit_signal(event, packed, parameter) --FIXME avoid repacking when buffering
+    end
   end
 
   -- transfer recently created tasks to main table
