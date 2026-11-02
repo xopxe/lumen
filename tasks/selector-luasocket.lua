@@ -248,7 +248,7 @@ local normalize_pattern = function(pattern)
   or (tonumber(pattern) and tonumber(pattern)<=0) then
     return  0 --'*a'
   end
-  log('SELECTOR', 'WARN', 'Could not normalize pattern "%s"', tostring(pattern))
+  log('SELECTOR', 'WARNING', 'Could not normalize pattern "%s"', tostring(pattern))
 end
 
 M.init = function()

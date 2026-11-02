@@ -6,7 +6,7 @@
 
 Lumen is a very simple environment for coroutine based multitasking. Consists of a scheduler, and that's it.
 The API was inspired by a brief description of [Sierra's scheduler](https://github.com/SierraWireless/luasched/).
-Lumen has no external dependencies nor C code, and runs on unmodified Lua (works with Lua 5.1, 5.2 and LuaJIT).
+Lumen has no external dependencies nor C code, and runs on unmodified Lua (works with Lua 5.1 - 5.5 and LuaJIT).
 Tasks that interface with LuaSocket and nixio for socket and async file I/O support are provided.
 
 Lumen's API reference is available in the `docs/` directory, or [online](https://www.fing.edu.uy/~jvisca/lumen_api/).
