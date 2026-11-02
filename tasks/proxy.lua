@@ -33,8 +33,55 @@ local unpack = unpack or table.unpack
 
 local encode_f
 local decode_f
+local incomplete_f
+local max_message_size
 
 local M = {}
+
+-- given a failed decode, tell a message that is not complete yet from a malformed one
+local incomplete = {
+	dkjson = function(buff, pos, err)
+		-- a missing value (JSON null) has no error message
+		return err ~= nil and type(pos) == 'number' and pos > #buff
+	end,
+	bencode = function(_, err)
+		return type(err) == 'string' and err:find('^truncat') ~= nil
+	end,
+}
+
+-- append data to buff and pass each whole message to on_message.
+-- returns the data left in the buffer, or _nil, err_ if the data is malformed
+-- or a message does not fit in max_message_size
+local function read_messages(buff, data, valid, on_message)
+	buff = buff .. data
+	while buff ~= '' do
+		local decoded, index, e = decode_f(buff)
+		if decoded == nil then
+			if not incomplete_f(buff, index, e) then
+				return nil, 'malformed message: '..tostring(index)..' '..tostring(e)
+			end
+			if #buff > max_message_size then
+				return nil, 'message larger than '..max_message_size..' bytes'
+			end
+			break
+		end
+		if not valid(decoded) then
+			return nil, 'malformed message: unexpected content'
+		end
+		buff = buff:sub(index)
+		on_message(decoded)
+	end
+	return buff
+end
+
+local function is_signal(m)
+	return type(m) == 'table' and type(m.n) == 'number'
+end
+
+local function is_request(m)
+	return type(m) == 'table' and type(m.events) == 'table'
+		and (m.name_timeout == nil or type(m.name_timeout) == 'number')
+end
 
 local function vararg_to_encodeable(...)
 	local n=select('#',...) 
@@ -76,20 +123,19 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 	
 	local function get_incomming_handler()
 		local buff = ''
-		return function(sktd, data, err) 
+		local function on_signal(decoded)
+			sched.signal(incomming_signal, encodeable_to_vararg(decoded))
+		end
+		return function(sktd, data, err)
 			--print ('incomming', data, buff)
 			if not data then return false end
-			buff = buff .. data
 			-- a chunk can hold several signals, or only part of one
-			while buff ~= '' do
-				local decoded, index, e = decode_f(buff)
-				if not decoded then
-					log('PROXY', 'DEBUG', 'waiting for more data, buff with length %s does not decode: "%s"',
-						tostring(#buff), tostring(index).." "..tostring(e))
-					break
-				end
-				buff = buff:sub(index)
-				sched.signal(incomming_signal, encodeable_to_vararg(decoded))
+			local readerr
+			buff, readerr = read_messages(buff, data, is_signal, on_signal)
+			if not buff then
+				log('PROXY', 'ERROR', 'closing connection to %s:%s, %s',
+					tostring(ip), tostring(port), readerr)
+				return false
 			end
 			return true
 		end
@@ -119,6 +165,9 @@ M.init = function(conf)
 	local encoder_lib = require ('lumen.lib.'..encoder)
 	encode_f = encoder_lib.encode
 	decode_f = encoder_lib.decode
+	-- without a way to spot malformed data, only the size limit applies
+	incomplete_f = incomplete[encoder] or function() return true end
+	max_message_size = conf.max_message_size or 1024*1024
 
 	local meta_name_default = {__index=function() return '*' end}
 	local task_to_name = setmetatable({}, meta_name_default)
@@ -194,13 +243,13 @@ M.init = function(conf)
 
 	local function request_handler(sktd, encoded, err)
 		if encoded then
-			local buff = (buffs[sktd] or '') .. encoded
 			-- a chunk can hold several requests, or only part of one
-			while buff ~= '' do
-				local rwaitd, index = decode_f(buff)
-				if not rwaitd then break end
-				buff = buff:sub(index)
-				serve_request(sktd, rwaitd)
+			local buff, readerr = read_messages(buffs[sktd] or '', encoded, is_request,
+				function(rwaitd) serve_request(sktd, rwaitd) end)
+			if not buff then
+				log('PROXY', 'ERROR', 'dropping connection, %s', readerr)
+				drop_connection(sktd)
+				return false
 			end
 			buffs[sktd] = buff
 		else
@@ -220,5 +269,8 @@ end
 -- @field ip the ip where the server listens (defaults to '*')
 -- @field port the port where the server listens (defaults to 1985)
 -- @field encoder the encoding method to use: 'bencode' or 'json' (default).
+-- @field max_message_size the maximum size in bytes of a received message, both
+-- for the proxy and for remote waitds (defaults to 1MB). Connections that receive
+-- larger or malformed messages are closed.
 
 return M

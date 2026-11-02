@@ -125,7 +125,10 @@ end
 
 local function decode_integer(s, index) 
 	local a, b, int = find(s, "^(%-?[0-9]+)e", index) 
-	if not int then return nil, "not a number", nil end
+	if not int then
+		if find(s, "^%-?[0-9]*$", index) then return nil, "truncation error", nil end
+		return nil, "not a number", nil
+	end
 	int = tonumber(int) 
 	if not int then return nil, "not a number", int end
 	return int, b + 1 
@@ -162,7 +165,10 @@ end
 	 
 local function decode_string(s, index) 
 	local a, b, len = find(s, "^([0-9]+):", index) 
-	if not len then return nil, "not a length", len end
+	if not len then
+		if find(s, "^[0-9]*$", index) then return nil, "truncation error", nil end
+		return nil, "not a length", len
+	end
 	index = b + 1 
 	 
 	local v = sub(s, index, index + len - 1) 
@@ -176,7 +182,7 @@ function M.decode(s, index)
 	if not s then return nil, "no data", nil end
 	index = index or 1 
 	local t = sub(s, index, index) 
-	if not t then return nil, "truncation error", nil end
+	if t == "" then return nil, "truncation error", nil end
 
 	if t == "i" then 
 		return decode_integer(s, index + 1) 

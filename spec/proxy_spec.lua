@@ -4,12 +4,15 @@ local T = require 'harness'
 local net = require 'net'
 local test, eq, same, ok, pack = T.test, T.eq, T.same, T.ok, T.pack
 
--- start the selector and a proxy server, then run body(proxy, port, events)
-local function with_proxy(L, encoder, body)
+-- start the selector and a proxy server, then run body(proxy, port, events).
+-- conf, if given, has extra configuration for the proxy
+local function with_proxy(L, encoder, body, conf)
   local selector = net.init_selector(L)
   net.run_with_selector(L, selector, function()
     local proxy = require 'lumen.tasks.proxy'
-    proxy.init({ip = '127.0.0.1', port = 0, encoder = encoder})
+    conf = conf or {}
+    conf.ip, conf.port, conf.encoder = '127.0.0.1', 0, encoder
+    proxy.init(conf)
     ok(proxy.skt_server, 'proxy server started')
     local _, port = proxy.skt_server:getsockname()
     body(proxy, port, L.catalog.get_catalog('events'))
@@ -192,4 +195,123 @@ test('requests split across packets from several clients do not mix', function(L
   end)
   ok(got[1]:find('"x"', 1, true), 'client a got '..got[1])
   ok(got[2]:find('"x"', 1, true), 'client b got '..got[2])
+end)
+
+---------------------------------------
+-- malformed and oversized messages
+
+-- read from a stream until it closes or times out, returns all the data and why it stopped
+local function read_all(s, timeout)
+  s:set_timeout(timeout or 1)
+  local data = {}
+  while true do
+    local chunk, err = s:read()
+    if not chunk then return table.concat(data), err end
+    data[#data+1] = chunk
+  end
+end
+
+-- a request for the 'EV' event, split in three parts
+local split_request = {
+  json = {'{"ev', 'ents":["E', 'V"]}'},
+  bencode = {'d6', ':eventsl2:E', 'Vee'},
+}
+
+for _, encoder in ipairs({'json', 'bencode'}) do
+  test(encoder..': a request split anywhere is still served', function(L)
+    local sched = L.sched
+    local got
+    with_proxy(L, encoder, function(_, port, events)
+      local selector = require 'lumen.tasks.selector'
+      local ev = {}
+      events:register('EV', ev)
+      local client = selector.new_tcp_client('127.0.0.1', port, nil, nil, 0, 'stream')
+      for _, part in ipairs(split_request[encoder]) do
+        client:send_sync(part)
+        settle(L)
+      end
+      sched.signal(ev, 'x')
+      client.stream:set_timeout(1)
+      got = client.stream:read() or 'nothing'
+      client:close()
+    end)
+    ok(got:find('EV', 1, true), 'event forwarded, got '..got)
+  end)
+
+  test(encoder..': a malformed request closes the connection', function(L)
+    local got
+    with_proxy(L, encoder, function(_, port)
+      local selector = require 'lumen.tasks.selector'
+      local client = selector.new_tcp_client('127.0.0.1', port, nil, nil, 0, 'stream')
+      client:send_sync('GET / HTTP/1.1\r\n\r\n')
+      got = {read_all(client.stream)}
+      client:close()
+    end)
+    same(got, {'', 'closed'})
+  end)
+end
+
+test('a request of the wrong shape closes the connection', function(L)
+  local got = {}
+  with_proxy(L, 'json', function(_, port)
+    local selector = require 'lumen.tasks.selector'
+    for i, request in ipairs({'"EV"', '{"events":"EV"}', '{"events":["EV"],"name_timeout":"x"}'}) do
+      local client = selector.new_tcp_client('127.0.0.1', port, nil, nil, 0, 'stream')
+      client:send_sync(request)
+      got[i] = select(2, read_all(client.stream))
+      client:close()
+    end
+  end)
+  same(got, {'closed', 'closed', 'closed'})
+end)
+
+test('a request larger than max_message_size closes the connection', function(L)
+  local got
+  with_proxy(L, 'json', function(_, port)
+    local selector = require 'lumen.tasks.selector'
+    local client = selector.new_tcp_client('127.0.0.1', port, nil, nil, 0, 'stream')
+    -- valid so far, but never ends
+    client:send_sync('{"events":["'..string.rep('x', 100))
+    got = {read_all(client.stream)}
+    client:close()
+  end, {max_message_size = 64})
+  same(got, {'', 'closed'})
+end)
+
+test('messages larger than a network packet are fine within max_message_size', function(L)
+  local sched = L.sched
+  local name = string.rep('n', 5000)
+  local got
+  with_proxy(L, 'json', function(proxy, port, events)
+    local ev = {}
+    events:register(name, ev)
+    local waitd = proxy.new_remote_waitd('127.0.0.1', port, {events = {name}, timeout = 1})
+    settle(L)
+    sched.signal(ev, string.rep('d', 5000))
+    got = pack(sched.wait(waitd))
+  end)
+  eq(got[2], name)
+  eq(got[3], string.rep('d', 5000))
+end)
+
+test('a remote waitd closes the connection on malformed signals', function(L)
+  local sched = L.sched
+  local got
+  -- init the proxy for its configuration, but talk to a fake server
+  with_proxy(L, 'json', function(proxy)
+    local selector = require 'lumen.tasks.selector'
+    local server = selector.new_tcp_server('127.0.0.1', 0, 0, 'stream')
+    local _, port = server:getsockname()
+    sched.sigrunonce({server.events.accepted}, function(_, conn)
+      conn:send_sync('{"n":1,"1":"EV"}garbage')
+      got = {read_all(conn.stream)}
+      conn:close()
+    end)
+    local waitd = proxy.new_remote_waitd('127.0.0.1', port, {events = {'EV'}, timeout = 1})
+    local first = pack(sched.wait(waitd))
+    eq(first[2], 'EV', 'the valid signal before the garbage is delivered')
+    sched.sleep(1.5)
+    server:close()
+  end)
+  same(got, {'{"events":["EV"]}', 'closed'})
 end)

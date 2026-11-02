@@ -83,6 +83,21 @@ test('decode returns the position after the value', function()
   eq(k, #s + 1)
 end)
 
+test('decode tells truncated input from malformed input', function()
+  local b = bencode()
+  local full = b.encode({events = {'EV', 12}, n = -3})
+  for i = 1, #full - 1 do
+    local v, err = b.decode(full:sub(1, i))
+    eq(v, nil)
+    T.ok(err:find('^truncat'), 'prefix '..full:sub(1, i)..' reported as '..err)
+  end
+  for _, bad in ipairs({'x', 'd1:ai1x', 'd1:a1x', 'GET / HTTP', 'l-e'}) do
+    local v, err = b.decode(bad)
+    eq(v, nil)
+    T.ok(not err:find('^truncat'), bad..' reported as truncated')
+  end
+end)
+
 test('decode reports malformed and truncated input', function()
   local b = bencode()
   for _, bad in ipairs({'x', 'i12', 'ie', '5:ab', 'l1:a', 'd1:a', '', nil}) do
