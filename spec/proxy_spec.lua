@@ -97,6 +97,28 @@ for encoder, bad_value in pairs(unencodable) do
   end)
 end
 
+test('several requests arriving together are all served', function(L)
+  local sched = L.sched
+  local got
+  with_proxy(L, 'json', function(_, port, events)
+    local selector = require 'lumen.tasks.selector'
+    local ev_a, ev_b = {}, {}
+    events:register('A', ev_a)
+    events:register('B', ev_b)
+    local client = selector.new_tcp_client('127.0.0.1', port, nil, nil, 0, 'stream')
+    client:send_sync('{"events":["A"]}{"events":["B"]}')
+    settle(L)
+    sched.signal(ev_a)
+    sched.signal(ev_b)
+    settle(L)
+    client.stream:set_timeout(1)
+    got = client.stream:read() or 'nothing'
+    client:close()
+  end)
+  ok(got:find('"A"', 1, true), 'event A forwarded, got '..got)
+  ok(got:find('"B"', 1, true), 'event B forwarded, got '..got)
+end)
+
 test('requests split across packets from several clients do not mix', function(L)
   local sched = L.sched
   local got = {}

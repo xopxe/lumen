@@ -80,13 +80,16 @@ M.new_remote_waitd = function(ip, port, waitd_table)
 			--print ('incomming', data, buff)
 			if not data then return false end
 			buff = buff .. data
-			local decoded, index, e = decode_f(buff)
-			if decoded then 
+			-- a chunk can hold several signals, or only part of one
+			while buff ~= '' do
+				local decoded, index, e = decode_f(buff)
+				if not decoded then
+					log('PROXY', 'DEBUG', 'waiting for more data, buff with length %s does not decode: "%s"',
+						tostring(#buff), tostring(index).." "..tostring(e))
+					break
+				end
 				buff = buff:sub(index)
-				sched.signal(incomming_signal, encodeable_to_vararg(decoded)) 
-			else
-				log('PROXY', 'ERROR', 'failed to bdecode buff  with length %s with error "%s"', 
-					tostring(#buff), tostring(index).." "..tostring(e))
+				sched.signal(incomming_signal, encodeable_to_vararg(decoded))
 			end
 			return true
 		end
@@ -121,47 +124,52 @@ M.init = function(conf)
 	local task_to_name = setmetatable({}, meta_name_default)
 	local event_to_name = setmetatable({}, meta_name_default)
 	
+	-- start forwarding the events requested in rwaitd through sktd
+	local function serve_request(sktd, rwaitd)
+		sched.run( function()
+			local name_timeout = rwaitd.name_timeout
+
+			-- recover all request all events
+			local nwaitd, rnames = {}, rwaitd.events
+			for i=1, #rnames do
+				local evname = rnames[i]
+				local event = events_catalog:waitfor(evname, name_timeout)
+				log('PROXY', 'DETAIL', 'event "%s" recovered from catalog:  "%s"',
+					tostring(evname), tostring(event))
+				if event then
+					nwaitd[#nwaitd+1] = event
+					event_to_name[event] = evname
+				end
+			end
+
+			sched.sigrun(nwaitd, function(ev,...)
+				--print ('caught', ev, ...)
+				local evname = event_to_name[ev]
+				local encodeable = vararg_to_encodeable(evname, ...)
+				-- bencode returns nil on failure, dkjson raises an error
+				local ok, encodedout, encodeerr = pcall(encode_f, encodeable)
+				if not ok then encodedout, encodeerr = nil, encodedout end
+				if encodedout then
+					sktd:send_sync(encodedout)
+				else
+					log('PROXY', 'ERROR', 'failed to encode event "%s" with error "%s"',
+						tostring(evname), tostring(encodeerr))
+				end
+			end)
+		end)
+	end
+
 	local function get_request_handler()
 		local buff = ''
 		return function(sktd, encoded, err)
-			if encoded then 
+			if encoded then
 				buff=buff .. encoded
-				local rwaitd, index = decode_f(buff)
-				
-				if rwaitd then
+				-- a chunk can hold several requests, or only part of one
+				while buff ~= '' do
+					local rwaitd, index = decode_f(buff)
+					if not rwaitd then break end
 					buff = buff:sub(index)
-					
-					sched.run( function()
-						local name_timeout = rwaitd.name_timeout
-								
-						-- recover all request all events 
-						local nwaitd, rnames = {}, rwaitd.events
-						for i=1, #rnames do
-							local evname = rnames[i]
-							local event = events_catalog:waitfor(evname, name_timeout)
-							log('PROXY', 'DETAIL', 'event "%s" recovered from catalog:  "%s"', 
-								tostring(evname), tostring(event))              
-							if event then 
-								nwaitd[#nwaitd+1] = event
-								event_to_name[event] = evname
-							end
-						end
-						
-						sched.sigrun(nwaitd, function(ev,...)
-							--print ('caught', ev, ...)
-							local evname = event_to_name[ev] 
-							local encodeable = vararg_to_encodeable(evname, ...)
-							-- bencode returns nil on failure, dkjson raises an error
-							local ok, encodedout, encodeerr = pcall(encode_f, encodeable)
-							if not ok then encodedout, encodeerr = nil, encodedout end
-							if encodedout then
-								sktd:send_sync(encodedout) 
-							else
-								log('PROXY', 'ERROR', 'failed to encode event "%s" with error "%s"', 
-									tostring(evname), tostring(encodeerr))
-							end
-						end)
-					end)
+					serve_request(sktd, rwaitd)
 				end
 			else
 				log('PROXY', 'DEBUG', 'socket handler called with error "%s"', tostring(err))
