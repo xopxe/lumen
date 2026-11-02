@@ -5,7 +5,7 @@
 
 ]]--
 -- Modified by xxopxe@gmail.com 
--- 1. best effort encoding (attempt a tostring on failure)
+-- 1. best effort encoding of values (attempt a tostring on failure)
 -- 2. exported as a plain module table
 
 local sort, concat, insert = table.sort, table.concat, table.insert
@@ -54,11 +54,9 @@ local function encode_dict(t, x)
 	insert(t, "d")
 	-- bittorrent requires the keys to be sorted.
 	local sortedkeys = {}
-	for k, v in pairs(x) do
+	for k, _ in pairs(x) do
 		if type(k) ~= "string" then
-			--return "bencoding requires dictionary keys to be strings", k
-			--best effort
-			k=tostring(k)
+			return "bencoding requires dictionary keys to be strings", k
 		end
 		insert(sortedkeys, k)
 	end
@@ -75,7 +73,14 @@ local function encode_int(t, x)
 
 	if x % 1 ~= 0 then return "number is not an integer", x end
 	insert(t, "i" )
-	insert(t,  x  )
+	if math.type and math.type(x) == "integer" then
+		insert(t, tostring(x))
+	elseif x == 0 then
+		insert(t, "0") -- not "-0"
+	else
+		-- a float holding an integer, avoid "3.0" and "1e+15"
+		insert(t, ("%.0f"):format(x))
+	end
 	insert(t, "e" )
 end
 
