@@ -160,10 +160,11 @@ M.init = function(conf)
 	end
 
 	local function get_request_handler()
-		local buff = ''
+		-- the handler is shared by all the connections, keep a buffer for each
+		local buffs = setmetatable({}, {__mode = 'k'})
 		return function(sktd, encoded, err)
 			if encoded then
-				buff=buff .. encoded
+				local buff = (buffs[sktd] or '') .. encoded
 				-- a chunk can hold several requests, or only part of one
 				while buff ~= '' do
 					local rwaitd, index = decode_f(buff)
@@ -171,7 +172,9 @@ M.init = function(conf)
 					buff = buff:sub(index)
 					serve_request(sktd, rwaitd)
 				end
+				buffs[sktd] = buff
 			else
+				buffs[sktd] = nil
 				log('PROXY', 'DEBUG', 'socket handler called with error "%s"', tostring(err))
 				return
 			end
