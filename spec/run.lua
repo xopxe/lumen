@@ -37,6 +37,8 @@ local spec_files = {
   'mutex_spec.lua',
   'catalog_spec.lua',
   'selector_spec.lua',
+  'bencode_spec.lua',
+  'proxy_spec.lua',
 }
 
 for _, file in ipairs(spec_files) do

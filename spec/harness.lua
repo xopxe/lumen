@@ -173,6 +173,10 @@ M.run = function(filter)
         io.write('  skip  ', full_name, ' (', tostring(err[SKIP]), ')\n')
       else
         failed = failed + 1
+        if env and #env.errors > 0 and not tostring(err):find('task died on error', 1, true) then
+          -- a failed assertion is often caused by a task that died
+          err = err..'\ntasks died on error:\n  '..table.concat(env.errors, '\n  ')
+        end
         failures[#failures+1] = {name = full_name, err = err}
         io.write('  FAIL  ', full_name, '\n')
       end

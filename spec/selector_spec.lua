@@ -1,34 +1,9 @@
 -- Integration tests for the luasocket selector, over loopback with real time.
 local T = require 'harness'
+local net = require 'net'
 local test, eq, same, ok = T.test, T.eq, T.same, T.ok
 
-local function init_selector(L)
-  if not pcall(require, 'socket') then L.skip('luasocket not available') end
-  local selector = require 'lumen.tasks.selector'
-  selector.init({service = 'luasocket'})
-  return selector
-end
-
--- run body in a task, stopping the (endless) selector task when it finishes
--- or after a deadline
-local function run_with_selector(L, selector, body)
-  local sched = L.sched
-  local timed_out = false
-  local main
-  local watchdog = sched.run(function()
-    sched.sleep(5)
-    timed_out = true
-    sched.kill(main)
-    sched.kill(selector.task)
-  end)
-  main = sched.run(function()
-    body()
-    sched.kill(watchdog)
-    sched.kill(selector.task)
-  end)
-  L.loop()
-  eq(timed_out, false, 'timed out')
-end
+local init_selector, run_with_selector = net.init_selector, net.run_with_selector
 
 test('tcp server and client exchange lines through streams', function(L)
   local sched = L.sched

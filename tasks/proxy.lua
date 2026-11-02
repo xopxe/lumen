@@ -28,8 +28,6 @@ local stream 			= lumen.stream
 local events_catalog 	= lumen.catalog.get_catalog('events')
 
 local selector 	= require 'lumen.tasks.selector'
-local http_util = require 'lumen.tasks.http-server.http-util'
-local websocket = require 'lumen.tasks.http-server.websocket'
 
 local unpack = unpack or table.unpack
 
@@ -153,8 +151,10 @@ M.init = function(conf)
 							--print ('caught', ev, ...)
 							local evname = event_to_name[ev] 
 							local encodeable = vararg_to_encodeable(evname, ...)
-							local encodedout, encodeerr = encode_f(encodeable)
-							if encoded then 
+							-- bencode returns nil on failure, dkjson raises an error
+							local ok, encodedout, encodeerr = pcall(encode_f, encodeable)
+							if not ok then encodedout, encodeerr = nil, encodedout end
+							if encodedout then
 								sktd:send_sync(encodedout) 
 							else
 								log('PROXY', 'ERROR', 'failed to encode event "%s" with error "%s"', 
