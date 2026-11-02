@@ -315,3 +315,26 @@ test('a remote waitd closes the connection on malformed signals', function(L)
   end)
   same(got, {'{"events":["EV"]}', 'closed'})
 end)
+
+test('a json signal split at any byte is not taken as malformed', function(L)
+  local sched = L.sched
+  -- literals and numbers cut short look like invalid values to the json decoder
+  local message = '{"n":6,"1":"EV","2":true,"3":false,"4":-1.5e-3,"5":null,"6":1E+2}'
+  local got
+  with_proxy(L, 'json', function(proxy)
+    local selector = require 'lumen.tasks.selector'
+    local server = selector.new_tcp_server('127.0.0.1', 0, 0, 'stream')
+    local _, port = server:getsockname()
+    sched.sigrunonce({server.events.accepted}, function(_, conn)
+      for i = 1, #message do
+        conn:send_sync(message:sub(i, i))
+        sched.sleep(0.005)
+      end
+    end)
+    local waitd = proxy.new_remote_waitd('127.0.0.1', port, {events = {'EV'}, timeout = 3})
+    got = pack(sched.wait(waitd))
+    got[1] = nil
+    server:close()
+  end)
+  same(got, {n = 7, nil, 'EV', true, false, -1.5e-3, nil, 100})
+end)

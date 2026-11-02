@@ -42,7 +42,15 @@ local M = {}
 local incomplete = {
 	dkjson = function(buff, pos, err)
 		-- a missing value (JSON null) has no error message
-		return err ~= nil and type(pos) == 'number' and pos > #buff
+		if err == nil or type(pos) ~= 'number' then return false end
+		if pos > #buff then return true end
+		-- a literal or number cut short at the end of the buffer ("tr", "-", "1e")
+		-- is reported as an invalid value where it starts
+		local rest = buff:sub(pos)
+		return rest:find('^[%d%.eE%+%-]+$') ~= nil
+			or ('true'):sub(1, #rest) == rest
+			or ('false'):sub(1, #rest) == rest
+			or ('null'):sub(1, #rest) == rest
 	end,
 	bencode = function(_, err)
 		return type(err) == 'string' and err:find('^truncat') ~= nil
@@ -167,10 +175,7 @@ M.init = function(conf)
 	decode_f = encoder_lib.decode
 	-- without a way to spot malformed data, only the size limit applies
 	incomplete_f = incomplete[encoder] or function() return true end
-	max_message_size = conf.max_message_size or 1024*1024
-
-	local meta_name_default = {__index=function() return '*' end}
-	local task_to_name = setmetatable({}, meta_name_default)
+	max_message_size = conf.max_message_size or (1024*1024)
 	
 	-- per connection state: the receive buffer, and the tasks forwarding events
 	-- (the request handler is shared by all the connections)
