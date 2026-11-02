@@ -124,9 +124,47 @@ M.init = function(conf)
 	local task_to_name = setmetatable({}, meta_name_default)
 	local event_to_name = setmetatable({}, meta_name_default)
 	
+	-- per connection state: the receive buffer, and the tasks forwarding events
+	-- (the request handler is shared by all the connections)
+	local buffs = setmetatable({}, {__mode = 'k'})
+	local forwarders = setmetatable({}, {__mode = 'k'})
+
+	-- stop serving a connection, killing its forwarding tasks
+	local function drop_connection(sktd)
+		buffs[sktd] = nil
+		local tasks = forwarders[sktd]
+		forwarders[sktd] = nil
+		if not tasks then return end
+		-- the running task may be one of them: kill it last, as it does not return
+		for task in pairs(tasks) do
+			if task ~= sched.running_task then sched.kill(task) end
+		end
+		if tasks[sched.running_task] then sched.kill(sched.running_task) end
+	end
+
+	local function forward(sktd, ev, ...)
+		local evname = event_to_name[ev]
+		local encodeable = vararg_to_encodeable(evname, ...)
+		-- bencode returns nil on failure, dkjson raises an error
+		local ok, encodedout, encodeerr = pcall(encode_f, encodeable)
+		if not ok then encodedout, encodeerr = nil, encodedout end
+		if not encodedout then
+			log('PROXY', 'ERROR', 'failed to encode event "%s" with error "%s"',
+				tostring(evname), tostring(encodeerr))
+			return
+		end
+		local sent, senderr = sktd:send_sync(encodedout)
+		if not sent then
+			log('PROXY', 'DETAIL', 'dropping connection, sending failed with error "%s"',
+				tostring(senderr))
+			sktd:close()
+			drop_connection(sktd)
+		end
+	end
+
 	-- start forwarding the events requested in rwaitd through sktd
 	local function serve_request(sktd, rwaitd)
-		sched.run( function()
+		local task = sched.new_task( function()
 			local name_timeout = rwaitd.name_timeout
 
 			-- recover all request all events
@@ -142,48 +180,36 @@ M.init = function(conf)
 				end
 			end
 
-			sched.sigrun(nwaitd, function(ev,...)
-				--print ('caught', ev, ...)
-				local evname = event_to_name[ev]
-				local encodeable = vararg_to_encodeable(evname, ...)
-				-- bencode returns nil on failure, dkjson raises an error
-				local ok, encodedout, encodeerr = pcall(encode_f, encodeable)
-				if not ok then encodedout, encodeerr = nil, encodedout end
-				if encodedout then
-					sktd:send_sync(encodedout)
-				else
-					log('PROXY', 'ERROR', 'failed to encode event "%s" with error "%s"',
-						tostring(evname), tostring(encodeerr))
-				end
-			end)
+			while true do
+				forward(sktd, sched.wait(nwaitd))
+			end
 		end)
+		forwarders[sktd] = forwarders[sktd] or {}
+		forwarders[sktd][task] = true
+		sched.run(task)
 	end
 
-	local function get_request_handler()
-		-- the handler is shared by all the connections, keep a buffer for each
-		local buffs = setmetatable({}, {__mode = 'k'})
-		return function(sktd, encoded, err)
-			if encoded then
-				local buff = (buffs[sktd] or '') .. encoded
-				-- a chunk can hold several requests, or only part of one
-				while buff ~= '' do
-					local rwaitd, index = decode_f(buff)
-					if not rwaitd then break end
-					buff = buff:sub(index)
-					serve_request(sktd, rwaitd)
-				end
-				buffs[sktd] = buff
-			else
-				buffs[sktd] = nil
-				log('PROXY', 'DEBUG', 'socket handler called with error "%s"', tostring(err))
-				return
+	local function request_handler(sktd, encoded, err)
+		if encoded then
+			local buff = (buffs[sktd] or '') .. encoded
+			-- a chunk can hold several requests, or only part of one
+			while buff ~= '' do
+				local rwaitd, index = decode_f(buff)
+				if not rwaitd then break end
+				buff = buff:sub(index)
+				serve_request(sktd, rwaitd)
 			end
-			return true
+			buffs[sktd] = buff
+		else
+			log('PROXY', 'DEBUG', 'socket handler called with error "%s"', tostring(err))
+			drop_connection(sktd)
+			return
 		end
+		return true
 	end
 	
 	log('PROXY', 'INFO', 'starting proxy on %s:%s, using %s', tostring(ip), tostring(port), tostring(encoder))
-	M.skt_server = selector.new_tcp_server(ip, port, nil, get_request_handler())
+	M.skt_server = selector.new_tcp_server(ip, port, nil, request_handler)
 end
 
 --- Configuration Table.

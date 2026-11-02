@@ -119,6 +119,33 @@ test('several requests arriving together are all served', function(L)
   ok(got:find('"B"', 1, true), 'event B forwarded, got '..got)
 end)
 
+test('forwarding stops when a client disconnects', function(L)
+  local sched = L.sched
+  local counts = {}
+  local function count_tasks()
+    local n = 0
+    for _ in pairs(sched.tasks) do n = n + 1 end
+    return n
+  end
+  with_proxy(L, 'json', function(_, port, events)
+    local selector = require 'lumen.tasks.selector'
+    local ev = {}
+    events:register('EV', ev)
+    local client = selector.new_tcp_client('127.0.0.1', port, nil, nil, 0, 'stream')
+    settle(L)
+    counts.before = count_tasks()
+    client:send_sync('{"events":["EV"]}{"events":["EV"]}')
+    settle(L)
+    counts.connected = count_tasks()
+    client:close()
+    settle(L)
+    counts.closed = count_tasks()
+    sched.signal(ev, 'x') -- nothing left to forward it
+  end)
+  eq(counts.connected, counts.before + 2, 'a forwarding task per request')
+  eq(counts.closed, counts.before, 'forwarding tasks left after disconnecting')
+end)
+
 test('requests split across packets from several clients do not mix', function(L)
   local sched = L.sched
   local got = {}
