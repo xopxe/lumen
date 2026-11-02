@@ -119,6 +119,26 @@ test('several requests arriving together are all served', function(L)
   ok(got:find('"B"', 1, true), 'event B forwarded, got '..got)
 end)
 
+test('each client gets events under the name it asked for', function(L)
+  local sched = L.sched
+  local got = {}
+  with_proxy(L, 'json', function(proxy, port, events)
+    local ev = {}
+    events:register('OLD', ev)
+    local old = proxy.new_remote_waitd('127.0.0.1', port, {events = {'OLD'}, timeout = 1})
+    settle(L)
+    events:register('NEW', ev, true) -- rename the event
+    local new = proxy.new_remote_waitd('127.0.0.1', port, {events = {'NEW'}, timeout = 1})
+    settle(L)
+    for name, waitd in pairs({old = old, new = new}) do
+      sched.run(function() got[name] = select(2, sched.wait(waitd)) or 'timeout' end)
+    end
+    sched.signal(ev)
+    settle(L)
+  end)
+  same(got, {old = 'OLD', new = 'NEW'})
+end)
+
 test('forwarding stops when a client disconnects', function(L)
   local sched = L.sched
   local counts = {}

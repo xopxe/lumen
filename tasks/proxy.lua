@@ -122,7 +122,6 @@ M.init = function(conf)
 
 	local meta_name_default = {__index=function() return '*' end}
 	local task_to_name = setmetatable({}, meta_name_default)
-	local event_to_name = setmetatable({}, meta_name_default)
 	
 	-- per connection state: the receive buffer, and the tasks forwarding events
 	-- (the request handler is shared by all the connections)
@@ -142,8 +141,7 @@ M.init = function(conf)
 		if tasks[sched.running_task] then sched.kill(sched.running_task) end
 	end
 
-	local function forward(sktd, ev, ...)
-		local evname = event_to_name[ev]
+	local function forward(sktd, evname, ...)
 		local encodeable = vararg_to_encodeable(evname, ...)
 		-- bencode returns nil on failure, dkjson raises an error
 		local ok, encodedout, encodeerr = pcall(encode_f, encodeable)
@@ -168,7 +166,9 @@ M.init = function(conf)
 			local name_timeout = rwaitd.name_timeout
 
 			-- recover all request all events
-			local nwaitd, rnames = {}, rwaitd.events
+			-- names are kept per request: an event renamed in the catalog is still
+			-- reported with the name this client asked for
+			local nwaitd, event_to_name, rnames = {}, {}, rwaitd.events
 			for i=1, #rnames do
 				local evname = rnames[i]
 				local event = events_catalog:waitfor(evname, name_timeout)
@@ -180,8 +180,11 @@ M.init = function(conf)
 				end
 			end
 
+			local function forward_event(ev, ...)
+				forward(sktd, event_to_name[ev], ...)
+			end
 			while true do
-				forward(sktd, sched.wait(nwaitd))
+				forward_event(sched.wait(nwaitd))
 			end
 		end)
 		forwarders[sktd] = forwarders[sktd] or {}
