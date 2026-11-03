@@ -47,7 +47,7 @@ end
 -- @param length optional length of string to be returned.
 -- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
 -- stream is closed and has not enough data (_err_ is the additinal error parameter provided on
--- @{write} when closing). Data left in a closed stream can still be retrieved with read().
+-- @{close}). Data left in a closed stream can still be retrieved with read().
 M.read          = function(streamd, length)
 	if length == 0 then return '' end
 	length = tonumber(length) or -1
@@ -70,7 +70,7 @@ end
 -- @param streamd the the stream descriptor to read from.
 -- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err, partial_ if
 -- stream is closed and has no whole line (_err_ is the additinal error parameter provided on
--- @{write} when closing). _partial_ is the last unterminated line, or nil if there is none;
+-- @{close}). _partial_ is the last unterminated line, or nil if there is none;
 -- The trailing newline is not included in the returned string.
 M.read_line     = function(streamd)
 	local buff_data, scanned -- chunks of buff_data already searched for a newline
@@ -110,20 +110,14 @@ end
 --- Write to a stream.
 -- Will block when writing to a full stream. Also accessible as streamd:write(s ,err)
 -- @param streamd the the stream descriptor to write to.
--- @param s the string to write to the stream. false or nil closes the stream.
+-- @param s the string to write to the stream. false or nil closes the stream, as
+-- @{close}(streamd, err) does.
 -- @param err optional error message to register on stream closing.
 -- @return _true_ on success, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
 -- stream is closed
 M.write         = function(streamd, s, err)
-	if not s then              --closing stream
-		streamd.closed = err or true
-		if streamd.rblocked > 0 then -- unlock readers
-			sched.signal(streamd.pipe_data_signal)
-		end
-		if streamd.wblocked > 0 then -- unlock writers, so they fail
-			sched.signal(streamd.pipe_enable_signal)
-		end
-		return true
+	if not s then --closing stream
+		return M.close(streamd, err)
 	end
 	if streamd.closed then --closing stream
 		return nil, 'closed', streamd.closed
@@ -141,6 +135,27 @@ M.write         = function(streamd, s, err)
 	streamd.len = streamd.len + #s
 	if streamd.rblocked > 0 then -- unlock readers
 		sched.signal(streamd.pipe_data_signal)
+	end
+	return true
+end
+
+--- Close a stream.
+-- Blocked readers and writers are woken up. Data left in the stream can still
+-- be read; after that, reads return _nil, 'closed', err_. Closing an already
+-- closed stream does nothing, so the first error is kept. Also accessible as
+-- streamd:close([err])
+-- @param streamd the stream descriptor to close.
+-- @param err optional error message, returned by following reads and writes
+-- (defaults to true).
+-- @return _true_
+M.close         = function(streamd, err)
+	if streamd.closed then return true end
+	streamd.closed = err or true
+	if streamd.rblocked > 0 then -- unlock readers
+		sched.signal(streamd.pipe_data_signal)
+	end
+	if streamd.wblocked > 0 then -- unlock writers, so they fail
+		sched.signal(streamd.pipe_enable_signal)
 	end
 	return true
 end
@@ -173,6 +188,7 @@ M.new           = function(size, read_timeout, write_timeout)
 		read = M.read,
 		read_line = M.read_line,
 		write = M.write,
+		close = M.close,
 	}, { __tostring = function() return pipename end --[[,__index=M]] })
 	log('STREAM', 'DETAIL', 'stream with name "%s" created', tostring(pipename))
 	streamd.size = size

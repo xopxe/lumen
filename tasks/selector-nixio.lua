@@ -95,7 +95,7 @@ local function handle_incomming_error(sktd, err)
       log('SELECTOR', 'ERROR', 'Handler died with "%s"', tostring(errcall))
     end
   elseif read_streams[sktd] then
-    read_streams[sktd]:write(nil, err)
+    read_streams[sktd]:close(err)
   else
     sched.signal(sktd.events.data, nil, err)
   end

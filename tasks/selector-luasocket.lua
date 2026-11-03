@@ -95,7 +95,7 @@ local function handle_incomming_error(sktd, err)
     local ok, errcall = xpcall(function () return sktd.handler(sktd, nil, err) end, debug.traceback)
     --local ok, errcall = pcall(sktd.handler,sktd, nil, err)
   elseif read_streams[sktd] then
-    read_streams[sktd]:write(nil, err)
+    read_streams[sktd]:close(err)
   else
     sched.signal(sktd.events.data, nil, err)
   end
