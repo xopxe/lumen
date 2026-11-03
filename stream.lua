@@ -16,7 +16,7 @@ local t_concat = table.concat
 local s_find   = string.find
 
 
-local M         = {}
+local M = {}
 
 -- Remove the first n bytes from the stream and return them (everything if n is
 -- nil), unlocking writers if there is room. The buffer table is always replaced,
@@ -68,9 +68,9 @@ end
 --- Read a line from a stream.
 -- Will block if there is not a whole line to return, until it arrives. Also accessible as streamd:read_line()
 -- @param streamd the the stream descriptor to read from.
--- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
+-- @return  a string if data is available, _nil,'timeout'_ on timeout, _nil, 'closed', err, partial_ if
 -- stream is closed and has no whole line (_err_ is the additinal error parameter provided on
--- @{write} when closing). A last unterminated line can still be retrieved with read().
+-- @{write} when closing). _partial_ is the last unterminated line, or nil if there is none;
 -- The trailing newline is not included in the returned string.
 M.read_line     = function(streamd)
 	local buff_data, scanned -- chunks of buff_data already searched for a newline
@@ -87,7 +87,9 @@ M.read_line     = function(streamd)
 		if line_available then break end
 		scanned = #buff_data
 		if streamd.closed then
-			return nil, 'closed', streamd.closed
+			-- no newline will ever arrive: hand out what is left
+			local partial = streamd.len > 0 and take(streamd) or nil
+			return nil, 'closed', streamd.closed, partial
 		end
 		streamd.rblocked = streamd.rblocked + 1
 		local ev = sched.wait(streamd.waitd_data)
@@ -113,7 +115,7 @@ end
 -- @return _true_ on success, _nil,'timeout'_ on timeout, _nil, 'closed', err_ if
 -- stream is closed
 M.write         = function(streamd, s, err)
-	if not s then          --closing stream
+	if not s then              --closing stream
 		streamd.closed = err or true
 		if streamd.rblocked > 0 then -- unlock readers
 			sched.signal(streamd.pipe_data_signal)
@@ -174,8 +176,8 @@ M.new           = function(size, read_timeout, write_timeout)
 	}, { __tostring = function() return pipename end --[[,__index=M]] })
 	log('STREAM', 'DETAIL', 'stream with name "%s" created', tostring(pipename))
 	streamd.size = size
-	streamd.pipe_enable_signal = {} --singleton event for pipe control
-	streamd.pipe_data_signal = {} --singleton event for pipe data
+	streamd.pipe_enable_signal = {}        --singleton event for pipe control
+	streamd.pipe_data_signal = {}          --singleton event for pipe data
 	streamd.len = 0
 	streamd.rblocked, streamd.wblocked = 0, 0 -- number of blocked readers and writers
 	streamd.buff_data = {}
