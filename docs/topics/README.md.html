@@ -26,6 +26,7 @@
 <br/>
 <h1>Lumen</h1>
 
+
 <ul>
   <li><a href="../index.html">Index</a></li>
 </ul>
@@ -39,6 +40,7 @@
 <li><a href="#Mutexes">Mutexes </a></li>
 <li><a href="#Goodies">Goodies </a></li>
 <li><a href="#How_to_try_it_out_">How to try it out? </a></li>
+<li><a href="#Running_the_test_suite">Running the test suite </a></li>
 <li><a href="#License">License </a></li>
 <li><a href="#Who_">Who? </a></li>
 <li><a href="#Contributors">Contributors </a></li>
@@ -63,12 +65,12 @@
 </ul>
 <h2>Examples</h2>
 <ul class="nowrap">
-  <li><a href="../examples/test.lua.html">test.lua</a></li>
-  <li><a href="../examples/test-selector.lua.html">test-selector.lua</a></li>
-  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
-  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
-  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/example.lua.html">example.lua</a></li>
+  <li><a href="../examples/selector.lua.html">selector.lua</a></li>
+  <li><a href="../examples/pipe.lua.html">pipe.lua</a></li>
+  <li><a href="../examples/stress.lua.html">stress.lua</a></li>
+  <li><a href="../examples/pause.lua.html">pause.lua</a></li>
+  <li><a href="../examples/mutex.lua.html">mutex.lua</a></li>
 </ul>
 
 </div>
@@ -76,50 +78,47 @@
 <div id="content">
 
 
-<h1>Lumen: Lua Multitasking Environment.</h1>
+<h1>Lumen: Lua Multitasking Environment</h1>
 
-<p>"A nice generic framework to develop complex, portable concurrent applications
-in Lua." </p>
+<p>"A nice generic framework to develop complex, portable concurrent applications in Lua."</p>
 
 <p><a name="Introduction"></a></p>
 <h2>Introduction</h2>
 
 <p>Lumen is a very simple environment for coroutine based multitasking. Consists of a scheduler, and that's it.
 The API was inspired by a brief description of <a href="https://github.com/SierraWireless/luasched/">Sierra's scheduler</a>.
-Lumen has no external dependencies nor C code, and runs on unmodified Lua (works with Lua 5.1, 5.2 and LuaJIT).
+Lumen has no external dependencies nor C code, and runs on unmodified Lua (works with Lua 5.1 - 5.5 and LuaJIT).
 Tasks that interface with LuaSocket and nixio for socket and async file I/O support are provided.</p>
 
 <p>Lumen's API reference is available in the <code>docs/</code> directory, or <a href="https://www.fing.edu.uy/~jvisca/lumen_api/">online</a>.</p>
 
-
 <p><a name="How_does_it_look_"></a></p>
 <h2>How does it look?</h2>
 
-<p>Here is a small program, with two tasks: one emits ten numbered signals,
-one second apart. Another tasks receives those signals and prints them.</p>
+<p>Here is a small program, with two tasks: one emits ten numbered signals, one second apart. Another tasks receives those signals and prints them.</p>
 
 
 <pre>
     <span class="keyword">local</span> sched=<span class="global">require</span> <span class="string">'lumen.sched'</span>
 
     <span class="comment">-- task receives signals
-</span>    sched.run(<span class="keyword">function</span>()
+</span>    sched.<span class="function-name">run</span>(<span class="keyword">function</span>()
         <span class="keyword">local</span> waitd = {<span class="string">'an_event'</span>}
         <span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
-            <span class="keyword">local</span> _, data = sched.wait(waitd)
+            <span class="keyword">local</span> _, data = sched.<span class="function-name">wait</span>(waitd)
             <span class="global">print</span>(data)
         <span class="keyword">end</span>
     <span class="keyword">end</span>)
 
     <span class="comment">-- task emits signals
-</span>    sched.run(<span class="keyword">function</span>()
+</span>    sched.<span class="function-name">run</span>(<span class="keyword">function</span>()
         <span class="keyword">for</span> i = <span class="number">1</span>, <span class="number">10</span> <span class="keyword">do</span>
-            sched.signal(<span class="string">'an_event'</span>, i)
-            sched.sleep(<span class="number">1</span>)
+            sched.<span class="function-name">signal</span>(<span class="string">'an_event'</span>, i)
+            sched.<span class="function-name">sleep</span>(<span class="number">1</span>)
         <span class="keyword">end</span>
     <span class="keyword">end</span>)
 
-    sched.loop()
+    sched.<span class="function-name">loop</span>()
 </pre>
 
 
@@ -135,60 +134,61 @@ one second apart. Another tasks receives those signals and prints them.</p>
     <li>There is an catalog that can be used to simplify sharing data between tasks.</li>
 </ul>
 
-
 <p><a name="Pipes___Streams"></a></p>
 <h2>Pipes &amp; Streams</h2>
 
-<p>There are also pipes and streams, for intertask communications. </p>
+<p>There are also pipes and streams, for intertask communications.</p>
 
 <ul>
     <li>Unlike with plain signals, writers can get blocked too (when pipe or stream gets full).</li>
     <li>Synchronous and asynchronous (with a timeout) modes supported.</li>
-    <li>Multiple readers and writers supported. </li>
+    <li>Multiple readers and writers supported.</li>
     <li>For when no signal can get lost!</li>
 </ul>
-
 
 <p><a name="Mutexes"></a></p>
 <h2>Mutexes</h2>
 
-<p>There are cases when you must guarantee that only one task is accessing a piece
-of code at a time. Mutexes provide a mechanism for that. Notice that Lumen, being a
-cooperative scheduler, will never preempt control from a task. That means you only
-may have to resort to mutexes when your critical piece of code relinquish
-control explicitly, for example with a call to sleep, emitting a signal or blocking
-waiting for a signal.</p>
-
+<p>There are cases when you must guarantee that only one task is accessing a piece of code at a time. Mutexes provide a mechanism for that. Notice that Lumen, being a cooperative scheduler, will never preempt control from a task. That means you only may have to resort to mutexes when your critical piece of code relinquish
+control explicitly, for example with a call to sleep, emitting a signal or blocking waiting for a signal.</p>
 
 <p><a name="Goodies"></a></p>
 <h2>Goodies</h2>
 
-<p>There are a few other useful modules, like an integrated remote Lua shell and a lightweigth
-HTTP server. </p>
-
+<p>There are a few other useful modules, like an integrated remote Lua shell and a lightweigth HTTP server.</p>
 
 <p><a name="How_to_try_it_out_"></a></p>
 <h2>How to try it out?</h2>
 
-<p>There several test programs in the tests/ folder. This example has a
-few tasks exchanging messages, showing off basic functionality:</p>
+<p>There several example programs in the examples/ folder. This example has few tasks exchanging messages, showing off basic functionality:</p>
 
 
 <pre>
-lua test.lua
+    lua example.lua
 </pre>
+
+
+<p><a name="Running_the_test_suite"></a></p>
+<h2>Running the test suite</h2>
+
+<p>The automated tests live in the spec/ folder and have no dependencies (the selector tests are skipped if LuaSocket is not installed):</p>
+
+
+<pre>
+    lua spec/run.lua            # run all tests
+    lua spec/run.lua stream     # run only the tests whose name <span class="function-name">contains</span> <span class="string">"stream"</span>
+</pre>
+
 
 <p><a name="License"></a></p>
 <h2>License</h2>
 
 <p>Same as Lua, see COPYRIGHT.</p>
 
-
 <p><a name="Who_"></a></p>
 <h2>Who?</h2>
 
-<p>Copyright (C) 2012 Jorge Visca, jvisca@fing.edu.uy</p>
-
+<p>Copyright (C) 2012 Jorge Visca, <a href="mailto:jvisca@fing.edu.uy">jvisca@fing.edu.uy</a></p>
 
 <p><a name="Contributors"></a></p>
 <h2>Contributors</h2>
@@ -196,12 +196,11 @@ lua test.lua
 <p>Andrew Starks (@andrewstarks)</p>
 
 
-
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
-<i style="float:right;">Last updated 2021-07-05 12:15:43 </i>
+<i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
+<i style="float:right;">Last updated 2026-11-05 11:46:59 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>

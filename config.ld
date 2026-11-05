@@ -8,9 +8,9 @@ project = "Lumen"
 dir='docs/'
 description = "A cooperative scheduler for Lua tasks"
 format = 'markdown'
-examples={'tests/test.lua', 'tests/test-selector.lua', 'tests/test-pipe.lua', 
-  'tests/test-stress.lua', 'tests/test-pause.lua', 'tests/test-mutex.lua', 
-  --'tests/test-http-server.lua',
+examples={'examples/example.lua', 'examples/selector.lua', 'examples/pipe.lua', 
+  'examples/stress.lua', 'examples/pause.lua', 'examples/mutex.lua', 
+  --'examples/http-server.lua',
 }
 readme = "README.md"
 

@@ -26,6 +26,7 @@
 <br/>
 <h1>Lumen</h1>
 
+
 <ul>
   <li><a href="../index.html">Index</a></li>
 </ul>
@@ -34,12 +35,12 @@
 
 <h2>Examples</h2>
 <ul class="nowrap">
-  <li><a href="../examples/test.lua.html">test.lua</a></li>
-  <li><strong>test-selector.lua</strong></li>
-  <li><a href="../examples/test-pipe.lua.html">test-pipe.lua</a></li>
-  <li><a href="../examples/test-stress.lua.html">test-stress.lua</a></li>
-  <li><a href="../examples/test-pause.lua.html">test-pause.lua</a></li>
-  <li><a href="../examples/test-mutex.lua.html">test-mutex.lua</a></li>
+  <li><a href="../examples/example.lua.html">example.lua</a></li>
+  <li><strong>selector.lua</strong></li>
+  <li><a href="../examples/pipe.lua.html">pipe.lua</a></li>
+  <li><a href="../examples/stress.lua.html">stress.lua</a></li>
+  <li><a href="../examples/pause.lua.html">pause.lua</a></li>
+  <li><a href="../examples/mutex.lua.html">mutex.lua</a></li>
 </ul>
 <h2>Modules</h2>
 <ul class="nowrap">
@@ -62,7 +63,7 @@
 
 <div id="content">
 
-    <h2>test-selector.lua</h2>
+    <h2>selector.lua</h2>
 <pre>
 <span class="comment">---
 </span><span class="comment">-- A task that interfaces with nixio. Supports UDP, TCP and async
@@ -77,11 +78,11 @@
 <span class="keyword">local</span> sched = <span class="global">require</span> <span class="string">"lumen.sched"</span>
 
 
-<span class="keyword">local</span> service=arg[<span class="number">1</span>] <span class="keyword">or</span> <span class="string">'luasocket'</span>
-<span class="comment">--local service='nixio'
-</span><span class="global">print</span> (<span class="string">'using service:'</span>, service)
+<span class="comment">--local service=arg[1] or 'luasocket'
+</span><span class="keyword">local</span> service=<span class="string">'nixio'</span>
+<span class="global">print</span> (<span class="string">'using service:'</span>, service)
 
-<span class="keyword">local</span> selector = <span class="global">require</span> <span class="string">"lumen.tasks.selector"</span>.init({service=service})
+<span class="keyword">local</span> selector = <span class="global">require</span> <span class="string">"lumen.tasks.selector"</span>.<span class="function-name">init</span>({service=service})
 
 <span class="comment">--sched.sigrun({sched.EVENT_ANY}, function(...) print("?", ...) end)
 </span>
@@ -106,42 +107,42 @@ end)
 --]]</span>
 
 <span class="comment">---[[ tcp sync
-</span><span class="keyword">local</span> tcp_server = selector.new_tcp_server(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="keyword">nil</span>, <span class="string">'stream'</span>)
+</span><span class="keyword">local</span> tcp_server = selector.<span class="function-name">new_tcp_server</span>(<span class="string">"127.0.0.1"</span>, <span class="number">8888</span>, <span class="keyword">nil</span>, <span class="string">'stream'</span>)
 <span class="comment">--local tcp_server = selector.new_tcp_server("127.0.0.1", 8888, 'line', 'stream')
 </span>
-sched.sigrun({tcp_server.events.accepted}, <span class="keyword">function</span>(_, sktd, err)
+sched.<span class="function-name">sigrun</span>({tcp_server.events.accepted}, <span class="keyword">function</span>(_, sktd, err)
   <span class="global">assert</span>(sktd, err)
   <span class="global">print</span> (<span class="string">'client accepted'</span>, sktd.stream)
-  sched.run( <span class="keyword">function</span>()
+  sched.<span class="function-name">run</span>( <span class="keyword">function</span>()
       <span class="keyword">while</span> <span class="keyword">true</span> <span class="keyword">do</span>
         <span class="comment">--print ('?', sktd.stream, sktd.stream.len)
 </span>        <span class="comment">--sched.sleep(1)
-</span>        <span class="keyword">local</span> line = <span class="global">assert</span>(sktd.stream:read_line())
+</span>        <span class="keyword">local</span> line = <span class="global">assert</span>(sktd.stream:<span class="function-name">read_line</span>())
         <span class="global">print</span> (<span class="string">'tcp arrived on'</span>, sktd.stream, line)
       <span class="keyword">end</span>
   <span class="keyword">end</span>)
 <span class="keyword">end</span>)
-<span class="keyword">local</span> tcp_client1 = selector.new_tcp_client(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
-sched.run(<span class="keyword">function</span>()
+<span class="keyword">local</span> tcp_client1 = selector.<span class="function-name">new_tcp_client</span>(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
+sched.<span class="function-name">run</span>(<span class="keyword">function</span>()
 	<span class="comment">--while true do
 </span>	<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">15</span> <span class="keyword">do</span>
-		<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.time()
+		<span class="keyword">local</span> m=<span class="string">"ping! "</span>..<span class="global">os</span>.<span class="function-name">time</span>()
 		<span class="global">print</span>(<span class="string">"tcp 1 sending"</span>,m)
-		tcp_client1:send(m..<span class="string">"\n"</span>)
-		sched.sleep(<span class="number">2.1</span>)
+		tcp_client1:<span class="function-name">send</span>(m..<span class="string">"\n"</span>)
+		sched.<span class="function-name">sleep</span>(<span class="number">2.1</span>)
 	<span class="keyword">end</span>
-	tcp_client1:close()
+	tcp_client1:<span class="function-name">close</span>()
 <span class="keyword">end</span>)
-<span class="keyword">local</span> tcp_client2 = selector.new_tcp_client(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
-sched.run(<span class="keyword">function</span>()
+<span class="keyword">local</span> tcp_client2 = selector.<span class="function-name">new_tcp_client</span>(<span class="string">"127.0.0.1"</span>,<span class="number">8888</span>)
+sched.<span class="function-name">run</span>(<span class="keyword">function</span>()
 	<span class="comment">--while true do
 </span>	<span class="keyword">for</span> i=<span class="number">1</span>, <span class="number">15</span> <span class="keyword">do</span>
-		<span class="keyword">local</span> m=<span class="string">"pong! "</span>..<span class="global">os</span>.time()
+		<span class="keyword">local</span> m=<span class="string">"pong! "</span>..<span class="global">os</span>.<span class="function-name">time</span>()
 		<span class="global">print</span>(<span class="string">"tcp 2 sending"</span>,m)
-		tcp_client2:send(m..<span class="string">"\n"</span>)
-		sched.sleep(<span class="number">1.5</span>)
+		tcp_client2:<span class="function-name">send</span>(m..<span class="string">"\n"</span>)
+		sched.<span class="function-name">sleep</span>(<span class="number">1.5</span>)
 	<span class="keyword">end</span>
-	tcp_client2:close()
+	tcp_client2:<span class="function-name">close</span>()
 <span class="keyword">end</span>)<span class="comment">--]]
 </span>
 <span class="comment">--[[ tcp async
@@ -167,14 +168,14 @@ end)
 --]]</span>
 
 
-sched.loop()</pre>
+sched.<span class="function-name">loop</span>()</pre>
 
 
 </div> <!-- id="content" -->
 </div> <!-- id="main" -->
 <div id="about">
-<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
-<i style="float:right;">Last updated 2021-07-05 12:15:43 </i>
+<i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
+<i style="float:right;">Last updated 2026-11-05 11:46:59 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
