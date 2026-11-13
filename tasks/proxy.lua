@@ -165,7 +165,7 @@ end
 -- This starts the task that will accept incomming wait requests.
 -- @param conf the configuration table (see @{conf})
 M.init = function(conf)
-	local ip = conf.ip or '*'
+	local ip = conf.ip or '127.0.0.1'
 	local port = conf.port or 1985
 	local encoder = conf.encoder or 'json'
 
