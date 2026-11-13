@@ -23,7 +23,7 @@ local M = {}
 
 local catalogs = {}
 
-local register_events = setmetatable({}, {__mode = 'vk'})
+local register_events = setmetatable({}, {__mode = 'k'})
 
 -- Creates a and queries singleton event for each queried name in a catalog, 
 -- to be used to wake tasks waiting for it to appear.
@@ -34,7 +34,8 @@ local function get_register_event (catalogd, name)
 		local register_event = setmetatable({}, {
 			--__tostring=function() return 'signal: register$'..tostring(catalogd.name)..'/'..tostring(name) end,
 		})
-		register_events[catalogd] = register_events[catalogd] or {}
+		register_events[catalogd] = register_events[catalogd] or setmetatable({}, {__mode = 'v'})
+
 		register_events[catalogd][name] = register_event
 		return register_event
 	end
