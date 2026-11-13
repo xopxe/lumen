@@ -93,10 +93,12 @@ local function walk_waitd(waitd, emitter, event, packed, ...)
       else
         step_task(taskd, event, ...)
       end
+      --[[ handle signals deterministically. if a receiver killed the emitter, finish anyway
       if emitter and emitter.status == 'dead' then
         -- the emitting task was killed from a triggered task
         return true
       end
+      --]]
     end
   end
   -- buffer only if no task got the signal; the buffer is shared by all the
