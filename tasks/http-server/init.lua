@@ -344,11 +344,8 @@ M.init = function(conf)
 				done, err, bytes = sktd_cli:send_sync(response_header)
         if done then 
           if type(response) == 'string' then
-            --sktd_cli:send_async(response)
-            sched.run(function()
-              done, err, bytes = sktd_cli:send_sync(response)
-              sched.signal(M.EVENT_DATA_TRANSFERRED, http_req_path, http_out_code, done, err, bytes)
-            end)
+            done, err, bytes = sktd_cli:send_sync(response)
+            sched.signal(M.EVENT_DATA_TRANSFERRED, http_req_path, http_out_code, done, err, bytes)
           else --stream
             if not http_out_header["content-length"] then
               need_flush = true
